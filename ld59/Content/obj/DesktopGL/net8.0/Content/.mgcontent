@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SourceFileCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Profile>Reach</Profile>
+  <Platform>DesktopGL</Platform>
+  <Config />
+  <SourceFiles>
+    <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
+    <File>F:/Dev/LD59/ld59/Content/images/file_explorer.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/file_folder.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/file_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
+  </SourceFiles>
+  <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+  </DestFiles>
+</SourceFileCollection>
