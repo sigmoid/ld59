@@ -9,6 +9,7 @@ public class DesktopUI : UIPanel
     private HorizontalLayoutGroup _taskbarLayout;
     private Rectangle _bounds;
 
+    private StartMenuUI _startMenuUI;
     private FileExplorerUI _fileExplorerUI;
 
     private float _taskbarItemSize = 80;
@@ -54,7 +55,17 @@ public class DesktopUI : UIPanel
 
     private void ToggleStartMenu()
     {
-        Logger.Info("Start menu toggled");
+        if (_startMenuUI == null)
+        {
+            _startMenuUI = new StartMenuUI(new Rectangle(5, _taskbar.GetBoundingBox().Top - 600, 400, 600));
+            _startMenuUI.OnClose += () => _startMenuUI = null;
+            AddChild(_startMenuUI);
+        }
+        else
+        {
+            RemoveChild(_startMenuUI);
+            _startMenuUI = null;
+        }
     }
 
     private void ActivateFileExplorer()
@@ -71,5 +82,4 @@ public class DesktopUI : UIPanel
         var textViewer = new TextViewerUI(new Rectangle(150, 150, 400, 500), file);
         AddChild(textViewer);
     }
-
 }

@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using Quartz;
 using Quartz.UI;
 
-public class FileItemUI : UIElement
+public class FileItemUI : UIElement, IHoverableUIElement
 {
     public Action OnClick;
 
@@ -78,5 +78,10 @@ public class FileItemUI : UIElement
 
 
         base.Draw(spriteBatch);
+    }
+
+    public void SetHoverState(bool isHovered)
+    {
+        _isHovered = isHovered;
     }
 }

@@ -4,11 +4,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
 
-public class FileExplorerUI : UIPanel
+public class FileExplorerUI : UIContainer
 {
     public Action OnClose;
 
-    private DraggableWindow _rootContainer;
+    private Window _rootContainer;
 
     private Rectangle _bounds;
     private Canvas _shortcutsCanvas;
@@ -34,16 +34,17 @@ public class FileExplorerUI : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new DraggableWindow(_bounds, "File Explorer", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2, ColorPalette.DarkGreen, ColorPalette.LightGreen);
-        _rootContainer.OnClose = () => Close();
-        AddChild(_rootContainer);
+        _rootContainer = new Window(_bounds, "File Explorer", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        Core.UISystem.AddElement(_rootContainer);
 
         CreateShortcuts();
         CreateFileDisplay();
     }
 
-    private void Close()
+    public void Close()
     {
+        _rootContainer.Close();
         // Remove from parent if it exists (this will trigger proper cleanup)
         var parent = GetParent() as UIContainer;
 
@@ -53,7 +54,7 @@ public class FileExplorerUI : UIPanel
         }
         else
         {
-            Core.UISystem.RemoveElement(this);
+            Core.UISystem.RemoveElement(_rootContainer);
         }
         OnClose?.Invoke();
     }

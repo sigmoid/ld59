@@ -4,17 +4,19 @@ using Quartz.UI;
 
 public class TextViewerUI : UIPanel
 {
-    private DraggableWindow _rootContainer;
+    private Window _rootContainer;
 
     private Rectangle _bounds;
 
     private GameFile _currentFile;
     private TextArea _textArea;
+    private bool _isReadOnly;
 
-    public TextViewerUI(Rectangle bounds, GameFile file)
+    public TextViewerUI(Rectangle bounds, GameFile file, bool isReadOnly = true)
     {
         _bounds = bounds;
         _currentFile = file;
+        _isReadOnly = isReadOnly;
         CreateUI();    
     }
 
@@ -31,12 +33,12 @@ public class TextViewerUI : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new DraggableWindow(_bounds, _currentFile.Name, Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2, ColorPalette.DarkGreen, ColorPalette.LightGreen);
-        _rootContainer.OnClose = () => Close();
-        AddChild(_rootContainer);
+        _rootContainer = new Window(_bounds, _currentFile.Name, Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        Core.UISystem.AddElement(_rootContainer);
+        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
 
         var textAreaBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);
-        _textArea = new TextArea(textAreaBounds, Core.DefaultFont, true, true, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _textArea = new TextArea(textAreaBounds, Core.DefaultFont, true, _isReadOnly, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.LightGreen);
         _textArea.Text = _currentFile.Content;
         _rootContainer.AddChild(_textArea);
     }
@@ -52,7 +54,7 @@ public class TextViewerUI : UIPanel
         }
         else
         {
-            Core.UISystem.RemoveElement(this);
+            Core.UISystem.RemoveElement(_rootContainer);
         }
     }
 }

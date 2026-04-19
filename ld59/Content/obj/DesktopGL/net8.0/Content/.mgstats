@@ -1,10 +1,14 @@
 Source File,Dest File,Processor Type,Content Type,Source File Size,Dest File Size,Build Seconds
-"F:/Dev/LD59/ld59/Content/files/root/batch_01/asdf.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_01/asdf.txt","CopyItem","File",4,4,0.0026669
-"F:/Dev/LD59/ld59/Content/files/root/batch_01/ASDF/FDSA.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_01/ASDF/FDSA.txt","CopyItem","File",0,0,0.0012938
+"F:/Dev/LD59/ld59/Content/files/root/batch_01/summer_tortoise.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_01/summer_tortoise.txt","CopyItem","File",240,240,0.0011538
 "F:/Dev/LD59/ld59/Content/files/root/batch_02/asdf2.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_02/asdf2.txt","CopyItem","File",8,8,0.001494
+"F:/Dev/LD59/ld59/Content/files/root/lorem_ipsum.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/lorem_ipsum.txt","CopyItem","File",2886,2886,0.0012038
 "F:/Dev/LD59/ld59/Content/files/root/readme.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/readme.txt","CopyItem","File",6,6,0.0013494
+"F:/Dev/LD59/ld59/Content/files/root/reference_material/creed.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/reference_material/creed.txt","CopyItem","File",240,240,0.0012025
 "F:/Dev/LD59/ld59/Content/fonts/Default.spritefont","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/fonts/Default.xnb","FontDescriptionProcessor","SpriteFontContent",2070,37913,0.1638515
+"F:/Dev/LD59/ld59/Content/images/decryptor_icon.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/decryptor_icon.xnb","TextureProcessor","Texture2DContent",558,65621,0.1052517
 "F:/Dev/LD59/ld59/Content/images/file_explorer.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/file_explorer.xnb","TextureProcessor","Texture2DContent",525,65621,0.0871743
 "F:/Dev/LD59/ld59/Content/images/file_folder.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/file_folder.xnb","TextureProcessor","Texture2DContent",347,65621,0.0976389
 "F:/Dev/LD59/ld59/Content/images/file_icon.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/file_icon.xnb","TextureProcessor","Texture2DContent",600,65621,0.0887269
+"F:/Dev/LD59/ld59/Content/images/key_icon.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/key_icon.xnb","TextureProcessor","Texture2DContent",498,65621,0.110998
+"F:/Dev/LD59/ld59/Content/images/minefield_icon.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/minefield_icon.xnb","TextureProcessor","Texture2DContent",833,65621,0.0960171
 "F:/Dev/LD59/ld59/Content/images/start_menu.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/start_menu.xnb","TextureProcessor","Texture2DContent",991,65621,0.0908465

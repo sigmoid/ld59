@@ -45,3 +45,46 @@ Cypher text
 Encryption
 
 Player reads the tutorial, starts by figuring out how to decode simple text files, only the files are gibberish. Player somehow figures out how to decode one of these files
+
+
+---
+
+Need to figure out what's actually going on in this game.
+
+I think the first phase is simply decoding basic text 
+
+Maybe you have two files, one that's encoded and one that's not
+
+There's a reference folder with items that might be useful. One of those items is something simple
+
+---
+
+alright so now I can encode a message by just swapping characters. The problem is not decoding this information without being too tedious
+or boring. I think for starters it would make sense to have a program in the game where you can generate a solution without needing to 
+manually fill in each replacement rule, but isn't that boring?
+
+Also this solution needs to scale up as the rules get more complex
+
+How does this thing work anyway?
+
+There is a program. Player can set a file as input and a file as a key. Maybe later in the game players will have to do something to improve the key.
+
+---
+
+It'd be cool if there was some kind of minigame to decode certain things
+
+Maybe you decode a file and it's coordinates and if you play those coordinates in minesweeper it unlocks a special mode with information
+
+---
+
+Okay brainblast
+
+There are resources: names, occupatioins(?) and keys (and probably more later)
+So you can unlock keys by comparing two pieces of information. THEN you can use the keys to decrypt stuff
+
+Maybe you can use previous keys to improve them?
+
+So the first thing is figuring out that the creed combined with the encrypted creed results in a key
+After that I need to figure something out. Maybe using the key again results in some kind of partially scrambled output that you need another key for
+
+So maybe when you decrypt a thing and it results in something that's still encrypted, so you have to find two matching documents again

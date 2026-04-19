@@ -45,3 +45,9 @@ F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\readme.txt
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\file_folder.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\file_icon.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_01\ASDF\FDSA.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\lorem_ipsum.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_01\summer_tortoise.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\reference_material\creed.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\key_icon.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\decryptor_icon.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\minefield_icon.xnb

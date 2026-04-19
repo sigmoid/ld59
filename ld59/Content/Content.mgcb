@@ -13,17 +13,20 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin files/root/batch_01/asdf.txt
-/copy:files/root/batch_01/asdf.txt
-
-#begin files/root/batch_01/ASDF/FDSA.txt
-/copy:files/root/batch_01/ASDF/FDSA.txt
+#begin files/root/batch_01/summer_tortoise.txt
+/copy:files/root/batch_01/summer_tortoise.txt
 
 #begin files/root/batch_02/asdf2.txt
 /copy:files/root/batch_02/asdf2.txt
 
+#begin files/root/lorem_ipsum.txt
+/copy:files/root/lorem_ipsum.txt
+
 #begin files/root/readme.txt
 /copy:files/root/readme.txt
+
+#begin files/root/reference_material/creed.txt
+/copy:files/root/reference_material/creed.txt
 
 #begin fonts/Default.spritefont
 /importer:FontDescriptionImporter
@@ -31,6 +34,18 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:fonts/Default.spritefont
+
+#begin images/decryptor_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/decryptor_icon.png
 
 #begin images/file_explorer.png
 /importer:TextureImporter
@@ -67,6 +82,30 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/file_icon.png
+
+#begin images/key_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/key_icon.png
+
+#begin images/minefield_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/minefield_icon.png
 
 #begin images/start_menu.png
 /importer:TextureImporter

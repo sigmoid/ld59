@@ -4,10 +4,13 @@
 
 # Tasks
 
-1. Player can view files as hex
-1. Player can convert a file using a conversion step
-    1. Text viewers have a node that can connect to other sources
-    1. A converter with an input node exists
+1. Key Generator
+1. Decryptor
+1. Double decrypt
+    1. You can save a decrypted file to another place and use it 
+1. Deduction puzzle
+1. Minesweeper
+1. Window better fix
 
 # Milestones
 
