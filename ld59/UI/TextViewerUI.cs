@@ -17,6 +17,15 @@ public class TextViewerUI : UIPanel
         _bounds = bounds;
         _currentFile = file;
         _isReadOnly = isReadOnly;
+
+        var dataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
+        var didUnlock = dataManager?.UnlockData(file);
+
+        if(didUnlock == true)
+        {
+            DesktopUI.ToastManager.ShowSuccess($"New info unlocked!", 3, Toast.ToastPosition.TopRight);
+        }
+
         CreateUI();    
     }
 

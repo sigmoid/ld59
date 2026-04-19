@@ -37,25 +37,19 @@ public class FileExplorerUI : UIContainer
         _rootContainer = new Window(_bounds, "File Explorer", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
         Core.UISystem.AddElement(_rootContainer);
+        _rootContainer.OnWindowClosed += (window) => Close();
 
         CreateShortcuts();
         CreateFileDisplay();
     }
 
-    public void Close()
+    public void CloseWindow()
     {
         _rootContainer.Close();
-        // Remove from parent if it exists (this will trigger proper cleanup)
-        var parent = GetParent() as UIContainer;
+    }
 
-        if (parent != null)
-        {
-            parent?.DestroyChild(this);
-        }
-        else
-        {
-            Core.UISystem.RemoveElement(_rootContainer);
-        }
+    public void Close()
+    {
         OnClose?.Invoke();
     }
 
@@ -107,6 +101,9 @@ public class FileExplorerUI : UIContainer
 
         foreach(var file in data.Files)
         {
+            if(!file.IsUnlocked)
+                continue;
+                
             var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file));
             _fileDisplayLayout.AddChild(fileItem);
         }

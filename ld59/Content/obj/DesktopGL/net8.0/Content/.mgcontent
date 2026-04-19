@@ -9,11 +9,17 @@
     <File>F:/Dev/LD59/ld59/Content/images/file_explorer.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_folder.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/key_file_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/key_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/minefield_cell.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/minefield_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/minefield_mine.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

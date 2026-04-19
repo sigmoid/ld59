@@ -10,5 +10,6 @@ public class ColorPalette
     public static readonly Color Black = new Color(0, 0, 0);
     public static readonly Color Red = new Color(204, 153, 153);
     public static readonly Color DarkRed = new Color(171, 128, 128);
+    public static readonly Color DarkCream = new Color(71,69,57);
 
 }

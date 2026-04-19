@@ -64,11 +64,11 @@ public class StartMenuUI : UIPanel
         _layoutGroup.AddChild(keygenButton);
 
         var decryptorIcon = Core.Content.Load<Texture2D>("images/decryptor_icon");
-        var decryptorButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 200, _layoutGroup.GetBoundingBox().Width, 100), decryptorIcon, "Decryptor", () => Logger.Info("Decryptor clicked"));
+        var decryptorButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 200, _layoutGroup.GetBoundingBox().Width, 100), decryptorIcon, "Decryptor", () => OpenDecoder());
         _layoutGroup.AddChild(decryptorButton);
 
         var minefieldIcon = Core.Content.Load<Texture2D>("images/minefield_icon");
-        var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 100), minefieldIcon, "Minefield", () => Logger.Info("Minefield clicked"));
+        var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 100), minefieldIcon, "Minefield", () => OpenMinefield());
         _layoutGroup.AddChild(minefieldButton);
 
         _rootElement.AddChild(_layoutGroup);
@@ -78,11 +78,34 @@ public class StartMenuUI : UIPanel
     {
         var textViewer = new TextViewerUI(new Rectangle(100, 100, 600, 400), new GameFile { Name = "New Text File.txt", Content = "" }, isReadOnly:false);
         Core.UISystem.AddElement(textViewer);
+        HideMenu();
     }
 
     private void OpenKeygen()
     {
         var keygenUI = new KeygenUI(new Rectangle(150, 150, 500, 400));
         Core.UISystem.AddElement(keygenUI);
+        HideMenu();
+    }
+
+    private void OpenDecoder()
+    {
+        var decoderUI = new DecoderUI(new Rectangle(150, 150, 700, 600));
+        Core.UISystem.AddElement(decoderUI);
+        HideMenu();
+    }
+
+    private void OpenMinefield()
+    {
+        var minefieldUI = new Minefield(new Rectangle(150, 150, 520, 620));
+        Core.UISystem.AddElement(minefieldUI);
+        HideMenu();
+    }
+
+    private void HideMenu()
+    {
+        var parent = GetParent() as UIContainer;
+        parent?.DestroyChild(this);
+        OnClose?.Invoke();
     }
 }

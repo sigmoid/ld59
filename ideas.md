@@ -88,3 +88,17 @@ So the first thing is figuring out that the creed combined with the encrypted cr
 After that I need to figure something out. Maybe using the key again results in some kind of partially scrambled output that you need another key for
 
 So maybe when you decrypt a thing and it results in something that's still encrypted, so you have to find two matching documents again
+
+---
+
+Functionality is mostly built save for the mystery solving system and minesweeper so I'm thinking I need to actually come up with some content
+
+What is this organization?
+
+They're definitely evil somehow, and probably pretty stupid, but what are they doing? Drugs? Murder? Terrorism? Cyber crime?
+
+Good name: Anastasia Corporation
+
+Anastasia corporation is illegally doing something with people's data and you're trying to find proof of that.
+Maybe they are illegally monitoring people. Maybe they are suspected in assasinating people
+

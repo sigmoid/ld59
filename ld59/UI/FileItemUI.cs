@@ -49,7 +49,7 @@ public class FileItemUI : UIElement, IHoverableUIElement
         var mouseState = Mouse.GetState();
         var mousePos = new Point(mouseState.X, mouseState.Y);
 
-        _isHovered = GetBoundingBox().Contains(mousePos);
+        _isHovered = GetBoundingBox().Contains(mousePos) && IsFocused;
 
         if (mouseState.LeftButton == ButtonState.Pressed && _isHovered && !_lastLefClick)
         {

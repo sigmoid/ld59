@@ -74,9 +74,19 @@ public class KeygenUI : UIPanel
             _progressBar.Value = 1 - (_generateTimer / _generateDuration);
             if(_generateTimer <= 0)
             {
+                var keyFileName = Core.CurrentScene.GetManager<GameFileDataManager>().GenerateKeyFile(_file1, _file2);
+                if(keyFileName != null)
+                {
+                    ShowModal($"Saved output: {keyFileName}");
+                    DesktopUI.ToastManager.ShowSuccess($"New key unlocked!", 3, Toast.ToastPosition.TopRight);
+                }
+                else
+                {
+                    ShowModal("No matching key file found for the selected files.");
+                }
+
                 _progressBar.Value = 0;
                 _generateTimer = 0;
-                ShowModal("Key generated successfully!");
                 _generateButton.SetEnabled(true);
             }
         }
@@ -100,7 +110,7 @@ public class KeygenUI : UIPanel
                 _file2 = file;
                 _file2NameLabel.Text = file.Name;
             }
-            _fileExplorerUI?.Close();
+            _fileExplorerUI?.CloseWindow();
             _fileExplorerUI = null;
         });
     }
@@ -112,13 +122,15 @@ public class KeygenUI : UIPanel
             ShowModal("Please select both files before generating.");
             return;
         }
-
-        _generateTimer = _generateDuration;
+        else
+        {
+            _generateTimer = _generateDuration;
+        }
     }
 
     private void ShowModal(string text)
     {
-        var modal = new NotificationPopup(new Rectangle(_rootContainer.GetBoundingBox().Center.X - 150, _rootContainer.GetBoundingBox().Center.Y - 50, 300, 100), text);
+        var modal = new NotificationPopup(new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 100), text);
         Core.UISystem.AddElement(modal);
     }
 }

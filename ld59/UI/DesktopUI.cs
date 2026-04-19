@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
@@ -5,12 +6,14 @@ using Quartz.UI;
 
 public class DesktopUI : UIPanel
 {
+    public static ToastManager ToastManager => _toastManager;
     private Canvas _taskbar;
     private HorizontalLayoutGroup _taskbarLayout;
     private Rectangle _bounds;
 
     private StartMenuUI _startMenuUI;
     private FileExplorerUI _fileExplorerUI;
+    private static ToastManager _toastManager;
 
     private float _taskbarItemSize = 80;
 
@@ -34,6 +37,8 @@ public class DesktopUI : UIPanel
 
     private void CreateUI()
     {
+        _toastManager = new ToastManager(Core.UISystem, Core.DefaultFont, new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, _bounds.Height));
+
         var taskBarArea = new Rectangle(0, _bounds.Height - 100, _bounds.Width, 100);
         _taskbar = new Canvas(taskBarArea, ColorPalette.Green);
 

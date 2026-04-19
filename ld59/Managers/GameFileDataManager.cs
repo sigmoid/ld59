@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Quartz;
 
@@ -5,6 +6,7 @@ public class GameFileDataManager : IManager
 {
 
     private GameFolder _rootFolder;
+    private List<GameKeyFile> _keyFiles = new List<GameKeyFile>();
     private const string ROOT_FILE_PATH = "Content/files/root";
 
     public void Initialize(Scene scene)
@@ -46,4 +48,71 @@ public class GameFileDataManager : IManager
         if (folder == null) return null;
         return folder.Files.Find(f => f.Name == fileName);
     }
+
+    public string GenerateKeyFile(GameFile file1, GameFile file2)
+    {
+        // collect all of the key files by traversing the folder structure
+        _keyFiles.Clear();
+        CollectKeyFiles(_rootFolder);
+
+        foreach(var keyFile in _keyFiles)
+        {
+            if((keyFile.Name1 == file1.Name && keyFile.Name2 == file2.Name) || (keyFile.Name1 == file2.Name && keyFile.Name2 == file1.Name))
+            {
+                keyFile.IsUnlocked = true;
+                return keyFile.Name;
+            }
+        }
+        return null;
+    }
+
+    public GameFile TryToDecryptFile(GameKeyFile keyFile, GameFile encryptedFile)
+    {
+        if((keyFile.UnlockedFiles.Contains(encryptedFile.Name)) && keyFile.IsUnlocked)
+        {
+            foreach(var unlockedFileName in keyFile.UnlockedFiles)
+            {
+                if(unlockedFileName == encryptedFile.Name)
+                {
+                    var resultFileName = encryptedFile.Name.Replace(".txt", ".dec");
+                    var decryptedFile = GetFileByPath("decrypted/" + resultFileName);
+                    if(decryptedFile != null)                    {
+                        decryptedFile.IsUnlocked = true;
+                        return decryptedFile;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public bool UnlockData(GameFile file)
+    {
+        bool didUnlock = false;
+
+        foreach (var info in file.Info)
+        {
+            didUnlock = true;
+            info.IsUnlocked = true;
+        }
+
+        return didUnlock;
+    }
+
+    private void CollectKeyFiles(GameFolder folder)
+    {
+        foreach (var file in folder.Files)
+        {
+            if (file is GameKeyFile keyFile)
+            {
+                _keyFiles.Add(keyFile);
+            }
+        }
+        foreach (var subfolder in folder.SubFolders)
+        {
+            CollectKeyFiles(subfolder);
+        }
+    }
+
+
 }
