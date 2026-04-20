@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Quartz;
 
@@ -8,6 +9,7 @@ public class GameFileDataManager : IManager
     private GameFolder _rootFolder;
     private List<GameKeyFile> _keyFiles = new List<GameKeyFile>();
     private const string ROOT_FILE_PATH = "Content/files/root";
+    private List<GameInfo> _unlockedInfo = new List<GameInfo>();
 
     public void Initialize(Scene scene)
     {
@@ -86,14 +88,25 @@ public class GameFileDataManager : IManager
         return null;
     }
 
+    public List<GameInfo> GetAllInfoOfType(InfoType type)
+    {
+        List<GameInfo> result = new List<GameInfo>();
+        _unlockedInfo.Where(i => i.Type == type).ToList().ForEach(i => result.Add(i));
+        return result;
+    }
+
     public bool UnlockData(GameFile file)
     {
         bool didUnlock = false;
 
         foreach (var info in file.Info)
         {
-            didUnlock = true;
             info.IsUnlocked = true;
+            if(!_unlockedInfo.Contains(info))
+            {
+            didUnlock = true;
+                _unlockedInfo.Add(info);
+            }
         }
 
         return didUnlock;

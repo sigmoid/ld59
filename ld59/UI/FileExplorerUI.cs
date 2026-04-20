@@ -19,6 +19,7 @@ public class FileExplorerUI : UIContainer
     private Texture2D _fileIcon;
     private string _currentPath = "";
     private Action<GameFile> _onOpenFile;
+    private Label _filepathLabel;
 
     public FileExplorerUI(Rectangle bounds, Action OnClose, Action<GameFile> onOpenFile)
     {
@@ -39,6 +40,7 @@ public class FileExplorerUI : UIContainer
         Core.UISystem.AddElement(_rootContainer);
         _rootContainer.OnWindowClosed += (window) => Close();
 
+        CreateFilePathDisplay();
         CreateShortcuts();
         CreateFileDisplay();
     }
@@ -53,9 +55,29 @@ public class FileExplorerUI : UIContainer
         OnClose?.Invoke();
     }
 
+    public void SetPath(string path)
+    {
+        var parts = path.Split(new char[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
+        _currentPath = "";
+        foreach(var part in parts)
+        {
+            SelectFolder(part);
+        }
+    }
+
+    private void CreateFilePathDisplay()
+    {
+        var contentBounds = _rootContainer.GetContentBounds();
+        var filepathArea = new Rectangle(contentBounds.X, contentBounds.Y, contentBounds.Width, 40);
+        var filepathBackground = new Canvas(new Rectangle(filepathArea.X, filepathArea.Y, filepathArea.Width, filepathArea.Height + 10), ColorPalette.Green);
+        _rootContainer.AddChild(filepathBackground);
+        _filepathLabel = new Label(new Rectangle(filepathArea.X + 10, filepathArea.Y + 10, filepathArea.Width - 20, 30), "", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black);
+        _rootContainer.AddChild(_filepathLabel);
+    }
+
     private void CreateShortcuts()
     {
-        _shortcutsCanvas = new Canvas(new Rectangle(_rootContainer.GetContentBounds().X, _rootContainer.GetContentBounds().Y, (int)(_rootContainer.GetContentBounds().Width * 0.25f), _rootContainer.GetContentBounds().Height), ColorPalette.Green);
+        _shortcutsCanvas = new Canvas(new Rectangle(_rootContainer.GetContentBounds().X, _filepathLabel.GetBoundingBox().Bottom + 10, (int)(_rootContainer.GetContentBounds().Width * 0.25f), _rootContainer.GetContentBounds().Height - (_filepathLabel.GetBoundingBox().Height + 10)), ColorPalette.Green);
         _rootContainer.AddChild(_shortcutsCanvas);
 
         var padding = 5;
@@ -69,7 +91,7 @@ public class FileExplorerUI : UIContainer
     private void CreateFileDisplay()
     {
         var contentBounds = _rootContainer.GetContentBounds();
-        var fileDisplayArea = new Rectangle(contentBounds.X + (int)(contentBounds.Width * 0.25f), contentBounds.Y, (int)(contentBounds.Width * 0.75f), contentBounds.Height);
+        var fileDisplayArea = new Rectangle(contentBounds.X + (int)(contentBounds.Width * 0.25f), _filepathLabel.GetBoundingBox().Bottom + 10, (int)(contentBounds.Width * 0.75f), contentBounds.Height - (_filepathLabel.GetBoundingBox().Height + 10));
         _fileDisplayScrollArea = new ScrollArea(fileDisplayArea);
         _rootContainer.AddChild(_fileDisplayScrollArea);
 
@@ -85,6 +107,8 @@ public class FileExplorerUI : UIContainer
         {
             _currentPath = "";
         }
+
+        _filepathLabel.Text = _currentPath == "" ? "~/" : "~"+_currentPath;
 
         // if first character of path is '/', remove it for lookup since root is represented as empty string
         var lookupPath = _currentPath.StartsWith("/") ? _currentPath.Substring(1) : _currentPath;

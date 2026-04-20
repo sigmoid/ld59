@@ -10,6 +10,7 @@ public class DesktopUI : UIPanel
     private Canvas _taskbar;
     private HorizontalLayoutGroup _taskbarLayout;
     private Rectangle _bounds;
+    private Texture2D _backgroundTexture;
 
     private StartMenuUI _startMenuUI;
     private FileExplorerUI _fileExplorerUI;
@@ -50,9 +51,13 @@ public class DesktopUI : UIPanel
         var startButton = new ImageButton(new Rectangle(0, 0, (int)_taskbarItemSize, (int)_taskbarItemSize), startButtonTexture, () => ToggleStartMenu());
         _taskbarLayout.AddChild(startButton);
 
-        var fileExplorerTexture = Core.Content.Load<Texture2D>("images/file_explorer");
-        var fileExplorerButton = new ImageButton(new Rectangle(0, 0, (int)_taskbarItemSize, (int)_taskbarItemSize), fileExplorerTexture, () => ActivateFileExplorer());
-        _taskbarLayout.AddChild(fileExplorerButton);
+        // var fileExplorerTexture = Core.Content.Load<Texture2D>("images/file_explorer");
+        // var fileExplorerButton = new ImageButton(new Rectangle(0, 0, (int)_taskbarItemSize, (int)_taskbarItemSize), fileExplorerTexture, () => ActivateFileExplorer());
+        // _taskbarLayout.AddChild(fileExplorerButton);
+
+        _backgroundTexture = Core.Content.Load<Texture2D>("images/background");
+        var background = new UIImage(_backgroundTexture, new Rectangle(0, 0, _bounds.Width, _bounds.Height));
+        AddChild(background);
 
         _taskbar.AddChild(_taskbarLayout);
         AddChild(_taskbar);
@@ -73,18 +78,7 @@ public class DesktopUI : UIPanel
         }
     }
 
-    private void ActivateFileExplorer()
-    {
-        if (_fileExplorerUI == null)
-        {
-            _fileExplorerUI = new FileExplorerUI(new Rectangle(100, 100, 800, 600), () => _fileExplorerUI = null, OpenFile);
-            AddChild(_fileExplorerUI);
-        }
-    }
 
-    private void OpenFile(GameFile file)
-    {
-        var textViewer = new TextViewerUI(new Rectangle(150, 150, 400, 500), file);
-        AddChild(textViewer);
-    }
+
+
 }

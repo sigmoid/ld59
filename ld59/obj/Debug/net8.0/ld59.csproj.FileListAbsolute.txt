@@ -56,3 +56,5 @@ F:\Dev\LD59\ld59\obj\Debug\net8.0\ld59.genruntimeconfig.cache
 F:\Dev\LD59\ld59\obj\Debug\net8.0\ref\ld59.dll
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\minefield_cell.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\minefield_mine.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\background.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\puzzle_icon.xnb

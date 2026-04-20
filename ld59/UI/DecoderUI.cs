@@ -102,6 +102,7 @@ public class DecoderUI : UIPanel
                 TryToDecrypt();
             }
         });
+        _fileExplorerUI.SetPath("/keys");
         Core.UISystem.AddElement(_fileExplorerUI);
     }
 

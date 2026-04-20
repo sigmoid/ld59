@@ -115,6 +115,7 @@ public class KeygenUI : UIPanel
         });
     }
 
+
     private void Generate()
     {
         if(_file1 == null || _file2 == null)

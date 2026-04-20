@@ -2,7 +2,8 @@ public enum InfoType
 {
     Name,
     Rank,
-    Position
+    Position,
+    Codename
 }
 
 public class GameInfo

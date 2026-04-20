@@ -12,6 +12,7 @@ public class Minefield : UIPanel
     private int _cellsWide = 16;
     private int _cellsHigh = 16;
     private int _numMines = 40;
+    private Label _statusLabel;
     private Dictionary<(int,int), MinefieldCell> _cells = new Dictionary<(int,int), MinefieldCell>();
 
     public Minefield(Rectangle bounds)
@@ -37,6 +38,11 @@ public class Minefield : UIPanel
         _rootWindow = new Window(_bounds, "Minefield", Core.DefaultFont);
         _rootWindow.SetColors(ColorPalette.DarkCream, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen);
         
+        _statusLabel = new Label(new Rectangle(_bounds.X + 10, _rootWindow.GetContentBounds().Y + 10, _bounds.Width - 20, 20), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
+        _rootWindow.AddChild(_statusLabel);
+        var resetButton = new Button(new Rectangle(_rootWindow.GetContentBounds().Right - 90, _rootWindow.GetContentBounds().Y + 10, 80, 30), "Reset", Core.DefaultFont,ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, () => CreateGame());
+        _rootWindow.AddChild(resetButton);
+
         var gridBounds = new Rectangle(_bounds.X + 10, _bounds.Y + 100, _bounds.Width - 20, _bounds.Height - 110);
         var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
 
@@ -52,6 +58,23 @@ public class Minefield : UIPanel
                 _cells[(x, y)] = cell;
                 grid.AddChild(cell);
             }
+        }
+
+        CreateGame();
+
+        _rootWindow.AddChild(grid);
+        AddChild(_rootWindow);
+
+        _rootWindow.OnFocus();
+    }
+
+    private void CreateGame()
+    {
+        foreach(var cell in _cells.Values)
+        {
+            cell.HasMine = false;
+            cell.IsRevealed = false;
+            cell.NeighborCount = 0;
         }
 
         for(int i = 0; i < _numMines; i++)
@@ -96,16 +119,11 @@ public class Minefield : UIPanel
                 _cells[(x, y)].NeighborCount = mineCount;
             }
         }
-
-
-        _rootWindow.AddChild(grid);
-        AddChild(_rootWindow);
-
-        _rootWindow.OnFocus();
     }
 
     private void OnCellClicked((int,int) position)
     {
+        _statusLabel.Text = "";
         if(_cells[position].HasMine)
         {
             GameOver();
@@ -113,6 +131,21 @@ public class Minefield : UIPanel
         }
 
         dfs(position);
+
+        CheckVictory();
+    }
+
+    private void CheckVictory()
+    {
+        foreach(var cell in _cells.Values)
+        {
+            if(!cell.HasMine && !cell.IsRevealed)
+            {
+                return;
+            }
+        }
+
+        _statusLabel.Text = "Congratulations! You've cleared the minefield!";
     }
 
     private void dfs((int,int) startCell)
@@ -159,5 +192,7 @@ public class Minefield : UIPanel
         {
             cell.IsRevealed = true;
         }
+
+        _statusLabel.Text = "Game Over! Click Reset to try again.";
     }
 }

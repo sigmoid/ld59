@@ -47,6 +47,18 @@
 /processorParam:TextureFormat=Compressed
 /build:fonts/Default.spritefont
 
+#begin images/background.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/background.png
+
 #begin images/decryptor_icon.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -154,6 +166,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/minefield_mine.png
+
+#begin images/puzzle_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/puzzle_icon.png
 
 #begin images/start_menu.png
 /importer:TextureImporter

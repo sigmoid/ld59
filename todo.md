@@ -4,18 +4,13 @@
 
 # Tasks
 
-1. Deduction puzzle
-    1. Player gathers info
-    1. Player unlocks info when file decoded
-    1. Player can use info to solve mysteries
-1. Minesweeper
-    1. Anastasia Corporation splash screen
-    1. Can enter a secret code to unlock a file
-1. Make desktop background
+1. Puzzle solver
+    1. Show when player has solution or one off
+1. Make the actual game
 1. Make icons show up on taskbar when a program is open
-1. File explorer can open to a path
-    1. Key file explorer opens to key directory
-    1. Display path in file explorer
+    1. Move file explorer to start menu too
+1. Add flags to minesweeper
+1. Make textarea in decryptor scroll
 
 # Milestones
 
