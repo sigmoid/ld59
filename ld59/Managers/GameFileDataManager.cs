@@ -77,7 +77,7 @@ public class GameFileDataManager : IManager
                 if(unlockedFileName == encryptedFile.Name)
                 {
                     var resultFileName = encryptedFile.Name.Replace(".txt", ".dec");
-                    var decryptedFile = GetFileByPath("decrypted/" + resultFileName);
+                    var decryptedFile = SearchForFileInDirectory("decrypted/", resultFileName);
                     if(decryptedFile != null)                    {
                         decryptedFile.IsUnlocked = true;
                         return decryptedFile;
@@ -127,5 +127,20 @@ public class GameFileDataManager : IManager
         }
     }
 
+    private GameFile SearchForFileInDirectory(string directory, string fileName)
+    {
+        var folder = GetFolderByPath(directory);
+        if (folder == null) return null;
+        var res = folder.Files.Find(f => f.Name == fileName);
+        if(res == null)
+        {
+            foreach(var subfolder in folder.SubFolders)
+            {
+                res = SearchForFileInDirectory(directory + "/" + subfolder.Name, fileName);
+                if(res != null) return res;
+            }
+        }
+        return res;
+    }
 
 }

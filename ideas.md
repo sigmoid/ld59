@@ -102,3 +102,26 @@ Good name: Anastasia Corporation
 Anastasia corporation is illegally doing something with people's data and you're trying to find proof of that.
 Maybe they are illegally monitoring people. Maybe they are suspected in assasinating people
 
+---
+
+Need to come up with an actual puzzle
+
+I like the idea of figuring out who oversees a project and finding its project codename, and for the third
+piece of information you have to figure out who leaked to the press
+
+Required documents
+
+* Leaked news article
+    * Identifies their source as a "Tier III" employee
+* Project descriptions with codenames
+* Org chart
+* readme
+* internal emails
+    * Maybe referring to an employee by their initials
+
+
+So I now have the information that the leaker was a tier iii employee which narrows down the search
+
+I should elimnate some other tier III executives from suspicion
+
+Some email saying "The tier II execs are overseeing codenames: x y z

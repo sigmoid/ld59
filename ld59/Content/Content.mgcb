@@ -13,8 +13,17 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin files/root/batch_01/eagle.txt
+/copy:files/root/batch_01/eagle.txt
+
 #begin files/root/batch_01/hare.txt
 /copy:files/root/batch_01/hare.txt
+
+#begin files/root/batch_01/snake.txt
+/copy:files/root/batch_01/snake.txt
+
+#begin files/root/batch_01/sphynx.txt
+/copy:files/root/batch_01/sphynx.txt
 
 #begin files/root/batch_01/tortoise.txt
 /copy:files/root/batch_01/tortoise.txt
@@ -22,11 +31,20 @@
 #begin files/root/batch_02/asdf2.txt
 /copy:files/root/batch_02/asdf2.txt
 
-#begin files/root/decrypted/hare.dec
-/copy:files/root/decrypted/hare.dec
+#begin files/root/decrypted/batch_01/eagle.dec
+/copy:files/root/decrypted/batch_01/eagle.dec
 
-#begin files/root/decrypted/tortoise.dec
-/copy:files/root/decrypted/tortoise.dec
+#begin files/root/decrypted/batch_01/hare.dec
+/copy:files/root/decrypted/batch_01/hare.dec
+
+#begin files/root/decrypted/batch_01/snake.dec
+/copy:files/root/decrypted/batch_01/snake.dec
+
+#begin files/root/decrypted/batch_01/sphynx.dec
+/copy:files/root/decrypted/batch_01/sphynx.dec
+
+#begin files/root/decrypted/batch_01/tortoise.dec
+/copy:files/root/decrypted/batch_01/tortoise.dec
 
 #begin files/root/keys/values_key.key
 /copy:files/root/keys/values_key.key
@@ -37,8 +55,14 @@
 #begin files/root/readme.txt
 /copy:files/root/readme.txt
 
-#begin files/root/reference_material/values.txt
-/copy:files/root/reference_material/values.txt
+#begin files/root/reference_material/anastasia_materials/values.txt
+/copy:files/root/reference_material/anastasia_materials/values.txt
+
+#begin files/root/reference_material/news_items/nyt3_14_26.txt
+/copy:files/root/reference_material/news_items/nyt3_14_26.txt
+
+#begin files/root/reference_material/news_items/nyt3_20_26.txt
+/copy:files/root/reference_material/news_items/nyt3_20_26.txt
 
 #begin fonts/Default.spritefont
 /importer:FontDescriptionImporter

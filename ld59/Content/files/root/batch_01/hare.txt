@@ -2,7 +2,7 @@ sTQRTKLIOH:
 
 ehcd h
 
-vci: sQFET zGGF
+vci: sQFET yOUIZOFUQST
 vni: kKWXEAST bQSZTKL
 vii: zTSQFOT bQSZTKL
 
@@ -10,15 +10,15 @@ ehcd hh
 
 vsi: sOFQ wOCOQF
 vhyi: fQKRTF hDQD
-vkhi: zGKZODTK zGGF
+vkhi: zGKZODTK yOUIZOFUQST
 vji: cKOE xQSSQKR
 
 ehcd hhh
 
 vwyi: qOD oGSRTF
-vvi: oXLZQC zGGF
-vdi: iHQS zGGF
-vyi: jQXSOFT zGGF
+vvi: oXLZQC yOUIZOFUQST
+vdi: iHQS yOUIZOFUQST
+vyi: jQXSOFT yOUIZOFUQST
 vivvi: zQKOQ vIQDWTKL
 
 oSGKN, oSGKN, kFQLZQLOQ

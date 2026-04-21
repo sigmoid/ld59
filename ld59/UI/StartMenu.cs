@@ -123,7 +123,7 @@ public class StartMenuUI : UIPanel
 
     private void OpenFile(GameFile file)
     {
-        var textViewer = new TextViewerUI(new Rectangle(150, 150, 400, 500), file);
+        var textViewer = new TextViewerUI(new Rectangle(150, 150, 600, 800), file);
         AddChild(textViewer);
     }
 

@@ -26,8 +26,8 @@ public class PuzzleSolutionUI : UIPanel
     private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
     {
         new PuzzleSolutionPiece() { ProblemDescription = "Who leaked the information to the press", PlayerSolution = "", CorrectSolution = "jim golden", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Which employee oversees the surveillance program", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the surveillance program", PlayerSolution = "", CorrectSolution = "jim golden", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the assassination plot", PlayerSolution = "", CorrectSolution = "Agamemnon", RelatedInfoType = InfoType.Codename},
+        new PuzzleSolutionPiece() { ProblemDescription = "Which employee oversaw the assasination plot", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
     };
 
     private List<Button> _solutionButtons = new List<Button>();

@@ -71,7 +71,7 @@ public class FileExplorerUI : UIContainer
         var filepathArea = new Rectangle(contentBounds.X, contentBounds.Y, contentBounds.Width, 40);
         var filepathBackground = new Canvas(new Rectangle(filepathArea.X, filepathArea.Y, filepathArea.Width, filepathArea.Height + 10), ColorPalette.Green);
         _rootContainer.AddChild(filepathBackground);
-        _filepathLabel = new Label(new Rectangle(filepathArea.X + 10, filepathArea.Y + 10, filepathArea.Width - 20, 30), "", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black);
+        _filepathLabel = new Label(new Rectangle(filepathArea.X + 10, filepathArea.Y + 10, filepathArea.Width - 20, 30), "", Core.DefaultFont, ColorPalette.Black, ColorPalette.ActualWhite);
         _rootContainer.AddChild(_filepathLabel);
     }
 
