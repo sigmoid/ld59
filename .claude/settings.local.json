@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(xxd \"f:/Dev/LD59/ld59/bin/Debug/net8.0/Content/files/root/batch_03/sphynx.enc\")",
+      "Bash(xxd \"f:/Dev/LD59/ld59/bin/Debug/net8.0/Content/files/root/batch_03/eagle.enc\")",
+      "Bash(xxd \"f:/Dev/LD59/ld59/Content/files/root/batch_04/nightshade.enc\")"
+    ]
+  }
+}

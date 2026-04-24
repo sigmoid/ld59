@@ -16,9 +16,11 @@
     <File>F:/Dev/LD59/ld59/Content/images/minefield_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/minefield_mine.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/puzzle_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/scramlogo.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

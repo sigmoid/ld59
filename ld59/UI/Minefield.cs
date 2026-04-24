@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Quartz;
 using Quartz.UI;
 
@@ -13,7 +15,20 @@ public class Minefield : UIPanel
     private int _cellsHigh = 16;
     private int _numMines = 40;
     private Label _statusLabel;
+    private UIImage _splashImage;
     private Dictionary<(int,int), MinefieldCell> _cells = new Dictionary<(int,int), MinefieldCell>();
+    private Label _coordinatesLabel;
+    private List<(int, int)> _inputSequence = new List<(int, int)>();
+    private List<(int, int)> _winningSequence = new List<(int, int)>()
+    {
+        (2,4),
+        (8,3),
+        (7,3),
+        (8,7),
+        (5,4)
+    };
+    private float _splashTimer = 0;
+    private float _splashDuration = 1f;
 
     public Minefield(Rectangle bounds)
     {
@@ -32,6 +47,49 @@ public class Minefield : UIPanel
         return _bounds;
     }
 
+    public override void Update(float deltaTime)
+    {
+        if(_splashImage.IsVisible())
+        {
+            _splashTimer += deltaTime;
+            if(_splashTimer >= _splashDuration)
+            {
+                _splashImage.SetVisibility(false);
+            }
+        }
+
+        var mouseState = Mouse.GetState();
+
+        _coordinatesLabel.Text = "";
+
+        foreach(var cell in _cells)
+        {
+            var key = cell.Key;
+            var value = cell.Value;
+
+            if(value.GetBoundingBox().Contains(new Point(mouseState.X, mouseState.Y)))
+            {
+                _coordinatesLabel.Text = $"({key.Item1}, {key.Item2})";
+                break;
+            }
+        }
+
+        if(_inputSequence.SequenceEqual(_winningSequence))
+        {
+            _inputSequence.Clear();
+            var modal = new NotificationPopup(new Rectangle(Core.GraphicsDevice.Viewport.Width / 2 - 150, Core.GraphicsDevice.Viewport.Height / 2 - 75, 700, 300), "Secret Sequence Activated: To decrypt reward use keys: x.okafor@anastasia.net, o.nightingale@anastasia.net, umiyamoto@anastasia.net\n");
+            Core.UISystem.AddElement(modal);
+        }
+
+        base.Update(deltaTime);
+    }
+
+    public override void LateUpdate(float deltaTime)
+    {
+        _rootWindow.LateUpdate(deltaTime);
+        base.LateUpdate(deltaTime);
+    }
+
 
     private void CreateUI()
     {
@@ -43,7 +101,7 @@ public class Minefield : UIPanel
         var resetButton = new Button(new Rectangle(_rootWindow.GetContentBounds().Right - 90, _rootWindow.GetContentBounds().Y + 10, 80, 30), "Reset", Core.DefaultFont,ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, () => CreateGame());
         _rootWindow.AddChild(resetButton);
 
-        var gridBounds = new Rectangle(_bounds.X + 10, _bounds.Y + 100, _bounds.Width - 20, _bounds.Height - 110);
+        var gridBounds = new Rectangle(_bounds.X + 10, _bounds.Y + 100, _bounds.Width - 20, _bounds.Height - 130);
         var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
 
         var cellWidth = gridBounds.Width / _cellsWide;
@@ -60,16 +118,22 @@ public class Minefield : UIPanel
             }
         }
 
+        _coordinatesLabel = new Label(new Rectangle(_bounds.X + 10, gridBounds.Bottom + 5, _bounds.Width - 20, 20), "", Core.DefaultFont, ColorPalette.ActualWhite);
+        _rootWindow.AddChild(_coordinatesLabel);
+
         CreateGame();
 
         _rootWindow.AddChild(grid);
         AddChild(_rootWindow);
 
+        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_bounds.X, _bounds.Y + 100, _bounds.Width, _bounds.Width));
+        _rootWindow.AddChild(_splashImage);
         _rootWindow.OnFocus();
     }
 
     private void CreateGame()
     {
+        _inputSequence.Clear();
         foreach(var cell in _cells.Values)
         {
             cell.HasMine = false;
@@ -84,7 +148,7 @@ public class Minefield : UIPanel
             {
                 x = Random.Next(0, _cellsWide);
                 y = Random.Next(0, _cellsHigh);
-            } while (_cells[(x, y)].HasMine);
+            } while (_cells[(x, y)].HasMine || _winningSequence.Contains((x, y)));
 
             _cells[(x, y)].HasMine = true;
         }
@@ -130,6 +194,8 @@ public class Minefield : UIPanel
             return;
         }
 
+        _inputSequence.Add(position);
+
         dfs(position);
 
         CheckVictory();
@@ -145,6 +211,7 @@ public class Minefield : UIPanel
             }
         }
 
+        _inputSequence.Clear();
         _statusLabel.Text = "Congratulations! You've cleared the minefield!";
     }
 
@@ -192,6 +259,9 @@ public class Minefield : UIPanel
         {
             cell.IsRevealed = true;
         }
+
+
+        _inputSequence.Clear();
 
         _statusLabel.Text = "Game Over! Click Reset to try again.";
     }

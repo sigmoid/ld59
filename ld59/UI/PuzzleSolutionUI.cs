@@ -23,6 +23,8 @@ public class PuzzleSolutionUI : UIPanel
     private Label _solutionLabel;
     private InfoSelectionWindow _infoSelectionWindow;
     private Label _resultLabel;
+    private LayoutGroup _problemsLayoutGroup;
+    private int _currentPuzzleIndex = 0;
 
     private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
     {
@@ -33,12 +35,19 @@ public class PuzzleSolutionUI : UIPanel
     };
     private List<PuzzleSolutionPiece> _solutionPieces2 = new List<PuzzleSolutionPiece>()
     {
-        new PuzzleSolutionPiece() { ProblemDescription = "Who leaked the information to the press", PlayerSolution = "", CorrectSolution = "jim golden", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the assassination plot", PlayerSolution = "", CorrectSolution = "Agamemnon", RelatedInfoType = InfoType.Codename},
-        new PuzzleSolutionPiece() { ProblemDescription = "Which employee oversaw the assasination plot", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who lead project Agamemnon", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who lead project Achilles", PlayerSolution = "", CorrectSolution = "mortimer nightingale", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the assassination plot", PlayerSolution = "", CorrectSolution = "agamemnon", RelatedInfoType = InfoType.Codename},
     };
 
-    private List<PuzzleSolutionPiece> _currentSolutionPieces => _solutionPieces;
+    private List<PuzzleSolutionPiece> _solutionPieces3 = new List<PuzzleSolutionPiece>()
+    {
+        new PuzzleSolutionPiece() { ProblemDescription = "What is the name of the assassin who killed Rose Cantrell", PlayerSolution = "", CorrectSolution = "mike poisson", RelatedInfoType = InfoType.Name},
+    };
+
+    private List<List<PuzzleSolutionPiece>> _puzzleSequence = new List<List<PuzzleSolutionPiece>>();
+
+    private List<PuzzleSolutionPiece> _currentSolutionPieces {get;set;}
 
     private List<Button> _solutionButtons = new List<Button>();
 
@@ -46,7 +55,13 @@ public class PuzzleSolutionUI : UIPanel
     {
         _bounds = bounds;
 
+        _currentSolutionPieces = _solutionPieces;
         CreateUI(solutionText);
+
+
+        _puzzleSequence.Add(_solutionPieces);
+        _puzzleSequence.Add(_solutionPieces2);
+        _puzzleSequence.Add(_solutionPieces3);
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -67,25 +82,32 @@ public class PuzzleSolutionUI : UIPanel
 
         var contentBounds = _rootContainer.GetContentBounds();
 
-        var problemLayoutGroup = new VerticalLayoutGroup(new Rectangle(contentBounds.X + 20, contentBounds.Y + 10, contentBounds.Width - 40, contentBounds.Height - 100), 10);
+        _problemsLayoutGroup = new VerticalLayoutGroup(new Rectangle(contentBounds.X + 20, contentBounds.Y + 10, contentBounds.Width - 40, contentBounds.Height - 100), 10);
 
-        foreach(var piece in _currentSolutionPieces)
-        {
-            var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(problemLayoutGroup.GetBoundingBox().X, problemLayoutGroup.GetBoundingBox().Y, problemLayoutGroup.GetBoundingBox().Width, 100), 5);
-            var pieceLabel = new TextArea(new Rectangle(problemLayoutGroup.GetBoundingBox().X, problemLayoutGroup.GetBoundingBox().Y, (int)(problemLayoutGroup.GetBoundingBox().Width * 0.5f), 100), Core.DefaultFont, true, true, Color.White, Color.Black);
-            pieceLabel.Text = piece.ProblemDescription + "\n";
-            Button problemButton = null;
-            problemButton = new Button(new Rectangle(horizontalGroup.GetBoundingBox().X + (int)(problemLayoutGroup.GetBoundingBox().Width * 0.5f) + 5, horizontalGroup.GetBoundingBox().Y, (int)(problemLayoutGroup.GetBoundingBox().Width * 0.5f) - 5, 100), "<SELECT>", Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => OpenInfoSelection(piece.RelatedInfoType, (info) => SelectInfoForButton(info, problemButton, piece)), ColorPalette.Green);
-            _solutionButtons.Add(problemButton);
-            horizontalGroup.AddChild(pieceLabel);
-            horizontalGroup.AddChild(problemButton);
-            problemLayoutGroup.AddChild(horizontalGroup);
-        }
+        PopulateCurrentMystery();
 
-        _rootContainer.AddChild(problemLayoutGroup);
+        _rootContainer.AddChild(_problemsLayoutGroup);
 
         _solutionLabel = new Label(new Rectangle(contentBounds.X + 20, contentBounds.Bottom - 80, contentBounds.Width - 40, 30), solutionText, Core.DefaultFont, ColorPalette.Black);
         _rootContainer.AddChild(_solutionLabel);
+    }
+
+    private void PopulateCurrentMystery()
+    {
+        _problemsLayoutGroup.ClearChildren();
+
+        foreach(var piece in _currentSolutionPieces)
+        {
+            var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, _problemsLayoutGroup.GetBoundingBox().Width, 100), 5);
+            var pieceLabel = new TextArea(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f), 100), Core.DefaultFont, true, true, Color.White, Color.Black);
+            pieceLabel.Text = piece.ProblemDescription + "\n";
+            Button problemButton = null;
+            problemButton = new Button(new Rectangle(horizontalGroup.GetBoundingBox().X + (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) + 5, horizontalGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) - 5, 100), "<SELECT>", Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => OpenInfoSelection(piece.RelatedInfoType, (info) => SelectInfoForButton(info, problemButton, piece)), ColorPalette.Green);
+            _solutionButtons.Add(problemButton);
+            horizontalGroup.AddChild(pieceLabel);
+            horizontalGroup.AddChild(problemButton);
+            _problemsLayoutGroup.AddChild(horizontalGroup);
+        }
     }
 
     private void OpenInfoSelection(InfoType infoType, Action<GameInfo> onInfoSelected = null)
@@ -106,6 +128,13 @@ public class PuzzleSolutionUI : UIPanel
         piece.PlayerSolution = info.Value;
         button.SetText(info.Value);
         TestSolution();
+    }
+    
+    private void ShowSuccess()
+    {
+        var modal = new NotificationPopup(new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 250), "Solution Correct: A new mission has been started.\n");
+        DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
+        Core.UISystem.AddElement(modal);
     }
 
     private void TestSolution()
@@ -132,7 +161,19 @@ public class PuzzleSolutionUI : UIPanel
         }
         else if(correctCount == _currentSolutionPieces.Count)
         {
-            _solutionLabel.Text = "Solution verified";
+            ShowSuccess();
+            _currentPuzzleIndex++;
+            if(_currentPuzzleIndex < _puzzleSequence.Count)
+            {
+                _currentSolutionPieces = _puzzleSequence[_currentPuzzleIndex];
+                PopulateCurrentMystery();
+            }
+            else
+            {
+                // TODO you beat the game
+            }
+        
+            _solutionLabel.Text = "";
             _solutionLabel.TextColor = ColorPalette.LightGreen;
         }
         else if(correctCount == _currentSolutionPieces.Count - 1)

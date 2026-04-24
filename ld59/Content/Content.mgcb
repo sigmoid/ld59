@@ -34,11 +34,122 @@
 #begin files/root/batch_03/sphynx.enc
 /copy:files/root/batch_03/sphynx.enc
 
-#begin files/root/batch_03/tortoise.enc
-/copy:files/root/batch_03/tortoise.enc
+#begin files/root/batch_04/hashes/a.strom@anastasia.net.txt
+/copy:files/root/batch_04/hashes/a.strom@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/a.walters@anastasia.net.txt
+/copy:files/root/batch_04/hashes/a.walters@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/blakethorn@anastasia.net.txt
+/copy:files/root/batch_04/hashes/blakethorn@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/c.reyes@anastasia.net.txt
+/copy:files/root/batch_04/hashes/c.reyes@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/dillon.f@anastasia.net.txt
+/copy:files/root/batch_04/hashes/dillon.f@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/e.ballard@anastasia.net.txt
+/copy:files/root/batch_04/hashes/e.ballard@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/e.sled@anastasia.net.txt
+/copy:files/root/batch_04/hashes/e.sled@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/elara.wynn@anastasia.net.txt
+/copy:files/root/batch_04/hashes/elara.wynn@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/f.castor@anastasia.net.txt
+/copy:files/root/batch_04/hashes/f.castor@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/g.nightingale@anastasia.net.txt
+/copy:files/root/batch_04/hashes/g.nightingale@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/g.nkosi@anastasia.net.txt
+/copy:files/root/batch_04/hashes/g.nkosi@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/j.golden@anastasia.net.txt
+/copy:files/root/batch_04/hashes/j.golden@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/j.mercer@anastasia.net.txt
+/copy:files/root/batch_04/hashes/j.mercer@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/l.nightingale@anastasia.net.txt
+/copy:files/root/batch_04/hashes/l.nightingale@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/l.vance@anastasia.net.txt
+/copy:files/root/batch_04/hashes/l.vance@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/l.vivian@anastasia.net.txt
+/copy:files/root/batch_04/hashes/l.vivian@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/m.chambers@anastasia.net.txt
+/copy:files/root/batch_04/hashes/m.chambers@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/melanie.w@anastasia.net.txt
+/copy:files/root/batch_04/hashes/melanie.w@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/mortimer.n@anastasia.net.txt
+/copy:files/root/batch_04/hashes/mortimer.n@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/nwolf@anastasia.net.txt
+/copy:files/root/batch_04/hashes/nwolf@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/o.nightingale@anastasia.net.txt
+/copy:files/root/batch_04/hashes/o.nightingale@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/ohara.d@anastasia.net.txt
+/copy:files/root/batch_04/hashes/ohara.d@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/p.nightingale@anastasia.net.txt
+/copy:files/root/batch_04/hashes/p.nightingale@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/rbennett@anastasia.net.txt
+/copy:files/root/batch_04/hashes/rbennett@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/serena.voss@anastasia.net.txt
+/copy:files/root/batch_04/hashes/serena.voss@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/t.calloway@anastasia.net.txt
+/copy:files/root/batch_04/hashes/t.calloway@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/umiyamoto@anastasia.net.txt
+/copy:files/root/batch_04/hashes/umiyamoto@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/vfrost@anastasia.net.txt
+/copy:files/root/batch_04/hashes/vfrost@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/w.aldridge@anastasia.net.txt
+/copy:files/root/batch_04/hashes/w.aldridge@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/x.okafor@anastasia.net.txt
+/copy:files/root/batch_04/hashes/x.okafor@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/y.imam@anastasia.net.txt
+/copy:files/root/batch_04/hashes/y.imam@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/ydalton@anastasia.net.txt
+/copy:files/root/batch_04/hashes/ydalton@anastasia.net.txt
+
+#begin files/root/batch_04/hashes/zephyr.k@anastasia.net.txt
+/copy:files/root/batch_04/hashes/zephyr.k@anastasia.net.txt
+
+#begin files/root/batch_04/leviathan.enc
+/copy:files/root/batch_04/leviathan.enc
+
+#begin files/root/batch_04/nightshade.enc
+/copy:files/root/batch_04/nightshade.enc
+
+#begin files/root/batch_04/orc.enc
+/copy:files/root/batch_04/orc.enc
+
+#begin files/root/batch_05/tortoise.enc
+/copy:files/root/batch_05/tortoise.enc
 
 #begin files/root/readme.txt
 /copy:files/root/readme.txt
+
+#begin files/root/reference_material/anastasia_materials/family.txt
+/copy:files/root/reference_material/anastasia_materials/family.txt
 
 #begin files/root/reference_material/anastasia_materials/values.txt
 /copy:files/root/reference_material/anastasia_materials/values.txt
@@ -187,6 +298,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/puzzle_icon.png
+
+#begin images/scramlogo.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/scramlogo.png
 
 #begin images/start_menu.png
 /importer:TextureImporter

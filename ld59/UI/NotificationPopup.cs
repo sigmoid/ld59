@@ -5,7 +5,7 @@ using Quartz.UI;
 public class NotificationPopup : UIPanel
 {
     private Window _rootContainer;
-    private Label _messageLabel;
+    private TextArea _messageLabel;
     private Rectangle _bounds;
     private string _message;
 
@@ -25,7 +25,8 @@ public class NotificationPopup : UIPanel
         Core.UISystem.WindowManager.SetFocusedWindow(_rootContainer);
 
         var labelBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);
-        _messageLabel = new Label(labelBounds, _message, Core.DefaultFont, ColorPalette.Black);
+        _messageLabel = new TextArea(labelBounds, Core.DefaultFont, true);
+        _messageLabel.Text = _message;
         _rootContainer.AddChild(_messageLabel);
     }
 

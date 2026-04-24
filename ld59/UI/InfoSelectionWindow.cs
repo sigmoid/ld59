@@ -56,6 +56,7 @@ public class InfoSelectionWindow : UIPanel
         {
             var label = new Button(new Rectangle(layoutGroup.GetBoundingBox().X, layoutGroup.GetBoundingBox().Y, layoutGroup.GetBoundingBox().Width - 20, 30), item.Value, Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => { _onSelectInfo?.Invoke(item); });
             layoutGroup.AddChild(label);
+            scrollArea.RefreshContentBounds();
         }
     }
 

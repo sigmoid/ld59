@@ -157,3 +157,15 @@ I think being able to keyword search in the file explorer is what will make this
 Player should have to find key files through deduction
 
 So instead of how it works now, each file should just have a decrypted flag. If a file is not decrypted it shows up as nonsense.
+
+--- 
+
+Trying to design a puzzle that has multiple keys. I think what could be cool is if each key is encrypted with the base key
+and then also some personally identifying information. So the player gets a bunch of personal things to different users and they
+can combine that with the key to unlock more files. There should be lots of files to prevent brute force guessing.
+These keys could be email addresses
+
+So there's like a webmaster role that is one of the identities that you've found, and you have to deduce who the webmaster is to
+find the right key combination.
+
+As requested, here is a list of identities to consider for candidacy of key holder. Their personal data is stored in the folder "info"

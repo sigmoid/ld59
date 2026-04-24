@@ -120,13 +120,14 @@ public class FileExplorerUI : UIContainer
         foreach(var subFolder in data.SubFolders)
         {
             var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name), null);
-            _fileDisplayLayout.AddChild(folderItem);
-        }
+            _fileDisplayLayout.AddChild(folderItem);        }
 
         foreach(var file in data.Files)
         {                
             var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file), file);
-            _fileDisplayLayout.AddChild(fileItem);
-        }
+            _fileDisplayLayout.AddChild(fileItem);        }
+
+        _fileDisplayScrollArea.RefreshContentBounds();
+        _fileDisplayScrollArea.ScrollToTop();
     }
 }

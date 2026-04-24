@@ -1,0 +1,4 @@
+X509 Thumbprint: A4:F2:C8:D1:E9:B3:05:63
+Subject: CN=agamemnon.internal
+Issuer: CN=Kryptex Root CA
+Serial: 0x3D9F2C8A1E7B5046
