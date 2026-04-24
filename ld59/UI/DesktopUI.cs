@@ -15,6 +15,7 @@ public class DesktopUI : UIPanel
     private StartMenuUI _startMenuUI;
     private FileExplorerUI _fileExplorerUI;
     private static ToastManager _toastManager;
+    private ClockUI _clockUI;
 
     private float _taskbarItemSize = 80;
 
@@ -61,6 +62,9 @@ public class DesktopUI : UIPanel
 
         _taskbar.AddChild(_taskbarLayout);
         AddChild(_taskbar);
+
+        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 200, taskBarArea.Top, 200, 100));
+        AddChild(_clockUI);
     }
 
     private void ToggleStartMenu()

@@ -21,6 +21,11 @@ public class TextViewerUI : UIPanel
         var dataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
         var didUnlock = dataManager?.UnlockData(file);
 
+        if(file.IsNewDiscovery)
+        {
+            file.IsNewDiscovery = false;
+        }
+
         if(didUnlock == true)
         {
             DesktopUI.ToastManager.ShowSuccess($"New info unlocked!", 3, Toast.ToastPosition.TopRight);
@@ -48,7 +53,15 @@ public class TextViewerUI : UIPanel
 
         var textAreaBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);
         _textArea = new TextArea(textAreaBounds, Core.DefaultFont, true, _isReadOnly, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.LightGreen);
-        _textArea.Text = _currentFile.Content;
+        
+        if(_currentFile.IsEncrypted)
+        {
+            _textArea.Text = "This file is encrypted. Find the necessary information to unlock it\n";
+        }
+        else
+        {
+            _textArea.Text = _currentFile.Content;
+        }
         _rootContainer.AddChild(_textArea);
     }
 

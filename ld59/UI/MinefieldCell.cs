@@ -20,7 +20,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
     private (int,int) _position;
     private bool _isHovered = false;
     private bool _isFocused = false;
-    private bool _lastLeftClick = false;
+    private bool _lastLeftClick = true;
 
     public MinefieldCell(Rectangle bounds, (int,int) position)
     {

@@ -60,11 +60,7 @@ public class StartMenuUI : UIPanel
         var keygenIcon = Core.Content.Load<Texture2D>("images/key_icon");
         var keygenButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 100, _layoutGroup.GetBoundingBox().Width, 80), keygenIcon, "Keygen", () => OpenKeygen());
         _layoutGroup.AddChild(keygenButton);
-
-        var decryptorIcon = Core.Content.Load<Texture2D>("images/decryptor_icon");
-        var decryptorButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 200, _layoutGroup.GetBoundingBox().Width, 80), decryptorIcon, "Decryptor", () => OpenDecoder());
-        _layoutGroup.AddChild(decryptorButton);
-
+        
         var minefieldIcon = Core.Content.Load<Texture2D>("images/minefield_icon");
         var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 80), minefieldIcon, "Minefield", () => OpenMinefield());
         _layoutGroup.AddChild(minefieldButton);
@@ -95,17 +91,11 @@ public class StartMenuUI : UIPanel
 
     private void OpenKeygen()
     {
-        var keygenUI = new KeygenUI(new Rectangle(150, 150, 500, 400));
+        var keygenUI = new KeygenUI(new Rectangle(150, 150, 700, 600));
         Core.UISystem.AddElement(keygenUI);
         HideMenu();
     }
 
-    private void OpenDecoder()
-    {
-        var decoderUI = new DecoderUI(new Rectangle(150, 150, 700, 600));
-        Core.UISystem.AddElement(decoderUI);
-        HideMenu();
-    }
 
     private void OpenMinefield()
     {

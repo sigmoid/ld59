@@ -23,16 +23,26 @@ public class PuzzleSolutionUI : UIPanel
     private Label _solutionLabel;
     private InfoSelectionWindow _infoSelectionWindow;
     private Label _resultLabel;
+
     private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
+    {
+        new PuzzleSolutionPiece() { ProblemDescription = "Who is the head engineer", PlayerSolution = "", CorrectSolution = "ed sled", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "What project were they assigned to before 3/20", PlayerSolution = "", CorrectSolution = "orpheus", RelatedInfoType = InfoType.Codename},
+        new PuzzleSolutionPiece() { ProblemDescription = "What is their rank in the company", PlayerSolution = "", CorrectSolution = "tier iii", RelatedInfoType = InfoType.Rank},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who takes minutes at executive meetings", PlayerSolution = "", CorrectSolution = "leif haynes", RelatedInfoType = InfoType.Name},
+    };
+    private List<PuzzleSolutionPiece> _solutionPieces2 = new List<PuzzleSolutionPiece>()
     {
         new PuzzleSolutionPiece() { ProblemDescription = "Who leaked the information to the press", PlayerSolution = "", CorrectSolution = "jim golden", RelatedInfoType = InfoType.Name},
         new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the assassination plot", PlayerSolution = "", CorrectSolution = "Agamemnon", RelatedInfoType = InfoType.Codename},
         new PuzzleSolutionPiece() { ProblemDescription = "Which employee oversaw the assasination plot", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
     };
 
+    private List<PuzzleSolutionPiece> _currentSolutionPieces => _solutionPieces;
+
     private List<Button> _solutionButtons = new List<Button>();
 
-    public PuzzleSolutionUI(Rectangle bounds, string solutionText)
+    public PuzzleSolutionUI(Rectangle bounds, string solutionText) : base()
     {
         _bounds = bounds;
 
@@ -59,7 +69,7 @@ public class PuzzleSolutionUI : UIPanel
 
         var problemLayoutGroup = new VerticalLayoutGroup(new Rectangle(contentBounds.X + 20, contentBounds.Y + 10, contentBounds.Width - 40, contentBounds.Height - 100), 10);
 
-        foreach(var piece in _solutionPieces)
+        foreach(var piece in _currentSolutionPieces)
         {
             var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(problemLayoutGroup.GetBoundingBox().X, problemLayoutGroup.GetBoundingBox().Y, problemLayoutGroup.GetBoundingBox().Width, 100), 5);
             var pieceLabel = new TextArea(new Rectangle(problemLayoutGroup.GetBoundingBox().X, problemLayoutGroup.GetBoundingBox().Y, (int)(problemLayoutGroup.GetBoundingBox().Width * 0.5f), 100), Core.DefaultFont, true, true, Color.White, Color.Black);
@@ -102,9 +112,9 @@ public class PuzzleSolutionUI : UIPanel
     {
         int correctCount = 0;
         int completeCount = 0;
-        for(int i = 0; i < _solutionPieces.Count; i++)
+        for(int i = 0; i < _currentSolutionPieces.Count; i++)
         {
-            var piece = _solutionPieces[i];
+            var piece = _currentSolutionPieces[i];
             if(piece.PlayerSolution.Trim().ToLower() == piece.CorrectSolution.Trim().ToLower())
             {
                 correctCount++;
@@ -115,17 +125,17 @@ public class PuzzleSolutionUI : UIPanel
             }
         }
 
-        if(completeCount < _solutionPieces.Count)
+        if(completeCount < _currentSolutionPieces.Count)
         {
             _solutionLabel.Text = $"Solution incomplete.";
             _solutionLabel.TextColor = ColorPalette.Red;
         }
-        else if(correctCount == _solutionPieces.Count)
+        else if(correctCount == _currentSolutionPieces.Count)
         {
             _solutionLabel.Text = "Solution verified";
             _solutionLabel.TextColor = ColorPalette.LightGreen;
         }
-        else if(correctCount == _solutionPieces.Count - 1)
+        else if(correctCount == _currentSolutionPieces.Count - 1)
         {
             _solutionLabel.Text = $"One piece of information is incorrect.";
             _solutionLabel.TextColor = ColorPalette.Orange;

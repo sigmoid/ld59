@@ -53,39 +53,25 @@ public class GameFileDataManager : IManager
 
     public string GenerateKeyFile(GameFile file1, GameFile file2)
     {
-        // collect all of the key files by traversing the folder structure
-        _keyFiles.Clear();
-        CollectKeyFiles(_rootFolder);
 
-        foreach(var keyFile in _keyFiles)
-        {
-            if((keyFile.Name1 == file1.Name && keyFile.Name2 == file2.Name) || (keyFile.Name1 == file2.Name && keyFile.Name2 == file1.Name))
-            {
-                keyFile.IsUnlocked = true;
-                return keyFile.Name;
-            }
-        }
         return null;
     }
 
-    public GameFile TryToDecryptFile(GameKeyFile keyFile, GameFile encryptedFile)
+    public bool TryToDecryptFile(GameFile encryptedFile, List<string> keys)
     {
-        if((keyFile.UnlockedFiles.Contains(encryptedFile.Name)) && keyFile.IsUnlocked)
+        if(!encryptedFile.IsEncrypted)
         {
-            foreach(var unlockedFileName in keyFile.UnlockedFiles)
-            {
-                if(unlockedFileName == encryptedFile.Name)
-                {
-                    var resultFileName = encryptedFile.Name.Replace(".txt", ".dec");
-                    var decryptedFile = SearchForFileInDirectory("decrypted/", resultFileName);
-                    if(decryptedFile != null)                    {
-                        decryptedFile.IsUnlocked = true;
-                        return decryptedFile;
-                    }
-                }
-            }
+            return false;
         }
-        return null;
+
+        if(keys.All(k => encryptedFile.Keys.Contains(k)) && encryptedFile.Keys.All(k => keys.Contains(k)))
+        {
+            encryptedFile.IsEncrypted = false;
+            encryptedFile.IsNewDiscovery = true;
+            return true;
+        }
+
+        return false;
     }
 
     public List<GameInfo> GetAllInfoOfType(InfoType type)
@@ -99,12 +85,17 @@ public class GameFileDataManager : IManager
     {
         bool didUnlock = false;
 
+        if(file.IsEncrypted)
+        {
+            return false;
+        }
+
         foreach (var info in file.Info)
         {
             info.IsUnlocked = true;
             if(!_unlockedInfo.Contains(info))
             {
-            didUnlock = true;
+                didUnlock = true;
                 _unlockedInfo.Add(info);
             }
         }

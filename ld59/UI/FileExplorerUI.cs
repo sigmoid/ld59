@@ -83,7 +83,7 @@ public class FileExplorerUI : UIContainer
         var padding = 5;
 
         var layoutGroup = new VerticalLayoutGroup(new Rectangle(_shortcutsCanvas.GetBoundingBox().X + padding, _shortcutsCanvas.GetBoundingBox().Y + padding, _shortcutsCanvas.GetBoundingBox().Width -  padding * 2, _shortcutsCanvas.GetBoundingBox().Height - padding * 2), 5);
-        var rootShortcut = new FileItemUI(new Rectangle(0, 0, layoutGroup.GetBoundingBox().Width, 40), "root", _folderIcon, () => SelectFolder("/"));
+        var rootShortcut = new FileItemUI(new Rectangle(0, 0, layoutGroup.GetBoundingBox().Width, 40), "root", _folderIcon, () => SelectFolder("/"), null);
         layoutGroup.AddChild(rootShortcut);
         _shortcutsCanvas.AddChild(layoutGroup);
     }
@@ -119,16 +119,13 @@ public class FileExplorerUI : UIContainer
 
         foreach(var subFolder in data.SubFolders)
         {
-            var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name));
+            var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name), null);
             _fileDisplayLayout.AddChild(folderItem);
         }
 
         foreach(var file in data.Files)
-        {
-            if(!file.IsUnlocked)
-                continue;
-                
-            var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file));
+        {                
+            var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file), file);
             _fileDisplayLayout.AddChild(fileItem);
         }
     }

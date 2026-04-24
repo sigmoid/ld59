@@ -125,3 +125,35 @@ So I now have the information that the leaker was a tier iii employee which narr
 I should elimnate some other tier III executives from suspicion
 
 Some email saying "The tier II execs are overseeing codenames: x y z
+
+--- 
+
+I really want to get something playable done this week, but I keep coming up with ideas that aren't helping.
+
+I like the concept of roottrees, building a family tree is a pretty good core system.
+
+I think search functionality will probably be needed to make this game more fun, but I don't think I have time to do that in the two days that remain in this week.
+
+Coming up with some novel mechanic that works is tough and I've been scratching my head all day thinking about it.
+
+I think the narrative is pretty solid. You are investigating the Anastasia corporation, they had a CEO assasinated and you need to find out who's responsible.
+
+I need to come up with a puzzle mechanic that makes the player feel smart without being lame.
+
+Decoding sounds promising, but in practice I haven't really come up with anything to make it really fun.
+
+Hyperlinks might be the easiest to implement way to get something fun happening.
+
+I could just add a keyword search feature to the file explorer!
+
+--- 
+
+Okay so more thought has been put into this
+
+I think decoding should stay
+
+I think being able to keyword search in the file explorer is what will make this work
+
+Player should have to find key files through deduction
+
+So instead of how it works now, each file should just have a decrypted flag. If a file is not decrypted it shows up as nonsense.

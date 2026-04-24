@@ -13,44 +13,29 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin files/root/batch_01/eagle.txt
-/copy:files/root/batch_01/eagle.txt
+#begin files/root/batch_01/minutes_03_5_26.txt
+/copy:files/root/batch_01/minutes_03_5_26.txt
 
-#begin files/root/batch_01/hare.txt
-/copy:files/root/batch_01/hare.txt
+#begin files/root/batch_01/minutes_03_6_26.txt
+/copy:files/root/batch_01/minutes_03_6_26.txt
 
-#begin files/root/batch_01/snake.txt
-/copy:files/root/batch_01/snake.txt
+#begin files/root/batch_02/minutes_03_12_26.txt
+/copy:files/root/batch_02/minutes_03_12_26.txt
 
-#begin files/root/batch_01/sphynx.txt
-/copy:files/root/batch_01/sphynx.txt
+#begin files/root/batch_03/eagle.enc
+/copy:files/root/batch_03/eagle.enc
 
-#begin files/root/batch_01/tortoise.txt
-/copy:files/root/batch_01/tortoise.txt
+#begin files/root/batch_03/hare.enc
+/copy:files/root/batch_03/hare.enc
 
-#begin files/root/batch_02/asdf2.txt
-/copy:files/root/batch_02/asdf2.txt
+#begin files/root/batch_03/snake.enc
+/copy:files/root/batch_03/snake.enc
 
-#begin files/root/decrypted/batch_01/eagle.dec
-/copy:files/root/decrypted/batch_01/eagle.dec
+#begin files/root/batch_03/sphynx.enc
+/copy:files/root/batch_03/sphynx.enc
 
-#begin files/root/decrypted/batch_01/hare.dec
-/copy:files/root/decrypted/batch_01/hare.dec
-
-#begin files/root/decrypted/batch_01/snake.dec
-/copy:files/root/decrypted/batch_01/snake.dec
-
-#begin files/root/decrypted/batch_01/sphynx.dec
-/copy:files/root/decrypted/batch_01/sphynx.dec
-
-#begin files/root/decrypted/batch_01/tortoise.dec
-/copy:files/root/decrypted/batch_01/tortoise.dec
-
-#begin files/root/keys/values_key.key
-/copy:files/root/keys/values_key.key
-
-#begin files/root/lorem_ipsum.txt
-/copy:files/root/lorem_ipsum.txt
+#begin files/root/batch_03/tortoise.enc
+/copy:files/root/batch_03/tortoise.enc
 
 #begin files/root/readme.txt
 /copy:files/root/readme.txt

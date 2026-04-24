@@ -1,5 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.WebSockets;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
 
@@ -7,21 +9,25 @@ public class KeygenUI : UIPanel
 {
     private Rectangle _bounds;
     private Window _rootContainer;
-    private static Texture2D _fileIcon;
     private ProgressBar _progressBar;
-    private Label _file1NameLabel;
-    private Label _file2NameLabel;
     private Button _generateButton;
-    private GameFile _file1;
-    private GameFile _file2;
     private FileExplorerUI _fileExplorerUI;
     private float _generateTimer = 0;
-    private float _generateDuration = 3; // seconds
+    private float _generateDuration = 2;
+
+    private readonly List<GameFile> _selectedFiles = [];
+    private VerticalLayoutGroup _selectedFilesLayout;
+
+    private VerticalLayoutGroup _scanDisplayLayout;
+    private ScrollArea _scanScrollArea;
+    private List<string> _scanPaths = [];
+    private int _scanIndex = 0;
+    private float _scanInterval = 0;
+    private float _scanAccumulator = 0;
 
     public KeygenUI(Rectangle bounds)
     {
         _bounds = bounds;
-        _fileIcon = Core.Content.Load<Texture2D>("images/file_icon");
         CreateUI();
     }
 
@@ -31,10 +37,7 @@ public class KeygenUI : UIPanel
         _bounds = bounds;
     }
 
-    public override Rectangle GetBoundingBox()
-    {
-        return _bounds;
-    }
+    public override Rectangle GetBoundingBox() => _bounds;
 
     private void CreateUI()
     {
@@ -44,47 +47,143 @@ public class KeygenUI : UIPanel
         Core.UISystem.WindowManager.SetFocusedWindow(_rootContainer);
 
         var content = _rootContainer.GetContentBounds();
+        int padding = 10;
+        int leftPaneWidth = (int)(content.Width * 0.33f);
 
-        var file1Button = new ImageButton(new Rectangle(content.X + content.Width / 3 - 64, content.Y + content.Height / 2 - 64 - 35, 128, 128), _fileIcon, () => OpenFileExplorer(1), hoverTintColor: ColorPalette.LightGreen);
-        var file1Label = new Label(new Rectangle(file1Button.GetBoundingBox().Center.X - (int)(Core.DefaultFont.MeasureString("File A").X / 2), file1Button.GetBoundingBox().Top - 20, (int)Core.DefaultFont.MeasureString("File A").X, 30), "File A", Core.DefaultFont, ColorPalette.Black);
-        _file1NameLabel = new Label(new Rectangle(file1Button.GetBoundingBox().X, file1Button.GetBoundingBox().Bottom + 5, file1Button.GetBoundingBox().Width, 30), "", Core.DefaultFont, ColorPalette.Black);
-        _rootContainer.AddChild(_file1NameLabel);
-        _rootContainer.AddChild(file1Button);
-        _rootContainer.AddChild(file1Label);
+        CreateLeftPane(content, leftPaneWidth, padding);
+        CreateRightPane(content, leftPaneWidth, padding);
+    }
 
-        var file2Button = new ImageButton(new Rectangle(content.X + content.Width / 3 * 2 - 64, content.Y + content.Height / 2 - 64 - 35, 128, 128), _fileIcon, () => OpenFileExplorer(2), hoverTintColor: ColorPalette.LightGreen);
-        var file2Label = new Label(new Rectangle(file2Button.GetBoundingBox().Center.X - (int)(Core.DefaultFont.MeasureString("File B").X / 2), file2Button.GetBoundingBox().Top - 20, (int)Core.DefaultFont.MeasureString("File B").X, 30), "File B", Core.DefaultFont, ColorPalette.Black);
-        _file2NameLabel = new Label(new Rectangle(file2Button.GetBoundingBox().X, file2Button.GetBoundingBox().Bottom + 5, file2Button.GetBoundingBox().Width, 30), "", Core.DefaultFont, ColorPalette.Black);
-        _rootContainer.AddChild(_file2NameLabel);
-        _rootContainer.AddChild(file2Button);
-        _rootContainer.AddChild(file2Label);
+    private void CreateLeftPane(Rectangle content, int paneWidth, int padding)
+    {
+        var paneBackground = new Canvas(new Rectangle(content.X, content.Y, paneWidth, content.Height), ColorPalette.Green);
+        _rootContainer.AddChild(paneBackground);
 
-        _progressBar = new ProgressBar(new Rectangle(content.X + 50, content.Bottom - 50, content.Width - 100, 30), 0, 1, 0, true, ColorPalette.LightGreen, ColorPalette.DarkGreen);
+        var titleLabel = new Label(new Rectangle(content.X + padding, content.Y + padding, paneWidth - padding * 2, 20), "Selected Files", Core.DefaultFont, ColorPalette.ActualWhite);
+        _rootContainer.AddChild(titleLabel);
+
+        int addButtonHeight = 30;
+        int addButtonY = content.Y + content.Height - addButtonHeight - padding;
+        int scrollTop = titleLabel.GetBoundingBox().Bottom + padding;
+        int scrollHeight = addButtonY - scrollTop - padding;
+
+        var scrollArea = new ScrollArea(new Rectangle(content.X + padding, scrollTop, paneWidth - padding * 2, scrollHeight));
+        _rootContainer.AddChild(scrollArea);
+
+        _selectedFilesLayout = new VerticalLayoutGroup(new Rectangle(content.X + padding, scrollTop, paneWidth - padding * 2, scrollHeight), 4);
+        scrollArea.AddChild(_selectedFilesLayout);
+
+        var addButton = new Button(new Rectangle(content.X + padding, addButtonY, paneWidth - padding * 2, addButtonHeight), "+ Add File", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, OpenFileExplorer, ColorPalette.Green);
+        _rootContainer.AddChild(addButton);
+    }
+
+    private void CreateRightPane(Rectangle content, int leftPaneWidth, int padding)
+    {
+        int rightX = content.X + leftPaneWidth + padding;
+        int rightWidth = content.Width - leftPaneWidth - padding;
+
+        int generateButtonHeight = 30;
+        int progressBarHeight = 20;
+        int bottomRowHeight = generateButtonHeight + progressBarHeight + padding * 3;
+
+        int scanAreaHeight = content.Height - bottomRowHeight - padding * 2;
+
+        _scanScrollArea = new ScrollArea(new Rectangle(rightX, content.Y + padding, rightWidth - padding, scanAreaHeight));
+        _rootContainer.AddChild(_scanScrollArea);
+
+        _scanDisplayLayout = new VerticalLayoutGroup(new Rectangle(rightX, content.Y + padding, rightWidth - padding, scanAreaHeight), 2);
+        _scanScrollArea.AddChild(_scanDisplayLayout);
+
+        int progressY = content.Y + content.Height - progressBarHeight - padding;
+        _progressBar = new ProgressBar(new Rectangle(rightX, progressY, rightWidth - padding, progressBarHeight), 0, 1, 0, true, ColorPalette.LightGreen, ColorPalette.DarkGreen);
         _rootContainer.AddChild(_progressBar);
 
-        _generateButton = new Button(new Rectangle(content.Center.X - 60, content.Bottom - 90, 120, 30), "Generate", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, Generate, ColorPalette.Green);
+        int generateY = progressY - generateButtonHeight - padding;
+        int generateX = rightX + (rightWidth - padding) / 2 - 60;
+        _generateButton = new Button(new Rectangle(generateX, generateY, 120, generateButtonHeight), "Generate", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, Generate, ColorPalette.Green);
         _rootContainer.AddChild(_generateButton);
+    }
+
+    private void RefreshSelectedFiles()
+    {
+        _selectedFilesLayout.ClearChildren();
+        foreach (var file in _selectedFiles)
+        {
+            var capturedFile = file;
+            var rowWidth = _selectedFilesLayout.GetBoundingBox().Width;
+            var row = new HorizontalLayoutGroup(new Rectangle(_selectedFilesLayout.GetBoundingBox().X, 0, rowWidth, 28), 4);
+
+            int deleteWidth = 24;
+            var nameLabel = new Label(new Rectangle(0, 0, rowWidth - deleteWidth - 4, 28), file.Name, Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.ActualWhite);
+            var deleteButton = new Button(new Rectangle(0, 0, deleteWidth, 28), "X", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, () => RemoveFile(capturedFile), ColorPalette.Green);
+
+            row.AddChild(nameLabel);
+            row.AddChild(deleteButton);
+            _selectedFilesLayout.AddChild(row);
+        }
+    }
+
+    private void RemoveFile(GameFile file)
+    {
+        _selectedFiles.Remove(file);
+        RefreshSelectedFiles();
+    }
+
+    private void OpenFileExplorer()
+    {
+        if (_fileExplorerUI != null) return;
+
+        var explorerBounds = new Rectangle(_rootContainer.GetBoundingBox().X + 20, _rootContainer.GetBoundingBox().Y + 100, 700, 500);
+        _fileExplorerUI = new FileExplorerUI(explorerBounds, () => _fileExplorerUI = null, file =>
+        {
+            if (!_selectedFiles.Contains(file))
+            {
+                _selectedFiles.Add(file);
+                RefreshSelectedFiles();
+            }
+            _fileExplorerUI?.CloseWindow();
+            _fileExplorerUI = null;
+        });
+    }
+
+    private void CollectAllFilePaths(GameFolder folder, string currentPath, List<string> result)
+    {
+        foreach (var file in folder.Files)
+            result.Add(currentPath + "/" + file.Name);
+        foreach (var sub in folder.SubFolders)
+            CollectAllFilePaths(sub, currentPath + "/" + sub.Name, result);
     }
 
     public override void Update(float deltaTime)
     {
-        if(_generateTimer > 0)
+        if (_generateTimer > 0)
         {
             _generateTimer -= deltaTime;
             _progressBar.Value = 1 - (_generateTimer / _generateDuration);
-            if(_generateTimer <= 0)
+
+            _scanAccumulator += deltaTime;
+            while (_scanAccumulator >= _scanInterval && _scanIndex < _scanPaths.Count)
             {
-                var keyFileName = Core.CurrentScene.GetManager<GameFileDataManager>().GenerateKeyFile(_file1, _file2);
-                if(keyFileName != null)
+                var file = _scanPaths[_scanIndex];
+                var gameFile = Core.CurrentScene.GetManager<GameFileDataManager>().GetFileByPath(file);
+                var gameFileDataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
+                var didUnlock = gameFileDataManager.TryToDecryptFile(gameFile, _selectedFiles.Select(f => f.Name).ToList());
+
+                var color = didUnlock ? ColorPalette.Green : ColorPalette.Red;
+
+                if(didUnlock)
                 {
-                    ShowModal($"Saved output: {keyFileName}");
-                    DesktopUI.ToastManager.ShowSuccess($"New key unlocked!", 3, Toast.ToastPosition.TopRight);
-                }
-                else
-                {
-                    ShowModal("No matching key file found for the selected files.");
+                    DesktopUI.ToastManager.ShowSuccess($"Decrypted {gameFile.Name}!", 3, Toast.ToastPosition.TopRight);
                 }
 
+                var label = new Label(new Rectangle(_scanDisplayLayout.GetBoundingBox().X, _scanDisplayLayout.GetBoundingBox().Y, _scanDisplayLayout.GetBoundingBox().Width, 16), _scanPaths[_scanIndex], Core.DefaultFont, color);
+                _scanDisplayLayout.AddChild(label);
+                _scanIndex++;
+                _scanAccumulator -= _scanInterval;
+            }
+
+            if (_generateTimer <= 0)
+            {
                 _progressBar.Value = 0;
                 _generateTimer = 0;
                 _generateButton.SetEnabled(true);
@@ -93,40 +192,23 @@ public class KeygenUI : UIPanel
         base.Update(deltaTime);
     }
 
-    private void OpenFileExplorer(int slot)
-    {
-        if (_fileExplorerUI != null) return;
-
-        var explorerBounds = new Rectangle(_rootContainer.GetBoundingBox().X + 20, _rootContainer.GetBoundingBox().Y + 100, 700, 500);
-        _fileExplorerUI = new FileExplorerUI(explorerBounds, () => _fileExplorerUI = null, file =>
-        {
-            if (slot == 1)
-            {
-                _file1 = file;
-                _file1NameLabel.Text = file.Name;
-            }
-            else
-            {
-                _file2 = file;
-                _file2NameLabel.Text = file.Name;
-            }
-            _fileExplorerUI?.CloseWindow();
-            _fileExplorerUI = null;
-        });
-    }
-
-
     private void Generate()
     {
-        if(_file1 == null || _file2 == null)
+        if (_selectedFiles.Count == 0)
         {
-            ShowModal("Please select both files before generating.");
+            ShowModal("Please select at least one file before generating.");
             return;
         }
-        else
-        {
-            _generateTimer = _generateDuration;
-        }
+
+        _scanDisplayLayout.ClearChildren();
+        _scanPaths = [];
+        CollectAllFilePaths(Core.CurrentScene.GetManager<GameFileDataManager>().GetRootFolder(), "", _scanPaths);
+        _scanIndex = 0;
+        _scanInterval = _scanPaths.Count > 0 ? _generateDuration / _scanPaths.Count : 0.1f;
+        _scanAccumulator = 0;
+
+        _generateTimer = _generateDuration;
+        _generateButton.SetEnabled(false);
     }
 
     private void ShowModal(string text)

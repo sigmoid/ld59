@@ -26,13 +26,6 @@ public class FileLoader
         var files = Directory.GetFiles(path);
         foreach (var file in files)
         {
-            if(file.EndsWith(".key"))
-            {
-                var keyFile = LoadKeyFile(file);
-                fileList.Add(keyFile);
-                continue;
-            }
-
             var fileObj = LoadGameFile(file);
             fileList.Add(fileObj);
         }
@@ -43,36 +36,29 @@ public class FileLoader
     {
         var content = File.ReadAllText(path);
 
-        var gameFileContent = "";
-        var infoContent = "";
-        bool pastSeperator = false;
+        var parts = content.Split("---");
 
-        foreach(var line in content.Split('\n'))
+        var gameFileContent = parts[0];
+        var fileObj = new GameFile { Name = Path.GetFileName(path), Content = gameFileContent };
+        if(parts.Length > 1)
         {
-            if(pastSeperator)
-            {
-                infoContent += line + "\n";
-            }
-            else
-            {
-                gameFileContent += line + "\n";
-            }
-            if(line.StartsWith("---"))
-            {
-                pastSeperator = true;
-            }
+            var unlocks = GetInfoUnlocks(parts[1]);
+            fileObj.Info.AddRange(unlocks);
+        }
+        if(parts.Length > 2)
+        {
+            var keys = GetKeys(parts[2]);
+            fileObj.Keys.AddRange(keys);
         }
 
-        var unlocks = GetInfoUnlocks(infoContent);
 
-        var fileObj = new GameFile { Name = Path.GetFileName(path), Content = gameFileContent, Info = unlocks };
-        if(fileObj.Name.EndsWith(".dec"))
+        if(fileObj.Name.EndsWith(".enc"))
         {
-            fileObj.IsUnlocked = false;
+            fileObj.IsEncrypted = true;
         }
         else
         {
-            fileObj.IsUnlocked = true;
+            fileObj.IsEncrypted = false;
         }
         return fileObj;
     }
@@ -96,27 +82,41 @@ public class FileLoader
         }
         return unlocks;
     }
-
-    private GameKeyFile LoadKeyFile(string path)
+    
+    private List<string> GetKeys(string data)
     {
-        var content = File.ReadAllText(path);
-        var lines = content.Split('\n');
-
-        var keyFile = new GameKeyFile { Name = Path.GetFileName(path) };
-        if (lines.Length > 0) keyFile.Name1 = lines[0].Trim();
-        if (lines.Length > 1) keyFile.Name2 = lines[1].Trim();
-
-        if (lines.Length > 2)        {
-            for (int i = 2; i < lines.Length; i++)
+        var keys = new List<string>();
+        foreach(var line in data.Split('\n'))
+        {
+            if(line.StartsWith("#") || string.IsNullOrEmpty(line.Trim()))
             {
-                keyFile.UnlockedFiles.Add(lines[i].Trim());
+                continue;
             }
+            keys.Add(line.Trim());
         }
-
-        keyFile.Content = GetRandomKeyData();
-        keyFile.IsUnlocked = false;
-        return keyFile;
+        return keys;
     }
+
+    // private GameKeyFile LoadKeyFile(string path)
+    // {
+    //     var content = File.ReadAllText(path);
+    //     var lines = content.Split('\n');
+
+    //     var keyFile = new GameKeyFile { Name = Path.GetFileName(path) };
+    //     if (lines.Length > 0) keyFile.Name1 = lines[0].Trim();
+    //     if (lines.Length > 1) keyFile.Name2 = lines[1].Trim();
+
+    //     if (lines.Length > 2)        {
+    //         for (int i = 2; i < lines.Length; i++)
+    //         {
+    //             keyFile.UnlockedFiles.Add(lines[i].Trim());
+    //         }
+    //     }
+
+    //     keyFile.Content = GetRandomKeyData();
+    //     keyFile.IsUnlocked = false;
+    //     return keyFile;
+    // }
 
     private string GetRandomKeyData()
     {

@@ -18,14 +18,17 @@ public class FileItemUI : UIElement, IHoverableUIElement
     private bool _lastLefClick = true;
 
     private bool _isHovered = false;
+    private GameFile _gameFile;
 
-    public FileItemUI(Rectangle bounds, string name, Texture2D icon, Action onClick)
+    public FileItemUI(Rectangle bounds, string name, Texture2D icon, Action onClick, GameFile file)
     {
         _bounds = bounds;
         _name = name;
         _icon = icon;
 
         _iconSize = bounds.Height - 10;
+
+        _gameFile = file;
 
         this.OnClick = onClick;
 
@@ -75,6 +78,12 @@ public class FileItemUI : UIElement, IHoverableUIElement
         var textColor = _isHovered ? ColorPalette.ActualWhite : ColorPalette.Black;
         var textBounds = new Rectangle(iconBounds.Right + 10, _bounds.Y, _bounds.Width - iconBounds.Width - 20, _bounds.Height);
         spriteBatch.DrawString(Core.DefaultFont, _name, new Vector2(textBounds.X, textBounds.Y + (textBounds.Height / 2) - (Core.DefaultFont.LineSpacing / 2)), textColor);
+
+        if(_gameFile?.IsNewDiscovery == true)
+        {
+            spriteBatch.Draw(_pixel, new Rectangle(_bounds.Right - 60, _bounds.Y + 5, 55, 30), ColorPalette.Green);
+            spriteBatch.DrawString(Core.DefaultFont, "NEW", new Vector2(_bounds.Right - 55, _bounds.Y + 3), ColorPalette.ActualWhite);
+        }
 
 
         base.Draw(spriteBatch);
