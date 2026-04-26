@@ -4,6 +4,24 @@
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
+    <File>F:/Dev/LD59/ld59/Content/audio/click1.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/click2.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/click3.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/click4.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/click5.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/confirmation_001.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/confirmation_002.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/confirmation_003.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/confirmation_004.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/error_004.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_001.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_002.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_003.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_004.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_005.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/glass_006.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/maximize_003.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/open_001.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/BIOS.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
@@ -19,8 +37,28 @@
     <File>F:/Dev/LD59/ld59/Content/images/puzzle_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/scramlogo.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

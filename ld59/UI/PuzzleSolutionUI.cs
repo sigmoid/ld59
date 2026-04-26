@@ -131,6 +131,7 @@ public class PuzzleSolutionUI : UIPanel
     
     private void ShowSuccess()
     {
+        AudioAtlas.Confirmation_001.Play();
         var modal = new NotificationPopup(new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 250), "Solution Correct: A new mission has been started.\n");
         DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
         Core.UISystem.AddElement(modal);

@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using Quartz;
 using Quartz.UI;
 
@@ -58,16 +57,15 @@ public class Minefield : UIPanel
             }
         }
 
-        var mouseState = Mouse.GetState();
-
         _coordinatesLabel.Text = "";
+        var mousePoint = Core.GetTransformedMousePoint();
 
         foreach(var cell in _cells)
         {
             var key = cell.Key;
             var value = cell.Value;
 
-            if(value.GetBoundingBox().Contains(new Point(mouseState.X, mouseState.Y)))
+            if(value.GetBoundingBox().Contains(mousePoint))
             {
                 _coordinatesLabel.Text = $"({key.Item1}, {key.Item2})";
                 break;
@@ -95,12 +93,12 @@ public class Minefield : UIPanel
         _rootWindow = new Window(_bounds, "Minefield", Core.DefaultFont);
         _rootWindow.SetColors(ColorPalette.DarkCream, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen);
         
-        _statusLabel = new Label(new Rectangle(_bounds.X + 10, _rootWindow.GetContentBounds().Y + 10, _bounds.Width - 20, 20), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
+        _statusLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, _rootWindow.GetContentBounds().Y + 10, _rootWindow.GetContentBounds().Width - 20, 20), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
         _rootWindow.AddChild(_statusLabel);
         var resetButton = new Button(new Rectangle(_rootWindow.GetContentBounds().Right - 90, _rootWindow.GetContentBounds().Y + 10, 80, 30), "Reset", Core.DefaultFont,ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, () => CreateGame());
         _rootWindow.AddChild(resetButton);
 
-        var gridBounds = new Rectangle(_bounds.X + 10, _bounds.Y + 100, _bounds.Width - 20, _bounds.Height - 130);
+        var gridBounds = new Rectangle(_rootWindow.GetContentBounds().X + 10, _rootWindow.GetContentBounds().Y + 100, _rootWindow.GetContentBounds().Width - 20, _rootWindow.GetContentBounds().Height - 130);
         var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
 
         var cellWidth = gridBounds.Width / _cellsWide;
@@ -117,7 +115,7 @@ public class Minefield : UIPanel
             }
         }
 
-        _coordinatesLabel = new Label(new Rectangle(_bounds.X + 10, gridBounds.Bottom + 5, _bounds.Width - 20, 20), "", Core.DefaultFont, ColorPalette.ActualWhite);
+        _coordinatesLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, gridBounds.Bottom + 5, _rootWindow.GetContentBounds().Width - 20, 20), "", Core.DefaultFont, ColorPalette.ActualWhite);
         _rootWindow.AddChild(_coordinatesLabel);
 
         CreateGame();
@@ -125,7 +123,7 @@ public class Minefield : UIPanel
         _rootWindow.AddChild(grid);
         Core.UISystem.AddElement(_rootWindow);
 
-        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_bounds.X, _bounds.Y + 100, _bounds.Width, _bounds.Width));
+        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_rootWindow.GetContentBounds().X, _rootWindow.GetContentBounds().Y + 100, _rootWindow.GetContentBounds().Width, _rootWindow.GetContentBounds().Width));
         _rootWindow.AddChild(_splashImage);
         _rootWindow.OnFocus();
     }
@@ -211,6 +209,7 @@ public class Minefield : UIPanel
         }
 
         _inputSequence.Clear();
+        AudioAtlas.Confirmation_003.Play();
         _statusLabel.Text = "Congratulations! You've cleared the minefield!";
     }
 
@@ -259,7 +258,7 @@ public class Minefield : UIPanel
             cell.IsRevealed = true;
         }
 
-
+        AudioAtlas.Error_004.Play();
         _inputSequence.Clear();
 
         _statusLabel.Text = "Game Over! Click Reset to try again.";

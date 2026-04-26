@@ -31,6 +31,7 @@ public class FileExplorerUI : UIContainer
         _folderIcon = Core.Content.Load<Texture2D>("images/file_folder");
 
         CreateUI();
+        SelectFolder("/");
     }
 
     private void CreateUI()
@@ -71,7 +72,13 @@ public class FileExplorerUI : UIContainer
         var filepathArea = new Rectangle(contentBounds.X, contentBounds.Y, contentBounds.Width, 40);
         var filepathBackground = new Canvas(new Rectangle(filepathArea.X, filepathArea.Y, filepathArea.Width, filepathArea.Height + 10), ColorPalette.Green);
         _rootContainer.AddChild(filepathBackground);
-        _filepathLabel = new Label(new Rectangle(filepathArea.X + 10, filepathArea.Y + 10, filepathArea.Width - 20, 30), "", Core.DefaultFont, ColorPalette.Black, ColorPalette.ActualWhite);
+
+        var backButtonSize = 30;
+        var backButton = new Button(new Rectangle(filepathArea.X + 5, filepathArea.Y + 5, backButtonSize, backButtonSize), "<", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, NavigateUp);
+        _rootContainer.AddChild(backButton);
+
+        var labelX = filepathArea.X + backButtonSize + 15;
+        _filepathLabel = new Label(new Rectangle(labelX, filepathArea.Y + 10, filepathArea.Width - (labelX - filepathArea.X) - 10, 30), "", Core.DefaultFont, ColorPalette.Black, ColorPalette.ActualWhite);
         _rootContainer.AddChild(_filepathLabel);
     }
 
@@ -100,19 +107,28 @@ public class FileExplorerUI : UIContainer
         _fileDisplayScrollArea.AddChild(_fileDisplayLayout);
     }
 
+    private void NavigateUp()
+    {
+        if (string.IsNullOrEmpty(_currentPath)) return;
+        var lastSlash = _currentPath.LastIndexOf('/');
+        _currentPath = lastSlash <= 0 ? "" : _currentPath.Substring(0, lastSlash);
+        RefreshCurrentFolder();
+    }
+
     private void SelectFolder(string folder)
     {
-        _currentPath += $"/{folder}";
-        if(folder == "/")
-        {
+        if (folder == "/")
             _currentPath = "";
-        }
+        else
+            _currentPath += $"/{folder}";
+        RefreshCurrentFolder();
+    }
 
+    private void RefreshCurrentFolder()
+    {
         _filepathLabel.Text = _currentPath == "" ? "~/" : "~"+_currentPath;
 
-        // if first character of path is '/', remove it for lookup since root is represented as empty string
-        var lookupPath = _currentPath.StartsWith("/") ? _currentPath.Substring(1) : _currentPath;
-
+        var lookupPath = _currentPath.StartsWith("/") ? _currentPath[1..] : _currentPath;
         var data = Core.CurrentScene.GetManager<GameFileDataManager>().GetFolderByPath(lookupPath);
 
         _fileDisplayLayout.ClearChildren();
@@ -120,12 +136,14 @@ public class FileExplorerUI : UIContainer
         foreach(var subFolder in data.SubFolders)
         {
             var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name), null);
-            _fileDisplayLayout.AddChild(folderItem);        }
+            _fileDisplayLayout.AddChild(folderItem);
+        }
 
         foreach(var file in data.Files)
-        {                
+        {
             var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file), file);
-            _fileDisplayLayout.AddChild(fileItem);        }
+            _fileDisplayLayout.AddChild(fileItem);
+        }
 
         _fileDisplayScrollArea.RefreshContentBounds();
         _fileDisplayScrollArea.ScrollToTop();

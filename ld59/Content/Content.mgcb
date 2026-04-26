@@ -13,6 +13,114 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin audio/click1.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/click1.ogg
+
+#begin audio/click2.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/click2.ogg
+
+#begin audio/click3.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/click3.ogg
+
+#begin audio/click4.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/click4.ogg
+
+#begin audio/click5.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/click5.ogg
+
+#begin audio/confirmation_001.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/confirmation_001.ogg
+
+#begin audio/confirmation_002.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/confirmation_002.ogg
+
+#begin audio/confirmation_003.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/confirmation_003.ogg
+
+#begin audio/confirmation_004.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/confirmation_004.ogg
+
+#begin audio/error_004.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/error_004.ogg
+
+#begin audio/glass_001.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_001.ogg
+
+#begin audio/glass_002.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_002.ogg
+
+#begin audio/glass_003.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_003.ogg
+
+#begin audio/glass_004.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_004.ogg
+
+#begin audio/glass_005.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_005.ogg
+
+#begin audio/glass_006.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/glass_006.ogg
+
+#begin audio/maximize_003.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/maximize_003.ogg
+
+#begin audio/open_001.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/open_001.ogg
+
 #begin files/root/batch_01/minutes_03_5_26.txt
 /copy:files/root/batch_01/minutes_03_5_26.txt
 
@@ -332,6 +440,12 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/start_menu.png
+
+#begin shaders/crt.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/crt.fx
 
 #begin splash_text.txt
 /copy:splash_text.txt

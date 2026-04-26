@@ -1,4 +1,22 @@
 Source File,Dest File,Processor Type,Content Type,Source File Size,Dest File Size,Build Seconds
+"F:/Dev/LD59/ld59/Content/audio/click1.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/click1.xnb","SoundEffectProcessor","SoundEffectContent",4983,16145,0.1839139
+"F:/Dev/LD59/ld59/Content/audio/click2.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/click2.xnb","SoundEffectProcessor","SoundEffectContent",4656,9425,0.1055715
+"F:/Dev/LD59/ld59/Content/audio/click3.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/click3.xnb","SoundEffectProcessor","SoundEffectContent",4880,14789,0.107044
+"F:/Dev/LD59/ld59/Content/audio/click4.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/click4.xnb","SoundEffectProcessor","SoundEffectContent",4558,6761,0.1008986
+"F:/Dev/LD59/ld59/Content/audio/click5.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/click5.xnb","SoundEffectProcessor","SoundEffectContent",4532,6249,0.0993444
+"F:/Dev/LD59/ld59/Content/audio/confirmation_001.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/confirmation_001.xnb","SoundEffectProcessor","SoundEffectContent",8968,25669,0.0931638
+"F:/Dev/LD59/ld59/Content/audio/confirmation_002.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/confirmation_002.xnb","SoundEffectProcessor","SoundEffectContent",14169,47645,0.1022089
+"F:/Dev/LD59/ld59/Content/audio/confirmation_003.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/confirmation_003.xnb","SoundEffectProcessor","SoundEffectContent",9535,28507,0.1042772
+"F:/Dev/LD59/ld59/Content/audio/confirmation_004.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/confirmation_004.xnb","SoundEffectProcessor","SoundEffectContent",12391,43359,0.0951916
+"F:/Dev/LD59/ld59/Content/audio/error_004.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/error_004.xnb","SoundEffectProcessor","SoundEffectContent",6393,18537,0.1682352
+"F:/Dev/LD59/ld59/Content/audio/glass_001.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_001.xnb","SoundEffectProcessor","SoundEffectContent",6103,24407,0.1898925
+"F:/Dev/LD59/ld59/Content/audio/glass_002.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_002.xnb","SoundEffectProcessor","SoundEffectContent",4917,10901,0.1031626
+"F:/Dev/LD59/ld59/Content/audio/glass_003.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_003.xnb","SoundEffectProcessor","SoundEffectContent",5732,10757,0.1028889
+"F:/Dev/LD59/ld59/Content/audio/glass_004.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_004.xnb","SoundEffectProcessor","SoundEffectContent",8161,60907,0.181219
+"F:/Dev/LD59/ld59/Content/audio/glass_005.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_005.xnb","SoundEffectProcessor","SoundEffectContent",6206,11753,0.0987089
+"F:/Dev/LD59/ld59/Content/audio/glass_006.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/glass_006.xnb","SoundEffectProcessor","SoundEffectContent",6956,11753,0.1098359
+"F:/Dev/LD59/ld59/Content/audio/maximize_003.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/maximize_003.xnb","SoundEffectProcessor","SoundEffectContent",11748,18791,0.1683044
+"F:/Dev/LD59/ld59/Content/audio/open_001.ogg","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/audio/open_001.xnb","SoundEffectProcessor","SoundEffectContent",9834,13139,0.0917699
 "F:/Dev/LD59/ld59/Content/files/root/batch_01/minutes_03_5_26.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_01/minutes_03_5_26.txt","CopyItem","File",658,658,0.0027918
 "F:/Dev/LD59/ld59/Content/files/root/batch_01/minutes_03_6_26.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_01/minutes_03_6_26.txt","CopyItem","File",660,660,0.0008592
 "F:/Dev/LD59/ld59/Content/files/root/batch_02/minutes_03_12_26.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\files/root/batch_02/minutes_03_12_26.txt","CopyItem","File",604,604,0.0013968
@@ -64,5 +82,6 @@ Source File,Dest File,Processor Type,Content Type,Source File Size,Dest File Siz
 "F:/Dev/LD59/ld59/Content/images/puzzle_icon.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/puzzle_icon.xnb","TextureProcessor","Texture2DContent",671,65621,0.0028282
 "F:/Dev/LD59/ld59/Content/images/scramlogo.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/scramlogo.xnb","TextureProcessor","Texture2DContent",1830,262229,0.1185031
 "F:/Dev/LD59/ld59/Content/images/start_menu.png","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/images/start_menu.xnb","TextureProcessor","Texture2DContent",991,65621,0.0029571
+"F:/Dev/LD59/ld59/Content/shaders/crt.fx","F:/Dev/LD59/ld59/Content/bin/DesktopGL/Content/shaders/crt.xnb","EffectProcessor","CompiledEffectContent",1466,2389,0.2453955
 "F:/Dev/LD59/ld59/Content/splash_text.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\splash_text.txt","CopyItem","File",3113,3113,0.0012891
 "F:/Dev/LD59/ld59/Content/victory_text.txt","F:\Dev\LD59\ld59\Content\bin\DesktopGL\Content\victory_text.txt","CopyItem","File",3483,3483,0.0011763

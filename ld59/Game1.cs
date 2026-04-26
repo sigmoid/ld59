@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 using Quartz;
+using Quartz.Graphics;
 
 namespace ld59;
 
@@ -10,6 +11,7 @@ public class Game1 : Core
 {
     public static Game1 Instance { get; private set; }
     private KeyboardState _prevKeyboard;
+    private MouseState _prevMouse;
     private VictoryScreen _victoryScreen;
 
     public Game1() : base("Glory, Glory, Anastasia", 1920, 1080, false, "fonts/Default")
@@ -22,12 +24,15 @@ public class Game1 : Core
 
     protected override void Initialize()
     {
-
         base.Initialize();
+
+        PostProcessing.AddEffect<CRTPostProcessEffect>();
     }
 
     protected override void LoadContent()
     {
+        AudioAtlas.Load(Content);
+        WindowManager.OnWindowOpened += () => AudioAtlas.Maximize_003.Play();
         Core.CurrentScene.AddManager(new GameFileDataManager());
 
         var screenBounds = new Rectangle(0, 0, GameplayConstants.ScreenWidth, GameplayConstants.ScreenHeight);
@@ -61,8 +66,13 @@ public class Game1 : Core
             Exit();
 
         var keyboard = Keyboard.GetState();
+        var mouse = Mouse.GetState();
+
+        if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released)
+            AudioAtlas.PlayRandomClick();
 
         _prevKeyboard = keyboard;
+        _prevMouse = mouse;
 
         base.Update(gameTime);
     }

@@ -4,17 +4,17 @@
 
 # Tasks
 
+1. Make icons show up on taskbar when a program is open
 1. Add victory sound
 1. Highlight info
-1. Ability to go back in file explorer
-1. Make icons show up on taskbar when a program is open
-1. File explorer should open on root
-1. Rename puzzle solution to looking glass
+1. Taskbar needs to always be in front
+1. Improve decrypting sound
 
 1. File search feature
 1. Make all exit button the same color on windows
 1. Add flags to minesweeper
 1. Show garbage for encrypted files
+
 
 
 # Milestones

@@ -45,7 +45,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
     {
         var mouseState = Mouse.GetState();
 
-        _isHovered = GetBoundingBox().Contains(mouseState.Position) && _isFocused;
+        _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && _isFocused;
 
         if(_isHovered && mouseState.LeftButton == ButtonState.Pressed && !_lastLeftClick)
         {

@@ -13,7 +13,7 @@ public class KeygenUI : UIPanel
     private Button _generateButton;
     private FileExplorerUI _fileExplorerUI;
     private float _generateTimer = 0;
-    private float _generateDuration = 4;
+    private float _generateDuration = 6;
 
     private readonly List<GameFile> _selectedFiles = [];
     private VerticalLayoutGroup _selectedFilesLayout;
@@ -176,6 +176,10 @@ public class KeygenUI : UIPanel
                     DesktopUI.ToastManager.ShowSuccess($"Decrypted {gameFile.Name}!", 3, Toast.ToastPosition.TopRight);
                 }
 
+                if (didUnlock)
+                    AudioAtlas.Glass_004.Play();
+                else
+                    AudioAtlas.PlayRandomGlass();
                 var label = new Label(new Rectangle(_scanDisplayLayout.GetBoundingBox().X, _scanDisplayLayout.GetBoundingBox().Y, _scanDisplayLayout.GetBoundingBox().Width, 16), _scanPaths[_scanIndex], Core.DefaultFont, color);
                 _scanDisplayLayout.AddChild(label);
                 _scanIndex++;

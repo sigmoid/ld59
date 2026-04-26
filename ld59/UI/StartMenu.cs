@@ -35,8 +35,7 @@ public class StartMenuUI : UIPanel
     {
         // if user clicks outside the start menu close it
         var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-        var mousePos = new Point(mouseState.X, mouseState.Y);
-        if (!GetBoundingBox().Contains(mousePos) && mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed && !_lastLeftButtonState)
+        if (!GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed && !_lastLeftButtonState)
         {
             Core.UISystem.RemoveElement(_rootElement);
             OnClose?.Invoke(); 

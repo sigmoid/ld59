@@ -28,6 +28,7 @@ public class TextViewerUI : UIPanel
 
         if(didUnlock == true)
         {
+            AudioAtlas.Confirmation_002.Play();
             DesktopUI.ToastManager.ShowSuccess($"New info unlocked!", 3, Toast.ToastPosition.TopRight);
         }
 
