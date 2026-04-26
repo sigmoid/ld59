@@ -18,6 +18,7 @@ public class DesktopUI : UIPanel
     private ClockUI _clockUI;
 
     private float _taskbarItemSize = 80;
+    private float _startingNoteTimer = 1;
 
     public DesktopUI(Rectangle bounds)
     {
@@ -35,6 +36,23 @@ public class DesktopUI : UIPanel
     public override Rectangle GetBoundingBox()
     {
         return _bounds;
+    }
+
+    public override void Update(float deltaTime)
+    {
+        base.Update(deltaTime);
+
+        if (_startingNoteTimer > 0)
+        {
+            _startingNoteTimer -= deltaTime;
+            if (_startingNoteTimer <= 0)
+            {
+                var gameDataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
+                var startingNote = gameDataManager.GetFileByPath("readme.txt");
+                var fileExplorerUI = new TextViewerUI(new Rectangle(150, 150, 700, 600), startingNote);
+                Core.UISystem.AddElement(fileExplorerUI);
+            }
+        }
     }
 
     private void CreateUI()

@@ -13,7 +13,7 @@ public class KeygenUI : UIPanel
     private Button _generateButton;
     private FileExplorerUI _fileExplorerUI;
     private float _generateTimer = 0;
-    private float _generateDuration = 2;
+    private float _generateDuration = 4;
 
     private readonly List<GameFile> _selectedFiles = [];
     private VerticalLayoutGroup _selectedFilesLayout;
@@ -180,6 +180,8 @@ public class KeygenUI : UIPanel
                 _scanDisplayLayout.AddChild(label);
                 _scanIndex++;
                 _scanAccumulator -= _scanInterval;
+                _scanScrollArea.RefreshContentBounds();
+                _scanScrollArea.ScrollToBottom();
             }
 
             if (_generateTimer <= 0)

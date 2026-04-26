@@ -145,6 +145,9 @@
 #begin files/root/batch_05/tortoise.enc
 /copy:files/root/batch_05/tortoise.enc
 
+#begin files/root/batch_06/phalanx.enc
+/copy:files/root/batch_06/phalanx.enc
+
 #begin files/root/readme.txt
 /copy:files/root/readme.txt
 
@@ -159,6 +162,13 @@
 
 #begin files/root/reference_material/news_items/nyt3_20_26.txt
 /copy:files/root/reference_material/news_items/nyt3_20_26.txt
+
+#begin fonts/BIOS.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/BIOS.spritefont
 
 #begin fonts/Default.spritefont
 /importer:FontDescriptionImporter
@@ -322,4 +332,10 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/start_menu.png
+
+#begin splash_text.txt
+/copy:splash_text.txt
+
+#begin victory_text.txt
+/copy:victory_text.txt
 

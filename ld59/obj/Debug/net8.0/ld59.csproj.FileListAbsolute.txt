@@ -99,3 +99,7 @@ F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_04\hashes\y.imam@anas
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_04\hashes\ydalton@anastasia.net.txt
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_04\hashes\zephyr.k@anastasia.net.txt
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\scramlogo.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\splash_text.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\fonts\BIOS.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\victory_text.txt
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\batch_06\phalanx.enc

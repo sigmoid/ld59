@@ -28,7 +28,7 @@ public class Minefield : UIPanel
         (5,4)
     };
     private float _splashTimer = 0;
-    private float _splashDuration = 1f;
+    private float _splashDuration = 0.8f;
 
     public Minefield(Rectangle bounds)
     {

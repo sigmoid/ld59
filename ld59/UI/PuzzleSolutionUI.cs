@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using ld59;
 using Microsoft.VisualBasic;
 using Microsoft.Xna.Framework;
 using Quartz;
@@ -24,7 +25,7 @@ public class PuzzleSolutionUI : UIPanel
     private InfoSelectionWindow _infoSelectionWindow;
     private Label _resultLabel;
     private LayoutGroup _problemsLayoutGroup;
-    private int _currentPuzzleIndex = 0;
+    private static int _currentPuzzleIndex = 0;
 
     private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
     {
@@ -47,7 +48,7 @@ public class PuzzleSolutionUI : UIPanel
 
     private List<List<PuzzleSolutionPiece>> _puzzleSequence = new List<List<PuzzleSolutionPiece>>();
 
-    private List<PuzzleSolutionPiece> _currentSolutionPieces {get;set;}
+    private List<PuzzleSolutionPiece> _currentSolutionPieces {get {return _puzzleSequence[_currentPuzzleIndex];}}
 
     private List<Button> _solutionButtons = new List<Button>();
 
@@ -55,13 +56,11 @@ public class PuzzleSolutionUI : UIPanel
     {
         _bounds = bounds;
 
-        _currentSolutionPieces = _solutionPieces;
-        CreateUI(solutionText);
-
-
         _puzzleSequence.Add(_solutionPieces);
         _puzzleSequence.Add(_solutionPieces2);
         _puzzleSequence.Add(_solutionPieces3);
+        
+        CreateUI(solutionText);
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -165,12 +164,11 @@ public class PuzzleSolutionUI : UIPanel
             _currentPuzzleIndex++;
             if(_currentPuzzleIndex < _puzzleSequence.Count)
             {
-                _currentSolutionPieces = _puzzleSequence[_currentPuzzleIndex];
                 PopulateCurrentMystery();
             }
             else
             {
-                // TODO you beat the game
+                Game1.Instance.EndGame();
             }
         
             _solutionLabel.Text = "";

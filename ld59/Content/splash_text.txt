@@ -1,0 +1,38 @@
+                                                                                                                   
+                                                                                                                   
+LLLLLLLLLLL                 iiii          tttt         hhhhhhh                      OOOOOOOOO        SSSSSSSSSSSSSSS 
+L:::::::::L                i::::i      ttt:::t         h:::::h                    OO:::::::::OO    SS:::::::::::::::S
+L:::::::::L                 iiii       t:::::t         h:::::h                  OO:::::::::::::OO S:::::SSSSSS::::::S
+LL:::::::LL                            t:::::t         h:::::h                 O:::::::OOO:::::::OS:::::S     SSSSSSS
+  L:::::L                 iiiiiiittttttt:::::ttttttt    h::::h hhhhh           O::::::O   O::::::OS:::::S            
+  L:::::L                 i:::::it:::::::::::::::::t    h::::hh:::::hhh        O:::::O     O:::::OS:::::S            
+  L:::::L                  i::::it:::::::::::::::::t    h::::::::::::::hh      O:::::O     O:::::O S::::SSSS         
+  L:::::L                  i::::itttttt:::::::tttttt    h:::::::hhh::::::h     O:::::O     O:::::O  SS::::::SSSSS    
+  L:::::L                  i::::i      t:::::t          h::::::h   h::::::h    O:::::O     O:::::O    SSS::::::::SS  
+  L:::::L                  i::::i      t:::::t          h:::::h     h:::::h    O:::::O     O:::::O       SSSSSS::::S 
+  L:::::L                  i::::i      t:::::t          h:::::h     h:::::h    O:::::O     O:::::O            S:::::S
+  L:::::L         LLLLLL   i::::i      t:::::t    tttttth:::::h     h:::::h    O::::::O   O::::::O            S:::::S
+LL:::::::LLLLLLLLL:::::L  i::::::i     t::::::tttt:::::th:::::h     h:::::h    O:::::::OOO:::::::OSSSSSSS     S:::::S
+L::::::::::::::::::::::L  i::::::i     tt::::::::::::::th:::::h     h:::::h     OO:::::::::::::OO S::::::SSSSSS:::::S
+L::::::::::::::::::::::L  i::::::i       tt:::::::::::tth:::::h     h:::::h       OO:::::::::OO   S:::::::::::::::SS 
+LLLLLLLLLLLLLLLLLLLLLLLL  iiiiiiii         ttttttttttt  hhhhhhh     hhhhhhh         OOOOOOOOO      SSSSSSSSSSSSSSS   
+                                                                                                                   
+
+LITHOS BIOS version 1248.8                                                                                    
+Absurd: Walls
+                                                                                                               
+Boot Check <OK>
+
+Processor: BNE 4225, 4 CPUS
+
+Memory Clock: 835 Mhz
+
+
+SATA1     :  EG23432_2048
+SATA2     :  GR484982398_2048
+SATA3     :  EG3553323_1024
+
+                                                                                                               
+                                                                                                               
+                                                                                                               
+                                                                                                               
