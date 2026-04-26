@@ -86,7 +86,6 @@ public class Minefield : UIPanel
 
     public override void LateUpdate(float deltaTime)
     {
-        _rootWindow.LateUpdate(deltaTime);
         base.LateUpdate(deltaTime);
     }
 
@@ -124,7 +123,7 @@ public class Minefield : UIPanel
         CreateGame();
 
         _rootWindow.AddChild(grid);
-        AddChild(_rootWindow);
+        Core.UISystem.AddElement(_rootWindow);
 
         _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_bounds.X, _bounds.Y + 100, _bounds.Width, _bounds.Width));
         _rootWindow.AddChild(_splashImage);

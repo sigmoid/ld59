@@ -61,6 +61,7 @@ public class Game1 : Core
             Exit();
 
         var keyboard = Keyboard.GetState();
+
         _prevKeyboard = keyboard;
 
         base.Update(gameTime);

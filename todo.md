@@ -12,6 +12,7 @@
 1. Remove duplicate info
 1. File explorer should open on root
 1. Should keep solution static
+1. Rename puzzle solution to looking glass
 
 1. File search feature
 1. Make all exit button the same color on windows

@@ -40,6 +40,7 @@ public class VictoryScreen : UIPanel
         }
 
         _font = Core.Content.Load<SpriteFont>("fonts/BIOS");
+        Order = 0.9f;
     }
 
     public override void Update(float deltaTime)
