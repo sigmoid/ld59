@@ -60,7 +60,7 @@ public class StartMenuUI : UIPanel
         var keygenIcon = Core.Content.Load<Texture2D>("images/key_icon");
         var keygenButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 100, _layoutGroup.GetBoundingBox().Width, 80), keygenIcon, "Keygen", () => OpenKeygen());
         _layoutGroup.AddChild(keygenButton);
-        
+
         var minefieldIcon = Core.Content.Load<Texture2D>("images/minefield_icon");
         var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 80), minefieldIcon, "Minefield", () => OpenMinefield());
         _layoutGroup.AddChild(minefieldButton);
@@ -70,8 +70,8 @@ public class StartMenuUI : UIPanel
         _layoutGroup.AddChild(fileExplorerButton);
 
         var puzzleIcon = Core.Content.Load<Texture2D>("images/puzzle_icon");
-        var puzzleButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 500, _layoutGroup.GetBoundingBox().Width, 80), puzzleIcon, "Puzzle Solution", () => {
-            var puzzleSolutionUI = new PuzzleSolutionUI(new Rectangle(150, 150, 500, 600), "The solution to the puzzle is: ...");
+        var puzzleButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 500, _layoutGroup.GetBoundingBox().Width, 80), puzzleIcon, "Looking Glass", () => {
+            var puzzleSolutionUI = new PuzzleSolutionUI(new Rectangle(150, 150, 500, 600), "");
             Core.UISystem.AddElement(puzzleSolutionUI);
             HideMenu();
         });

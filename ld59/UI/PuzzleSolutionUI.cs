@@ -76,7 +76,7 @@ public class PuzzleSolutionUI : UIPanel
 
     private void CreateUI(string solutionText)
     {
-        _rootContainer = new Window(_bounds, "Puzzle Solution", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer = new Window(_bounds, "Looking Glass", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         Core.UISystem.AddElement(_rootContainer);
 
         var contentBounds = _rootContainer.GetContentBounds();

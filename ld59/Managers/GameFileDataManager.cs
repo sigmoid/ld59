@@ -78,6 +78,7 @@ public class GameFileDataManager : IManager
     {
         List<GameInfo> result = new List<GameInfo>();
         _unlockedInfo.Where(i => i.Type == type).ToList().ForEach(i => result.Add(i));
+        result.Sort((a, b) => string.Compare(a.Value, b.Value));
         return result;
     }
 
@@ -93,7 +94,7 @@ public class GameFileDataManager : IManager
         foreach (var info in file.Info)
         {
             info.IsUnlocked = true;
-            if(!_unlockedInfo.Contains(info))
+            if(!_unlockedInfo.Any(i => i.Value.ToLowerInvariant() == info.Value.ToLowerInvariant() && i.Type == info.Type))
             {
                 didUnlock = true;
                 _unlockedInfo.Add(info);
