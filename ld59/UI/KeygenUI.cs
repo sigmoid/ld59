@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Quartz;
 using Quartz.UI;
 
@@ -24,6 +25,8 @@ public class KeygenUI : UIPanel
     private int _scanIndex = 0;
     private float _scanInterval = 0;
     private float _scanAccumulator = 0;
+    private SoundEffectInstance _scanSoundInstance;
+    private bool _discoveredInfo = false;
 
     public KeygenUI(Rectangle bounds)
     {
@@ -174,12 +177,9 @@ public class KeygenUI : UIPanel
                 if(didUnlock)
                 {
                     DesktopUI.ToastManager.ShowSuccess($"Decrypted {gameFile.Name}!", 3, Toast.ToastPosition.TopRight);
+                    _discoveredInfo = true;
                 }
 
-                if (didUnlock)
-                    AudioAtlas.Glass_004.Play();
-                else
-                    AudioAtlas.PlayRandomGlass();
                 var label = new Label(new Rectangle(_scanDisplayLayout.GetBoundingBox().X, _scanDisplayLayout.GetBoundingBox().Y, _scanDisplayLayout.GetBoundingBox().Width, 16), _scanPaths[_scanIndex], Core.DefaultFont, color);
                 _scanDisplayLayout.AddChild(label);
                 _scanIndex++;
@@ -190,9 +190,20 @@ public class KeygenUI : UIPanel
 
             if (_generateTimer <= 0)
             {
+                _scanSoundInstance.Stop();
                 _progressBar.Value = 0;
                 _generateTimer = 0;
                 _generateButton.SetEnabled(true);
+
+                if(_discoveredInfo)
+                {
+                    AudioAtlas.Glass_004.Play();
+                    _discoveredInfo = false;
+                }
+                else
+                {
+                    AudioAtlas.Error_006.Play();
+                }
             }
         }
         base.Update(deltaTime);
@@ -215,6 +226,9 @@ public class KeygenUI : UIPanel
 
         _generateTimer = _generateDuration;
         _generateButton.SetEnabled(false);
+        _scanSoundInstance = AudioAtlas.Scroll_003.CreateInstance();
+        _scanSoundInstance.IsLooped = true;
+        _scanSoundInstance.Play();
     }
 
     private void ShowModal(string text)

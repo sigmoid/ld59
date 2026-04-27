@@ -84,7 +84,7 @@ public class FileExplorerUI : UIContainer
 
     private void CreateShortcuts()
     {
-        _shortcutsCanvas = new Canvas(new Rectangle(_rootContainer.GetContentBounds().X, _filepathLabel.GetBoundingBox().Bottom + 10, (int)(_rootContainer.GetContentBounds().Width * 0.25f), _rootContainer.GetContentBounds().Height - (_filepathLabel.GetBoundingBox().Height + 10)), ColorPalette.Green);
+        _shortcutsCanvas = new Canvas(new Rectangle(_rootContainer.GetContentBounds().X, _filepathLabel.GetBoundingBox().Bottom + 10, (int)(_rootContainer.GetContentBounds().Width * 0.25f), _rootContainer.GetContentBounds().Height - (_filepathLabel.GetBoundingBox().Height + 16)), ColorPalette.Green);
         _rootContainer.AddChild(_shortcutsCanvas);
 
         var padding = 5;
@@ -98,7 +98,7 @@ public class FileExplorerUI : UIContainer
     private void CreateFileDisplay()
     {
         var contentBounds = _rootContainer.GetContentBounds();
-        var fileDisplayArea = new Rectangle(contentBounds.X + (int)(contentBounds.Width * 0.25f), _filepathLabel.GetBoundingBox().Bottom + 10, (int)(contentBounds.Width * 0.75f), contentBounds.Height - (_filepathLabel.GetBoundingBox().Height + 10));
+        var fileDisplayArea = new Rectangle(contentBounds.X + (int)(contentBounds.Width * 0.25f), _filepathLabel.GetBoundingBox().Bottom + 10, (int)(contentBounds.Width * 0.75f), contentBounds.Height - (_filepathLabel.GetBoundingBox().Height + 16));
         _fileDisplayScrollArea = new ScrollArea(fileDisplayArea);
         _rootContainer.AddChild(_fileDisplayScrollArea);
 

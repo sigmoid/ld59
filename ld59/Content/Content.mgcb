@@ -73,6 +73,12 @@
 /processorParam:Quality=Best
 /build:audio/error_004.ogg
 
+#begin audio/error_006.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/error_006.ogg
+
 #begin audio/glass_001.ogg
 /importer:OggImporter
 /processor:SoundEffectProcessor
@@ -120,6 +126,12 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:audio/open_001.ogg
+
+#begin audio/scroll_003.ogg
+/importer:OggImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/scroll_003.ogg
 
 #begin files/root/batch_01/minutes_03_5_26.txt
 /copy:files/root/batch_01/minutes_03_5_26.txt

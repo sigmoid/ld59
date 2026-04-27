@@ -97,11 +97,11 @@ public class PuzzleSolutionUI : UIPanel
 
         foreach(var piece in _currentSolutionPieces)
         {
-            var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, _problemsLayoutGroup.GetBoundingBox().Width, 100), 5);
-            var pieceLabel = new TextArea(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f), 100), Core.DefaultFont, true, true, Color.White, Color.Black);
+            var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, _problemsLayoutGroup.GetBoundingBox().Width, 150), 5);
+            var pieceLabel = new TextArea(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f), 150), Core.DefaultFont, true, true, Color.White, Color.Black);
             pieceLabel.Text = piece.ProblemDescription + "\n";
             Button problemButton = null;
-            problemButton = new Button(new Rectangle(horizontalGroup.GetBoundingBox().X + (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) + 5, horizontalGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) - 5, 100), "<SELECT>", Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => OpenInfoSelection(piece.RelatedInfoType, (info) => SelectInfoForButton(info, problemButton, piece)), ColorPalette.Green);
+            problemButton = new Button(new Rectangle(horizontalGroup.GetBoundingBox().X + (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) + 5, horizontalGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) - 5, 60), "<SELECT>", Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => OpenInfoSelection(piece.RelatedInfoType, (info) => SelectInfoForButton(info, problemButton, piece)), ColorPalette.Green);
             _solutionButtons.Add(problemButton);
             horizontalGroup.AddChild(pieceLabel);
             horizontalGroup.AddChild(problemButton);

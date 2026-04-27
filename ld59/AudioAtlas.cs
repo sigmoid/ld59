@@ -22,6 +22,8 @@ public static class AudioAtlas
     public static SoundEffect Glass_006 { get; private set; }
     public static SoundEffect Maximize_003 { get; private set; }
     public static SoundEffect Error_004 { get; private set; }
+    public static SoundEffect Error_006 { get; private set; }
+    public static SoundEffect Scroll_003 { get; private set; }
 
     private static readonly SoundEffect[] _clicks = new SoundEffect[5];
     private static readonly SoundEffect[] _glass = new SoundEffect[6];
@@ -45,11 +47,13 @@ public static class AudioAtlas
         Open_001 = content.Load<SoundEffect>("audio/open_001");
         Maximize_003 = content.Load<SoundEffect>("audio/maximize_003");
         Error_004 = content.Load<SoundEffect>("audio/error_004");
+        Error_006 = content.Load<SoundEffect>("audio/error_006");
         Glass_001 = _glass[0] = _glassScan[0] = content.Load<SoundEffect>("audio/glass_001");
         Glass_002 = _glass[1] = _glassScan[1] = content.Load<SoundEffect>("audio/glass_002");
         Glass_003 = _glass[2] = _glassScan[2] = content.Load<SoundEffect>("audio/glass_003");
         Glass_004 = _glass[3] =                  content.Load<SoundEffect>("audio/glass_004");
         Glass_005 = _glass[4] = _glassScan[3] = content.Load<SoundEffect>("audio/glass_005");
         Glass_006 = _glass[5] = _glassScan[4] = content.Load<SoundEffect>("audio/glass_006");
+        Scroll_003 = content.Load<SoundEffect>("audio/scroll_003");
     }
 }

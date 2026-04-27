@@ -60,7 +60,7 @@ public class DesktopUI : UIPanel
         _toastManager = new ToastManager(Core.UISystem, Core.DefaultFont, new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, _bounds.Height));
 
         var taskBarArea = new Rectangle(0, _bounds.Height - 100, _bounds.Width, 100);
-        _taskbar = new Canvas(taskBarArea, ColorPalette.Green);
+        _taskbar = new Canvas(taskBarArea, ColorPalette.Green) { Order = 0.9f };
 
         var taskbarLayoutPadding = 10;
         var taskbarLayoutArea = new Rectangle(taskBarArea.X + taskbarLayoutPadding, taskBarArea.Y + taskbarLayoutPadding, taskBarArea.Width - (taskbarLayoutPadding * 2), taskBarArea.Height - (taskbarLayoutPadding * 2));
@@ -79,10 +79,10 @@ public class DesktopUI : UIPanel
         AddChild(background);
 
         _taskbar.AddChild(_taskbarLayout);
-        AddChild(_taskbar);
+        Core.UISystem.AddElement(_taskbar);
 
-        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 200, taskBarArea.Top, 200, 100));
-        AddChild(_clockUI);
+        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 200, taskBarArea.Top, 200, 100)) { Order = 0.9f };
+        Core.UISystem.AddElement(_clockUI);
     }
 
     private void ToggleStartMenu()

@@ -1,4 +1,6 @@
-# Ideas
+
+[ideation](#ideation)
+*[4/27/26](#42726)
 
 ## Theme is "Signal"
 
@@ -47,6 +49,7 @@ Encryption
 Player reads the tutorial, starts by figuring out how to decode simple text files, only the files are gibberish. Player somehow figures out how to decode one of these files
 
 
+# Ideation
 ---
 
 Need to figure out what's actually going on in this game.
@@ -169,3 +172,16 @@ So there's like a webmaster role that is one of the identities that you've found
 find the right key combination.
 
 As requested, here is a list of identities to consider for candidacy of key holder. Their personal data is stored in the folder "info"
+
+---
+
+## 4/27/26
+
+I like the gameplay of the game okay but I feel the story is lacking. How can I make this story good?
+I listened to a video about a diving disaster last night where the company in charge decided not to try to rescue
+the divers due to liability. I like that idea as a subplot
+
+I think one of the big problems currently is that the story doesn't introduce much conflict and pays off immediately
+It would be better if the player feels like they are uncovering the start of a vast criminal underbelly of this organization
+
+I like the story that the company had a ceo assassinated. Could use more detail though.

@@ -123,7 +123,7 @@ public class Minefield : UIPanel
         _rootWindow.AddChild(grid);
         Core.UISystem.AddElement(_rootWindow);
 
-        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_rootWindow.GetContentBounds().X, _rootWindow.GetContentBounds().Y + 100, _rootWindow.GetContentBounds().Width, _rootWindow.GetContentBounds().Width));
+        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_rootWindow.GetContentBounds().X, _rootWindow.GetContentBounds().Y + 70, _rootWindow.GetContentBounds().Width, _rootWindow.GetContentBounds().Width ));
         _rootWindow.AddChild(_splashImage);
         _rootWindow.OnFocus();
     }

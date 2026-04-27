@@ -14,6 +14,7 @@
     <File>F:/Dev/LD59/ld59/Content/audio/confirmation_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/confirmation_004.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/error_004.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/error_006.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/glass_001.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/glass_002.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/glass_003.ogg</File>
@@ -22,6 +23,7 @@
     <File>F:/Dev/LD59/ld59/Content/audio/glass_006.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/maximize_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/open_001.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/scroll_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/BIOS.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
@@ -40,6 +42,8 @@
     <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

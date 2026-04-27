@@ -123,3 +123,5 @@ F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\maximize_003.ogg
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\maximize_003.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\error_004.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\shaders\crt.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\error_006.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\scroll_003.xnb

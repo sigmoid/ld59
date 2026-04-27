@@ -18,6 +18,7 @@ public class StartMenuUI : UIPanel
     {
         _bounds = bounds;
         CreateUI();
+        this.Order = 0.9f;
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -70,7 +71,7 @@ public class StartMenuUI : UIPanel
 
         var puzzleIcon = Core.Content.Load<Texture2D>("images/puzzle_icon");
         var puzzleButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 500, _layoutGroup.GetBoundingBox().Width, 80), puzzleIcon, "Looking Glass", () => {
-            var puzzleSolutionUI = new PuzzleSolutionUI(new Rectangle(150, 150, 500, 600), "");
+            var puzzleSolutionUI = new PuzzleSolutionUI(new Rectangle(150, 150, 700, 800), "");
             Core.UISystem.AddElement(puzzleSolutionUI);
             HideMenu();
         });
