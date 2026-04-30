@@ -50,6 +50,7 @@ public class TextViewerUI : UIPanel
     {
         _rootContainer = new Window(_bounds, _currentFile.Name, Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         Core.UISystem.AddElement(_rootContainer);
+        TaskbarRegistry.Register("Notepad", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/file_icon"), _rootContainer);
         _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
 
         var textAreaBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);
@@ -62,6 +63,21 @@ public class TextViewerUI : UIPanel
         else
         {
             _textArea.Text = _currentFile.Content;
+            foreach (var info in _currentFile.Info)
+            {
+                if (!info.IsUnlocked || string.IsNullOrEmpty(info.Value)) continue;
+                var color = info.Type switch
+                {
+                    InfoType.Name         => ColorPalette.InfoName,
+                    InfoType.Rank         => ColorPalette.InfoRank,
+                    InfoType.Position     => ColorPalette.InfoPosition,
+                    InfoType.Codename     => ColorPalette.InfoCodename,
+                    InfoType.Verb         => ColorPalette.InfoVerb,
+                    InfoType.CauseOfDeath => ColorPalette.InfoCauseOfDeath,
+                    _                     => ColorPalette.Black
+                };
+                _textArea.AddHighlight(info.Value, color);
+            }
         }
         _rootContainer.AddChild(_textArea);
     }

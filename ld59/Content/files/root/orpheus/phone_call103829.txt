@@ -1,0 +1,16 @@
+Phone Call Transcript
+
+3.12.26 7:30 PM
+
+YI: Hello, who is this?
+???: It's me. We've got a problem at the mine
+YI: Call me back on an encrypted line
+???: I tried that. The key didn't take.
+YI: We changed it
+???: Nobody gave it to me! What is it?
+YI: I can't just tell you
+???: Who even sends those things?
+YI: Nobody sends it. It's a document every employee gets on day one.
+???: What are you talking about?
+YI: Figure it out
+* End Call

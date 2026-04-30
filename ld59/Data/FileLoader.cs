@@ -52,14 +52,21 @@ public class FileLoader
         }
 
 
-        if(fileObj.Name.EndsWith(".enc"))
+        if (fileObj.Name.EndsWith(".enc"))
         {
             fileObj.IsEncrypted = true;
         }
-        else
+
+        if (fileObj.Name.EndsWith(".img"))
         {
-            fileObj.IsEncrypted = false;
+            fileObj.FileType = FileType.Image;
+            fileObj.Content = gameFileContent.Trim();
+            if (fileObj.Keys.Count > 0)
+            {
+                fileObj.IsEncrypted = true;
+            }
         }
+
         return fileObj;
     }
 

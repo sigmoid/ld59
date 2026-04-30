@@ -43,11 +43,11 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float scanline = sin(uv.y * 260.0 * 3.14159);
     if (scanline < 0)
     {
-        color.rgb *= 0.95;
+        color.rgb *= 0.98;
     }
     else
     {
-        color.rgb *= 1.05;
+        color.rgb *= 1.03;
     }
 
     // Vignette

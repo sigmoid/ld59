@@ -1,6 +1,58 @@
 
 [ideation](#ideation)
-*[4/27/26](#42726)
+
+* [4/27/26](#42726)
+* [4/28/26](#42826)
+* [4/29/26](#42926)
+
+# Characters 
+
+## Lawrence Pilgrim: Eutropia CEO
+Wants: to make the world better
+
+## Lance Nightingale: Anastasia CEO
+Wants: power, validation
+
+## Player
+Employee of Lithos software
+
+# Companies
+## Eutropia: 
+A mostly benevolent company who threatens to make actual institutional change
+CEO: Lawrence Pilgrim
+
+## Anastasia Corporation: 
+A massive monopoly in control of the world
+CEO: Lance Nightingale
+
+## Lithos Software: 
+A regular company caught in the crossfire. Flagship product is an operating system.
+CEO: Ed Sled
+
+## Scram!: 
+A game company which is unwittingly used to further progress of the Anastasia corporation through acquisition
+CEO: Rose cantrell
+
+---
+
+# Puzzles
+
+## Tutorial
+
+Player must identify the CEOs of each corporation. Completing this mission opens up the rest of the game
+
+## Disaster
+
+Project Codename: Lycurgus
+
+Workers in an Anastasia corporation lithium mine are trapped in a cave. Anastasia leadership determines
+that mounting a rescue effort is risky and choose to instead try to downplay the severity of the accident
+
+Puzzle:
+Identify the workers who died
+
+
+---
 
 ## Theme is "Signal"
 
@@ -185,3 +237,79 @@ I think one of the big problems currently is that the story doesn't introduce mu
 It would be better if the player feels like they are uncovering the start of a vast criminal underbelly of this organization
 
 I like the story that the company had a ceo assassinated. Could use more detail though.
+
+---
+
+Just read some more Fear and Loathing on the campaign trail. Although i didn't really follow it, the section
+on the convention was kinda exciting. I like the idea of a complex voting system getting totally fucked up.
+In the book, McGovern staff 'shave' votes to make it seem like their losing because they know that if 
+everyone else is focused on trivial challenges, they won't challenge their Ace, and that's how they secured
+the nomination.
+
+I think complicated voting rules would be really interesting to include in the game. People concealing votes,
+making counterintuitive votes, etc.
+
+Agenda: Call to order, roll call, minues, treasurers report, committee reports, unfinished business, new business, adjourn
+
+motions requires a second
+
+## 4/28/26
+
+I think I need to come up with self contained cool mysteries.
+Mining disaster, Political vote, assassination plot, secret society, Using games as secret communication
+
+Story ideas
+* Mining Disaster
+* Political vote
+* Assassination plot
+* Secret Society
+* Weather control
+* Games as secret communication
+
+Assassinated CEO was trying to do things the right way
+
+I also like the idea of having a more open world approach. The player
+can solve any mystery at any time, and mysteries are validated in sets of three or so
+
+It'd be cool to introduce some kind of hard to believe element to the game
+
+There needs to be a bigger running story that ties all of these things together. What could that be?
+I mean for sure the elites are involved in some kind of fucked up war, but it would be cool if there 
+was some element to this that sparked real intrigue
+
+Each project codename is a different mystery and they can be solved in any order.
+
+What really motivates elites? I think it probably always starts with some kind of insecurity
+which leads them to want power. It could be that all these CEOs are rushing to find a fountain
+of youth. Or they are trying to influence the world through proxies in media or something.
+
+I mean everybody wants to be loved and to feel like they're a good person. What's interesting
+is how that gets perverted to the point where you are willing to hurt other people to feel it.
+
+
+## 4/29/26
+
+Document ideas
+* ID of a worker
+* Project overview
+    * map of the mine
+* meeting minutes
+* progress reports
+    * promotion report  
+    * blast schedule
+    * report on mine safety
+* phone call transcript
+
+Key info
+* Shaft was blocked
+    * documents describing routine checks
+    * timeline points to a check resulting in damage found
+* One of the workers in the zone was recently promoted
+    * the shift schedule doesn't perfectly match up to the info
+* blasting didn't occur on the day of the incident
+* roster for the mine
+    * player needs to figure out where each person was
+* detailed notes on the day's progress
+* one worker was arrested (brother of one of the dead)
+
+* Phone call transcript between two workers (project lead and the person at the mine) unencrypted, reveals encryption key

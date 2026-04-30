@@ -1,21 +1,18 @@
-Your new assignment has come in.
+Welcome to LithOS Software!
 
-Last week the CEO of Eutropia LLC was murdered. This comes just days after the announcement a new product which threatens to unseat The Anastasia Corporation as the dominant force in social media.  
+We are excited to have you start your forensic data analyst journey as a member of our team.
 
-The grapevine says the murder was a hit organized by Anastasia executive leadership. We need you to prove it.
-
-We've intercepted several batches of files from their internal servers, nevermind how we got them. Most of these files are encoded. You should have all the tools you need to decrypt and investigate. 
-
-Frankly, you were selected for this job because you happen to be the only person with high enough clearance and enough free time to take on a task like this. I'll explain the basic tools.
-
-Keygen:
-The keygen is a highly advanced tool that is able to decrypt encoded files. When supplied with the right keys it can unscramble the information. Some documents use multiple keys for their encryption.
+We have a couple of programs that you might not be familiar with. Here's a rundown of the basics.
 
 Looking Glass:
-The Looking Glass program is where you will report your findings. Fill out the information and the program will be able to verify it.
+The looking glass program is where you will receive and submit your tasks. You'll be asked to fill in the correct information for several questions. Once a task is solved, we will send you a new one.
 
-We've provided you with a folder of reference material relevant to the case. Hopefully it will prove useful. It is in the reference_material folder
+Keygen:
+This program decrypts encrypted files. If you happen to know that a certain file is an encryption key, you can give it to the keygen program and it will automatically scan your file system and unscramble the files. Sometimes files are encrypted with multiple keys.
 
-That's about it. Solve all of the mysteries and return to your regular duties.
 
-For some reason we are unable to remove the minefield game from your system. Remember that your progress will be monitored.
+For your first day, we gave you a layup. You probably already know everything you need to solve it. If not, look at the folder reference_material/news_items for more information.
+
+
+
+- esled

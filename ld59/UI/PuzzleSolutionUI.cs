@@ -14,6 +14,7 @@ public class PuzzleSolutionPiece
     public string ProblemDescription {get;set;}
     public string PlayerSolution {get;set;}
     public string CorrectSolution {get;set;}
+    public string[] AcceptableSolutions {get;set;}
     public InfoType RelatedInfoType {get;set;}
 }
 
@@ -29,16 +30,19 @@ public class PuzzleSolutionUI : UIPanel
 
     private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
     {
-        new PuzzleSolutionPiece() { ProblemDescription = "Who is the head engineer", PlayerSolution = "", CorrectSolution = "ed sled", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "What project were they assigned to before 3/20", PlayerSolution = "", CorrectSolution = "orpheus", RelatedInfoType = InfoType.Codename},
-        new PuzzleSolutionPiece() { ProblemDescription = "What is their rank in the company", PlayerSolution = "", CorrectSolution = "tier iii", RelatedInfoType = InfoType.Rank},
-        new PuzzleSolutionPiece() { ProblemDescription = "Who takes minutes at executive meetings", PlayerSolution = "", CorrectSolution = "leif haynes", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Eutropia", PlayerSolution = "", CorrectSolution = "jack pilgrim", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of The Anastasia Corporation", PlayerSolution = "", CorrectSolution = "lance nightingale", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Lithos Software", PlayerSolution = "", CorrectSolution = "ed sled", RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Scram! Games", PlayerSolution = "", CorrectSolution = "rose cantrell", RelatedInfoType = InfoType.Name},
     };
+
+    private static readonly string[] _workerNames = new[] { "Miguel Angel Soto", "Sebastian Araya" };
+
     private List<PuzzleSolutionPiece> _solutionPieces2 = new List<PuzzleSolutionPiece>()
     {
-        new PuzzleSolutionPiece() { ProblemDescription = "Who lead project Agamemnon", PlayerSolution = "", CorrectSolution = "yarden imam", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Who lead project Achilles", PlayerSolution = "", CorrectSolution = "mortimer nightingale", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "What is the codename of the assassination plot", PlayerSolution = "", CorrectSolution = "agamemnon", RelatedInfoType = InfoType.Codename},
+        new PuzzleSolutionPiece() { ProblemDescription = "Name of worker who died", PlayerSolution = "", AcceptableSolutions = _workerNames, RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Name of worker who died", PlayerSolution = "", AcceptableSolutions = _workerNames, RelatedInfoType = InfoType.Name},
+        new PuzzleSolutionPiece() { ProblemDescription = "Cause of death", PlayerSolution = "", CorrectSolution = "suffocation", RelatedInfoType = InfoType.CauseOfDeath},
     };
 
     private List<PuzzleSolutionPiece> _solutionPieces3 = new List<PuzzleSolutionPiece>()
@@ -78,6 +82,7 @@ public class PuzzleSolutionUI : UIPanel
     {
         _rootContainer = new Window(_bounds, "Looking Glass", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         Core.UISystem.AddElement(_rootContainer);
+        TaskbarRegistry.Register("Looking Glass", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/puzzle_icon"), _rootContainer);
 
         var contentBounds = _rootContainer.GetContentBounds();
 
@@ -137,6 +142,25 @@ public class PuzzleSolutionUI : UIPanel
         Core.UISystem.AddElement(modal);
     }
 
+    private bool IsPieceCorrect(PuzzleSolutionPiece piece)
+    {
+        var playerVal = piece.PlayerSolution.Trim().ToLower();
+        if (piece.AcceptableSolutions == null || piece.AcceptableSolutions.Length == 0)
+            return playerVal == piece.CorrectSolution.Trim().ToLower();
+
+        if (!System.Array.Exists(piece.AcceptableSolutions, s => s.Trim().ToLower() == playerVal))
+            return false;
+
+        // Reject duplicate answers among pieces sharing the same AcceptableSolutions pool
+        foreach (var sibling in _currentSolutionPieces)
+        {
+            if (sibling != piece && sibling.AcceptableSolutions == piece.AcceptableSolutions
+                && sibling.PlayerSolution.Trim().ToLower() == playerVal)
+                return false;
+        }
+        return true;
+    }
+
     private void TestSolution()
     {
         int correctCount = 0;
@@ -144,7 +168,7 @@ public class PuzzleSolutionUI : UIPanel
         for(int i = 0; i < _currentSolutionPieces.Count; i++)
         {
             var piece = _currentSolutionPieces[i];
-            if(piece.PlayerSolution.Trim().ToLower() == piece.CorrectSolution.Trim().ToLower())
+            if(IsPieceCorrect(piece))
             {
                 correctCount++;
             }
@@ -162,10 +186,17 @@ public class PuzzleSolutionUI : UIPanel
         else if(correctCount == _currentSolutionPieces.Count)
         {
             ShowSuccess();
+            int completedIndex = _currentPuzzleIndex;
             _currentPuzzleIndex++;
             if(_currentPuzzleIndex < _puzzleSequence.Count)
             {
                 PopulateCurrentMystery();
+            }
+
+            if (completedIndex == 0)
+            {
+                var emailManager = Core.CurrentScene.GetManager<EmailDataManager>();
+                emailManager?.DeliverEmail("case2_start.eml");
             }
             else
             {

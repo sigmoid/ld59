@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
@@ -18,7 +21,8 @@ public class DesktopUI : UIPanel
     private ClockUI _clockUI;
 
     private float _taskbarItemSize = 80;
-    private float _startingNoteTimer = 1;
+    private List<UIElement> _taskbarAppItems = new();
+    private float _startingNoteTimer = 1f; // delay the starting note a bit so it doesn't get lost in the chaos of the start
 
     public DesktopUI(Rectangle bounds)
     {
@@ -47,10 +51,8 @@ public class DesktopUI : UIPanel
             _startingNoteTimer -= deltaTime;
             if (_startingNoteTimer <= 0)
             {
-                var gameDataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
-                var startingNote = gameDataManager.GetFileByPath("readme.txt");
-                var fileExplorerUI = new TextViewerUI(new Rectangle(150, 150, 700, 600), startingNote);
-                Core.UISystem.AddElement(fileExplorerUI);
+                var emailManager = Core.CurrentScene.GetManager<EmailDataManager>();
+                emailManager.DeliverEmail("welcome.eml");
             }
         }
     }
@@ -83,13 +85,45 @@ public class DesktopUI : UIPanel
 
         _clockUI = new ClockUI(new Rectangle(_bounds.Width - 200, taskBarArea.Top, 200, 100)) { Order = 0.9f };
         Core.UISystem.AddElement(_clockUI);
+
+        TaskbarRegistry.OnChanged += RebuildTaskbarApps;
+        EmailDataManager.OnEmailDelivered += OnEmailReceived;
+    }
+
+    private void OnEmailReceived(Email email)
+    {
+        _toastManager.ShowSuccess($"New email: {email.Subject}", 4, Toast.ToastPosition.TopRight);
+
+        var apps = TaskbarRegistry.GetApps();
+        bool emailOpen = apps.Any(a => a.Name == "Email");
+        if (emailOpen)
+            TaskbarRegistry.BringToFront("Email");
+        else
+        {
+            var emailListUI = new EmailListUI(new Rectangle(150, 150, 700, 600));
+            Core.UISystem.AddElement(emailListUI);
+        }
+    }
+
+    private void RebuildTaskbarApps()
+    {
+        foreach (var item in _taskbarAppItems)
+            _taskbarLayout.RemoveChild(item);
+        _taskbarAppItems.Clear();
+
+        foreach (var (name, icon) in TaskbarRegistry.GetApps())
+        {
+            var item = new TaskbarItemUI(new Rectangle(0, 0, (int)_taskbarItemSize, (int)_taskbarItemSize), icon, name);
+            _taskbarLayout.AddChild(item);
+            _taskbarAppItems.Add(item);
+        }
     }
 
     private void ToggleStartMenu()
     {
         if (_startMenuUI == null)
         {
-            _startMenuUI = new StartMenuUI(new Rectangle(5, _taskbar.GetBoundingBox().Top - 600, 400, 600));
+            _startMenuUI = new StartMenuUI(new Rectangle(5, _taskbar.GetBoundingBox().Top - 700, 400, 700));
             _startMenuUI.OnClose += () => _startMenuUI = null;
             AddChild(_startMenuUI);
         }

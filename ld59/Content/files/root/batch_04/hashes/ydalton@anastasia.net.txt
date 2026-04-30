@@ -1,4 +1,0 @@
-ChaCha20-Poly1305
-Key: 4f7a2c8d1e9b30563a7f2c1d8e9b4056
-Nonce: 3a7f2c1d8e9b4056
-Tag: c8d1e9b30563a7f2

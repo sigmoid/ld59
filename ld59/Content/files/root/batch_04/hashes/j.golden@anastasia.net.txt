@@ -1,5 +1,0 @@
-KEYBLOCK v2
-algo=AES256
-keydata=2c1d8e9b40563a7f2c8d1e9b30563a7f
-signature=63a7f2c1d8e9b40563a7f2c1d8e9b405
-verify=PASS

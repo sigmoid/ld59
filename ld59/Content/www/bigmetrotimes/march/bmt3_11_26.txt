@@ -1,0 +1,23 @@
+ ______     ____    ____   _________  
+|_   _ \   |_   \  /   _| |  _   _  | 
+  | |_) |    |   \/   |   |_/ | | \_| 
+  |  __'.    | |\  /| |       | |     
+ _| |__) |  _| |_\/_| |_     _| |_    
+|_______/  |_____||_____|   |_____|   
+                                      
+BIG METRO TIMES
+
+LithOS Vulnerability Could Have Crashed Global Economy
+Wednesday, March 11 2026
+Fritz Wallace
+
+A vulnerability in the LithOS operating system that would have allowed remote code execution on 8.5 million devices around the world.
+
+The vulnerability, discovered by white hat hacking group Free Movement Society, could have allowed any hacker to infect virtually any machine running LithOS.
+
+A patch was released several weeks before the vulnerability was made public.
+
+Many in the valley have speculated that the new LithOS CEO would have a hard time transitioning from game development to software. The company did not respond to our request for comment.
+---
+
+Fritz Wallace, Name

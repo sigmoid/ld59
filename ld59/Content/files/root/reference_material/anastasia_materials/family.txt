@@ -4,23 +4,41 @@ Lance Nightingale, CEO of Anastasia corporation
   Married to: Vivienne Nightingale (née Ashford), deceased
 
 Pauline Nightingale CNO and daughter of LN
-  Married to: Dr. Elliot Crane (no corporate role, academic)
+  Married to: Dr. Elliot Crane 
   Children:
-    Mortimer Nightingale CAIO, son of Pauline
-    Iris Nightingale, daughter of Pauline, works in R&D (junior analyst)
+    Mortimer Nightingale CAIO
+    Iris Nightingale
 
 Opal Nightingale CRO and daughter of LN
-  Divorced from: Sterling Voss (former VP of Logistics, departed company under murky circumstances)
+  Divorced from: Sterling Voss
   Children:
-    Cressida Voss, daughter of Opal, estranged from the family
-    Dorian Voss, son of Opal, intern at Anastasia (recent hire)
+    Cressida Voss
+    Dorian Voss
 
 Gustav Nightingale CCO and son of LN
-  Married to: Felicity Nightingale (née Drummond), handles corporate philanthropy arm
+  Married to: Felicity Nightingale (née Drummond)
   Children:
-    Noel Nightingale, son of Gustav, 17 years old, heir apparent (groomed for future role)
-    Petra Nightingale, daughter of Gustav, 14 years old
+    Noel Nightingale
+    Petra Nightingale
 
-Extended:
-  Barnard Ashford, brother of Vivienne (Lance's brother-in-law), board member
-  Constance Ashford, sister of Vivienne, no corporate role, close confidant of Pauline
+---
+
+Lance Nightingale, Name
+Vivienne Nightingale, Name
+Pauline Nightingale, Name
+Dr. Elliot Crane, Name
+Mortimer Nightingale, Name
+Iris Nightingale, Name
+Opal Nightingale, Name
+Sterling Voss, Name
+Cressida Voss, Name
+Dorian Voss, Name
+Gustav Nightingale, Name
+Felicity Nightingale, Name
+Noel Nightingale, Name
+Petra Nightingale, Name
+CEO, Position
+CNO, Position
+CAIO, Position
+CRO, Position
+CCO, Position

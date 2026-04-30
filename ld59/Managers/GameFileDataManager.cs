@@ -11,10 +11,22 @@ public class GameFileDataManager : IManager
     private const string ROOT_FILE_PATH = "Content/files/root";
     private List<GameInfo> _unlockedInfo = new List<GameInfo>();
 
+    private static readonly string[] DefaultCausesOfDeath =
+    {
+        "Suffocation", "Explosion", "Gunshot Wound", "Drowning",
+        "Electrocution", "Poisoning", "Blunt Force Trauma",
+        "Strangulation", "Incineration", "Fall",
+    };
+
     public void Initialize(Scene scene)
     {
         FileLoader loader = new FileLoader();
         _rootFolder = loader.LoadFolder(ROOT_FILE_PATH);
+
+        foreach (var cause in DefaultCausesOfDeath)
+        {
+            _unlockedInfo.Add(new GameInfo { Value = cause, Type = InfoType.CauseOfDeath, IsUnlocked = true });
+        }
     }
 
     public void Update(GameTime gameTime)
@@ -80,6 +92,21 @@ public class GameFileDataManager : IManager
         _unlockedInfo.Where(i => i.Type == type).ToList().ForEach(i => result.Add(i));
         result.Sort((a, b) => string.Compare(a.Value, b.Value));
         return result;
+    }
+
+    public bool UnlockInfo(List<GameInfo> infoList)
+    {
+        bool didUnlock = false;
+        foreach (var info in infoList)
+        {
+            info.IsUnlocked = true;
+            if (!_unlockedInfo.Any(i => i.Value.ToLowerInvariant() == info.Value.ToLowerInvariant() && i.Type == info.Type))
+            {
+                didUnlock = true;
+                _unlockedInfo.Add(info);
+            }
+        }
+        return didUnlock;
     }
 
     public bool UnlockData(GameFile file)

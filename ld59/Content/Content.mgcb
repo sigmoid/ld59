@@ -133,140 +133,47 @@
 /processorParam:Quality=Best
 /build:audio/scroll_003.ogg
 
-#begin files/root/batch_01/minutes_03_5_26.txt
-/copy:files/root/batch_01/minutes_03_5_26.txt
+#begin emails/case2_start.eml
+/copy:emails/case2_start.eml
 
-#begin files/root/batch_01/minutes_03_6_26.txt
-/copy:files/root/batch_01/minutes_03_6_26.txt
+#begin emails/welcome.eml
+/copy:emails/welcome.eml
 
-#begin files/root/batch_02/minutes_03_12_26.txt
-/copy:files/root/batch_02/minutes_03_12_26.txt
+#begin files/root/orpheus/arrest_record.enc
+/copy:files/root/orpheus/arrest_record.enc
 
-#begin files/root/batch_03/eagle.enc
-/copy:files/root/batch_03/eagle.enc
+#begin files/root/orpheus/assignments030526.enc
+/copy:files/root/orpheus/assignments030526.enc
 
-#begin files/root/batch_03/hare.enc
-/copy:files/root/batch_03/hare.enc
+#begin files/root/orpheus/meeting_minutes.txt
+/copy:files/root/orpheus/meeting_minutes.txt
 
-#begin files/root/batch_03/snake.enc
-/copy:files/root/batch_03/snake.enc
+#begin files/root/orpheus/mine_map.img
+/copy:files/root/orpheus/mine_map.img
 
-#begin files/root/batch_03/sphynx.enc
-/copy:files/root/batch_03/sphynx.enc
+#begin files/root/orpheus/operations_guide.enc
+/copy:files/root/orpheus/operations_guide.enc
 
-#begin files/root/batch_04/hashes/a.strom@anastasia.net.txt
-/copy:files/root/batch_04/hashes/a.strom@anastasia.net.txt
+#begin files/root/orpheus/orpheus.enc
+/copy:files/root/orpheus/orpheus.enc
 
-#begin files/root/batch_04/hashes/a.walters@anastasia.net.txt
-/copy:files/root/batch_04/hashes/a.walters@anastasia.net.txt
+#begin files/root/orpheus/phone_call103829.txt
+/copy:files/root/orpheus/phone_call103829.txt
 
-#begin files/root/batch_04/hashes/blakethorn@anastasia.net.txt
-/copy:files/root/batch_04/hashes/blakethorn@anastasia.net.txt
+#begin files/root/orpheus/phone_call103830.enc
+/copy:files/root/orpheus/phone_call103830.enc
 
-#begin files/root/batch_04/hashes/c.reyes@anastasia.net.txt
-/copy:files/root/batch_04/hashes/c.reyes@anastasia.net.txt
+#begin files/root/orpheus/progress_report030126.enc
+/copy:files/root/orpheus/progress_report030126.enc
 
-#begin files/root/batch_04/hashes/dillon.f@anastasia.net.txt
-/copy:files/root/batch_04/hashes/dillon.f@anastasia.net.txt
+#begin files/root/orpheus/progress_report030526.enc
+/copy:files/root/orpheus/progress_report030526.enc
 
-#begin files/root/batch_04/hashes/e.ballard@anastasia.net.txt
-/copy:files/root/batch_04/hashes/e.ballard@anastasia.net.txt
+#begin files/root/orpheus/progress_report030926.enc
+/copy:files/root/orpheus/progress_report030926.enc
 
-#begin files/root/batch_04/hashes/e.sled@anastasia.net.txt
-/copy:files/root/batch_04/hashes/e.sled@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/elara.wynn@anastasia.net.txt
-/copy:files/root/batch_04/hashes/elara.wynn@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/f.castor@anastasia.net.txt
-/copy:files/root/batch_04/hashes/f.castor@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/g.nightingale@anastasia.net.txt
-/copy:files/root/batch_04/hashes/g.nightingale@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/g.nkosi@anastasia.net.txt
-/copy:files/root/batch_04/hashes/g.nkosi@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/j.golden@anastasia.net.txt
-/copy:files/root/batch_04/hashes/j.golden@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/j.mercer@anastasia.net.txt
-/copy:files/root/batch_04/hashes/j.mercer@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/l.nightingale@anastasia.net.txt
-/copy:files/root/batch_04/hashes/l.nightingale@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/l.vance@anastasia.net.txt
-/copy:files/root/batch_04/hashes/l.vance@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/l.vivian@anastasia.net.txt
-/copy:files/root/batch_04/hashes/l.vivian@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/m.chambers@anastasia.net.txt
-/copy:files/root/batch_04/hashes/m.chambers@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/melanie.w@anastasia.net.txt
-/copy:files/root/batch_04/hashes/melanie.w@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/mortimer.n@anastasia.net.txt
-/copy:files/root/batch_04/hashes/mortimer.n@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/nwolf@anastasia.net.txt
-/copy:files/root/batch_04/hashes/nwolf@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/o.nightingale@anastasia.net.txt
-/copy:files/root/batch_04/hashes/o.nightingale@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/ohara.d@anastasia.net.txt
-/copy:files/root/batch_04/hashes/ohara.d@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/p.nightingale@anastasia.net.txt
-/copy:files/root/batch_04/hashes/p.nightingale@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/rbennett@anastasia.net.txt
-/copy:files/root/batch_04/hashes/rbennett@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/serena.voss@anastasia.net.txt
-/copy:files/root/batch_04/hashes/serena.voss@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/t.calloway@anastasia.net.txt
-/copy:files/root/batch_04/hashes/t.calloway@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/umiyamoto@anastasia.net.txt
-/copy:files/root/batch_04/hashes/umiyamoto@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/vfrost@anastasia.net.txt
-/copy:files/root/batch_04/hashes/vfrost@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/w.aldridge@anastasia.net.txt
-/copy:files/root/batch_04/hashes/w.aldridge@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/x.okafor@anastasia.net.txt
-/copy:files/root/batch_04/hashes/x.okafor@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/y.imam@anastasia.net.txt
-/copy:files/root/batch_04/hashes/y.imam@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/ydalton@anastasia.net.txt
-/copy:files/root/batch_04/hashes/ydalton@anastasia.net.txt
-
-#begin files/root/batch_04/hashes/zephyr.k@anastasia.net.txt
-/copy:files/root/batch_04/hashes/zephyr.k@anastasia.net.txt
-
-#begin files/root/batch_04/leviathan.enc
-/copy:files/root/batch_04/leviathan.enc
-
-#begin files/root/batch_04/nightshade.enc
-/copy:files/root/batch_04/nightshade.enc
-
-#begin files/root/batch_04/orc.enc
-/copy:files/root/batch_04/orc.enc
-
-#begin files/root/batch_05/tortoise.enc
-/copy:files/root/batch_05/tortoise.enc
-
-#begin files/root/batch_06/phalanx.enc
-/copy:files/root/batch_06/phalanx.enc
+#begin files/root/orpheus/progress_report031326.enc
+/copy:files/root/orpheus/progress_report031326.enc
 
 #begin files/root/readme.txt
 /copy:files/root/readme.txt
@@ -274,14 +181,11 @@
 #begin files/root/reference_material/anastasia_materials/family.txt
 /copy:files/root/reference_material/anastasia_materials/family.txt
 
+#begin files/root/reference_material/anastasia_materials/org_chart.txt
+/copy:files/root/reference_material/anastasia_materials/org_chart.txt
+
 #begin files/root/reference_material/anastasia_materials/values.txt
 /copy:files/root/reference_material/anastasia_materials/values.txt
-
-#begin files/root/reference_material/news_items/nyt3_14_26.txt
-/copy:files/root/reference_material/news_items/nyt3_14_26.txt
-
-#begin files/root/reference_material/news_items/nyt3_20_26.txt
-/copy:files/root/reference_material/news_items/nyt3_20_26.txt
 
 #begin fonts/BIOS.spritefont
 /importer:FontDescriptionImporter
@@ -289,6 +193,13 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:fonts/BIOS.spritefont
+
+#begin fonts/Browser.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/Browser.spritefont
 
 #begin fonts/Default.spritefont
 /importer:FontDescriptionImporter
@@ -309,6 +220,18 @@
 /processorParam:TextureFormat=Color
 /build:images/background.png
 
+#begin images/browser_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/browser_icon.png
+
 #begin images/decryptor_icon.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -320,6 +243,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/decryptor_icon.png
+
+#begin images/email_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/email_icon.png
 
 #begin images/file_explorer.png
 /importer:TextureImporter
@@ -357,6 +292,18 @@
 /processorParam:TextureFormat=Color
 /build:images/file_icon.png
 
+#begin images/image_viewer.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/image_viewer.png
+
 #begin images/key_file_icon.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -380,6 +327,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/key_icon.png
+
+#begin images/mine_map.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/mine_map.png
 
 #begin images/minefield_cell.png
 /importer:TextureImporter
@@ -453,15 +412,63 @@
 /processorParam:TextureFormat=Color
 /build:images/start_menu.png
 
+#begin shaders/chromatic_aberration.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/chromatic_aberration.fx
+
 #begin shaders/crt.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:shaders/crt.fx
 
+#begin shaders/static_noise.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/static_noise.fx
+
 #begin splash_text.txt
 /copy:splash_text.txt
 
 #begin victory_text.txt
 /copy:victory_text.txt
+
+#begin www/bigmetrotimes/archive.txt
+/copy:www/bigmetrotimes/archive.txt
+
+#begin www/bigmetrotimes/bmt10_10_25.txt
+/copy:www/bigmetrotimes/bmt10_10_25.txt
+
+#begin www/bigmetrotimes/error.txt
+/copy:www/bigmetrotimes/error.txt
+
+#begin www/bigmetrotimes/index.txt
+/copy:www/bigmetrotimes/index.txt
+
+#begin www/bigmetrotimes/march/bmt3_10_26.txt
+/copy:www/bigmetrotimes/march/bmt3_10_26.txt
+
+#begin www/bigmetrotimes/march/bmt3_11_26.txt
+/copy:www/bigmetrotimes/march/bmt3_11_26.txt
+
+#begin www/bigmetrotimes/march/bmt3_13_26.txt
+/copy:www/bigmetrotimes/march/bmt3_13_26.txt
+
+#begin www/bigmetrotimes/march/bmt3_14_26_2.txt
+/copy:www/bigmetrotimes/march/bmt3_14_26_2.txt
+
+#begin www/bigmetrotimes/march/bmt3_14_26.txt
+/copy:www/bigmetrotimes/march/bmt3_14_26.txt
+
+#begin www/codematrix/code_matrix_12_26.txt
+/copy:www/codematrix/code_matrix_12_26.txt
+
+#begin www/codematrix/index.txt
+/copy:www/codematrix/index.txt
+
+#begin www/home.txt
+/copy:www/home.txt
 

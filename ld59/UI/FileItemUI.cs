@@ -55,6 +55,7 @@ public class FileItemUI : UIElement, IHoverableUIElement
 
         if (mouseState.LeftButton == ButtonState.Pressed && _isHovered && !_lastLefClick)
         {
+            if (_gameFile != null) _gameFile.IsNewDiscovery = false;
             OnClick?.Invoke();
         }
 

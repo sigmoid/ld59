@@ -47,6 +47,7 @@ public class KeygenUI : UIPanel
         _rootContainer = new Window(_bounds, "Keygen", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
         Core.UISystem.AddElement(_rootContainer);
+        TaskbarRegistry.Register("Keygen", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/key_icon"), _rootContainer);
         Core.UISystem.WindowManager.SetFocusedWindow(_rootContainer);
 
         var content = _rootContainer.GetContentBounds();

@@ -17,6 +17,7 @@ public class FileExplorerUI : UIContainer
     private VerticalLayoutGroup _fileDisplayLayout;
     private Texture2D _folderIcon;
     private Texture2D _fileIcon;
+    private Texture2D _imageFileIcon;
     private string _currentPath = "";
     private Action<GameFile> _onOpenFile;
     private Label _filepathLabel;
@@ -29,6 +30,7 @@ public class FileExplorerUI : UIContainer
 
         _fileIcon = Core.Content.Load<Texture2D>("images/file_icon");
         _folderIcon = Core.Content.Load<Texture2D>("images/file_folder");
+        _imageFileIcon = Core.Content.Load<Texture2D>("images/image_viewer");
 
         CreateUI();
         SelectFolder("/");
@@ -40,6 +42,7 @@ public class FileExplorerUI : UIContainer
         _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
         Core.UISystem.AddElement(_rootContainer);
         _rootContainer.OnWindowClosed += (window) => Close();
+        TaskbarRegistry.Register("File Explorer", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/file_folder"), _rootContainer);
 
         CreateFilePathDisplay();
         CreateShortcuts();
@@ -141,7 +144,8 @@ public class FileExplorerUI : UIContainer
 
         foreach(var file in data.Files)
         {
-            var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, _fileIcon, () => _onOpenFile?.Invoke(file), file);
+            var icon = file.FileType == FileType.Image ? _imageFileIcon : _fileIcon;
+            var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, icon, () => _onOpenFile?.Invoke(file), file);
             _fileDisplayLayout.AddChild(fileItem);
         }
 

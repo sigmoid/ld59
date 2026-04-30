@@ -77,6 +77,14 @@ public class StartMenuUI : UIPanel
         });
         _layoutGroup.AddChild(puzzleButton);
 
+        var emailIcon = Core.Content.Load<Texture2D>("images/email_icon");
+        var emailButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 600, _layoutGroup.GetBoundingBox().Width, 80), emailIcon, "Email", () => OpenEmail());
+        _layoutGroup.AddChild(emailButton);
+
+        var browserIcon = Core.Content.Load<Texture2D>("images/browser_icon");
+        var browserButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 700, _layoutGroup.GetBoundingBox().Width, 80), browserIcon, "LithNET", () => OpenBrowser());
+        _layoutGroup.AddChild(browserButton);
+
         _rootElement.AddChild(_layoutGroup);
 
         Core.UISystem.AddElement(_rootElement);
@@ -113,8 +121,30 @@ public class StartMenuUI : UIPanel
 
     private void OpenFile(GameFile file)
     {
-        var textViewer = new TextViewerUI(new Rectangle(150, 150, 600, 800), file);
-        AddChild(textViewer);
+        if (file.FileType == FileType.Image)
+        {
+            var imageViewer = new ImageViewerUI(file);
+            Core.UISystem.AddElement(imageViewer);
+        }
+        else
+        {
+            var textViewer = new TextViewerUI(new Rectangle(150, 150, 600, 800), file);
+            AddChild(textViewer);
+        }
+    }
+
+    private void OpenEmail()
+    {
+        var emailListUI = new EmailListUI(new Rectangle(150, 150, 700, 600));
+        Core.UISystem.AddElement(emailListUI);
+        HideMenu();
+    }
+
+    private void OpenBrowser()
+    {
+        var browserUI = new BrowserUI(new Rectangle(100, 50, 900, 700));
+        Core.UISystem.AddElement(browserUI);
+        HideMenu();
     }
 
     private void HideMenu()

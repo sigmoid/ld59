@@ -27,6 +27,9 @@ public class Game1 : Core
         base.Initialize();
 
         PostProcessing.AddEffect<CRTPostProcessEffect>();
+        PostProcessing.AddEffect<ChromaticAberrationPostProcessEffect>();
+        var noise = PostProcessing.AddEffect<StaticNoisePostProcessEffect>();
+        noise.Intensity = 0.15f;
     }
 
     protected override void LoadContent()
@@ -34,6 +37,7 @@ public class Game1 : Core
         AudioAtlas.Load(Content);
         WindowManager.OnWindowOpened += () => AudioAtlas.Maximize_003.Play();
         Core.CurrentScene.AddManager(new GameFileDataManager());
+        Core.CurrentScene.AddManager(new EmailDataManager());
 
         var screenBounds = new Rectangle(0, 0, GameplayConstants.ScreenWidth, GameplayConstants.ScreenHeight);
         SplashAnimation splash = null;

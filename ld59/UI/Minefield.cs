@@ -92,6 +92,7 @@ public class Minefield : UIPanel
     {
         _rootWindow = new Window(_bounds, "Minefield", Core.DefaultFont);
         _rootWindow.SetColors(ColorPalette.DarkCream, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen);
+        TaskbarRegistry.Register("Minefield", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/minefield_icon"), _rootWindow);
         
         _statusLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, _rootWindow.GetContentBounds().Y + 10, _rootWindow.GetContentBounds().Width - 20, 20), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
         _rootWindow.AddChild(_statusLabel);

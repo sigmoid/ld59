@@ -47,8 +47,6 @@ public class InfoSelectionWindow : UIPanel
         var layoutGroup  = new VerticalLayoutGroup(new Rectangle(contentBounds.X + 10, contentBounds.Y + 10, contentBounds.Width - 20, contentBounds.Height - 20), 5);
         scrollArea.AddChild(layoutGroup);
 
-        Core.UISystem.AddElement(_rootContainer);
-        
         var dataManager = Core.CurrentScene.GetManager<GameFileDataManager>();
         var infoItems = dataManager.GetAllInfoOfType(_infoType);
 

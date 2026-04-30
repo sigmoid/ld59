@@ -1,3 +1,0 @@
-Token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9
-.eyJzdWIiOiIwMDAwMDAwMjAwIiwibmFtZSI6IkFy
-YnVja2xlIFdhbHRlcnMiLCJyb2xlIjoiQ0ZPIiwiaWF0IjoxNTE2MjM5MDIyfQ
