@@ -6,8 +6,8 @@
 
 
 1. If selection window already open in puzzle solution, don't open another one
-1. Put date on worker assignments
-1. Make older post about anastasia mine collapse
+1. Add images to web browser
+1. Show which files are encrypted in file explorer
 
 1. Improve minesweeper look
 

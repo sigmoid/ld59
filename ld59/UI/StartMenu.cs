@@ -142,7 +142,7 @@ public class StartMenuUI : UIPanel
 
     private void OpenBrowser()
     {
-        var browserUI = new BrowserUI(new Rectangle(100, 50, 900, 700));
+        var browserUI = new BrowserUI(new Rectangle(100, 50, 1000, 700));
         Core.UISystem.AddElement(browserUI);
         HideMenu();
     }

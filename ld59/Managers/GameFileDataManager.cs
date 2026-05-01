@@ -27,6 +27,9 @@ public class GameFileDataManager : IManager
         {
             _unlockedInfo.Add(new GameInfo { Value = cause, Type = InfoType.CauseOfDeath, IsUnlocked = true });
         }
+
+        HidePath("orpheus");
+        HidePath("reference_material/anastasia_materials");
     }
 
     public void Update(GameTime gameTime)
@@ -107,6 +110,22 @@ public class GameFileDataManager : IManager
             }
         }
         return didUnlock;
+    }
+
+    public void HidePath(string path)
+    {
+        var folder = GetFolderByPath(path);
+        if (folder != null) { folder.IsHidden = true; return; }
+        var file = GetFileByPath(path);
+        if (file != null) file.IsHidden = true;
+    }
+
+    public void UnlockPath(string path)
+    {
+        var folder = GetFolderByPath(path);
+        if (folder != null) { folder.IsHidden = false; return; }
+        var file = GetFileByPath(path);
+        if (file != null) file.IsHidden = false;
     }
 
     public bool UnlockData(GameFile file)

@@ -11,7 +11,7 @@ public class CRTPostProcessEffect : PostProcessEffect
     {
         Shader.Parameters["curvature"].SetValue(Curvature);
         Shader.Parameters["screenResolution"].SetValue(1080f);
-        Shader.Parameters["roundness"].SetValue(8f);
+        Shader.Parameters["roundness"].SetValue(25f);
         Shader.Parameters["vignetteOpacity"].SetValue(0.25f);
         spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointClamp, null, null, Shader);
         spriteBatch.Draw(source, Vector2.Zero, Color.White);

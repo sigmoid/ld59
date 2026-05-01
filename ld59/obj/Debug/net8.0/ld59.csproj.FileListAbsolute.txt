@@ -1,4 +1,3 @@
-F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\files\root\readme.txt
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\fonts\Default.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\decryptor_icon.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\file_explorer.xnb
@@ -111,3 +110,4 @@ F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\www\bigmetrotimes\march\bmt3_14_26_2.t
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\email_icon.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\emails\welcome.eml
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\emails\case2_start.eml
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\fonts\Small.xnb

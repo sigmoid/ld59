@@ -11,5 +11,6 @@ public class GameFile
     public bool IsEncrypted {get;set;}
     public List<GameInfo> Info {get;set;} = new List<GameInfo>();
     public List<string> Keys {get;set;} = new List<string>();
-    public bool IsNewDiscovery {get;set;} = false;
+    public bool IsHidden { get; set; } = false;
+    public bool IsNewDiscovery {get;set;} = true;
 }

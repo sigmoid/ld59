@@ -175,9 +175,6 @@
 #begin files/root/orpheus/progress_report031326.enc
 /copy:files/root/orpheus/progress_report031326.enc
 
-#begin files/root/readme.txt
-/copy:files/root/readme.txt
-
 #begin files/root/reference_material/anastasia_materials/family.txt
 /copy:files/root/reference_material/anastasia_materials/family.txt
 
@@ -207,6 +204,13 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:fonts/Default.spritefont
+
+#begin fonts/Small.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/Small.spritefont
 
 #begin images/background.png
 /importer:TextureImporter

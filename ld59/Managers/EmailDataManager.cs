@@ -31,6 +31,11 @@ public class EmailDataManager : IManager
         if (email == null || _inbox.Contains(email)) return;
 
         _inbox.Add(email);
+
+        var fileManager = Core.CurrentScene.GetManager<GameFileDataManager>();
+        foreach (var path in email.UnlockPaths)
+            fileManager?.UnlockPath(path);
+
         OnEmailDelivered?.Invoke(email);
     }
 

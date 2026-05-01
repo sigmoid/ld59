@@ -138,12 +138,14 @@ public class FileExplorerUI : UIContainer
 
         foreach(var subFolder in data.SubFolders)
         {
-            var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name), null);
+            if (subFolder.IsHidden) continue;
+            var folderItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), subFolder.Name, _folderIcon, () => SelectFolder(subFolder.Name), null, subFolder);
             _fileDisplayLayout.AddChild(folderItem);
         }
 
         foreach(var file in data.Files)
         {
+            if (file.IsHidden) continue;
             var icon = file.FileType == FileType.Image ? _imageFileIcon : _fileIcon;
             var fileItem = new FileItemUI(new Rectangle(_fileDisplayLayout.GetBoundingBox().X, _fileDisplayLayout.GetBoundingBox().Y, _fileDisplayLayout.GetBoundingBox().Width, 40), file.Name, icon, () => _onOpenFile?.Invoke(file), file);
             _fileDisplayLayout.AddChild(fileItem);

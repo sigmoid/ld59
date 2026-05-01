@@ -67,7 +67,22 @@ public class EmailLoader
         if (sections.Length > 1)
             email.Info.AddRange(ParseInfoUnlocks(sections[1]));
 
+        if (sections.Length > 2)
+            email.UnlockPaths.AddRange(ParseUnlockPaths(sections[2]));
+
         return email;
+    }
+
+    private List<string> ParseUnlockPaths(string data)
+    {
+        var paths = new List<string>();
+        foreach (var line in data.Split('\n'))
+        {
+            var trimmed = line.Trim().TrimEnd('\r');
+            if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith("#"))
+                paths.Add(trimmed);
+        }
+        return paths;
     }
 
     private List<GameInfo> ParseInfoUnlocks(string data)

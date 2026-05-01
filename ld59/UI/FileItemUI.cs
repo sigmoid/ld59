@@ -19,8 +19,10 @@ public class FileItemUI : UIElement, IHoverableUIElement
 
     private bool _isHovered = false;
     private GameFile _gameFile;
+    private GameFolder _gameFolder;
+    private SpriteFont _smallFont;
 
-    public FileItemUI(Rectangle bounds, string name, Texture2D icon, Action onClick, GameFile file)
+    public FileItemUI(Rectangle bounds, string name, Texture2D icon, Action onClick, GameFile file, GameFolder folder = null)
     {
         _bounds = bounds;
         _name = name;
@@ -29,11 +31,14 @@ public class FileItemUI : UIElement, IHoverableUIElement
         _iconSize = bounds.Height - 10;
 
         _gameFile = file;
+        _gameFolder = folder;
 
         this.OnClick = onClick;
 
         _pixel = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+
+        _smallFont = Core.Content.Load<SpriteFont>("fonts/Small");
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -79,10 +84,18 @@ public class FileItemUI : UIElement, IHoverableUIElement
         var textBounds = new Rectangle(iconBounds.Right + 10, _bounds.Y, _bounds.Width - iconBounds.Width - 20, _bounds.Height);
         spriteBatch.DrawString(Core.DefaultFont, _name, new Vector2(textBounds.X, textBounds.Y + (textBounds.Height / 2) - (Core.DefaultFont.LineSpacing / 2)), textColor);
 
-        if(_gameFile?.IsNewDiscovery == true)
+        if(_gameFile?.IsEncrypted == true)
         {
-            spriteBatch.Draw(_pixel, new Rectangle(_bounds.Right - 60, _bounds.Y + 5, 55, 30), ColorPalette.Green);
-            spriteBatch.DrawString(Core.DefaultFont, "NEW", new Vector2(_bounds.Right - 55, _bounds.Y + 3), ColorPalette.ActualWhite);
+            spriteBatch.Draw(_pixel, new Rectangle(_bounds.Right - 80, _bounds.Y + 5, 70, 30), Color.DarkRed);
+            spriteBatch.DrawString(_smallFont, "LOCKED", new Vector2(_bounds.Right - 70, _bounds.Center.Y - (_smallFont.LineSpacing / 2)), ColorPalette.ActualWhite);
+        }
+
+        var isNew = (_gameFile?.IsNewDiscovery == true && _gameFile?.IsEncrypted != true) || _gameFolder?.HasNewItems() == true;
+        if (isNew)
+        {
+            var newBadgeOffset = _gameFile?.IsEncrypted == true ? 145 : 60;
+            spriteBatch.Draw(_pixel, new Rectangle(_bounds.Right - newBadgeOffset, _bounds.Y + 5, 40, 30), ColorPalette.Green);
+            spriteBatch.DrawString(_smallFont, "NEW", new Vector2(_bounds.Right - newBadgeOffset + 5, _bounds.Center.Y - (_smallFont.LineSpacing / 2)), ColorPalette.ActualWhite);
         }
 
 
