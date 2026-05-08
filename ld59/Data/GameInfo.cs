@@ -6,6 +6,9 @@ public enum InfoType
     Codename,
     Verb,
     CauseOfDeath,
+    Resource,
+    Location,
+    Tool
 }
 
 public class GameInfo

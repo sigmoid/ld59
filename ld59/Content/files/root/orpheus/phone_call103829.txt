@@ -2,7 +2,7 @@ Phone Call Transcript
 
 3.12.26 7:30 PM
 
-YI: Hello, who is this?
+YI: What is it?
 ???: It's me. We've got a problem at the mine
 YI: Call me back on an encrypted line
 ???: I tried that. The key didn't take.

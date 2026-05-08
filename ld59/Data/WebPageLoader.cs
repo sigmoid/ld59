@@ -72,6 +72,21 @@ public static class WebPageLoader
 
         while (i < line.Length)
         {
+            if (line[i] == '!' && i + 1 < line.Length && line[i + 1] == '[')
+            {
+                int closeBracket = line.IndexOf(']', i + 2);
+                if (closeBracket > i + 1 && closeBracket + 1 < line.Length && line[closeBracket + 1] == '(')
+                {
+                    int closeParen = line.IndexOf(')', closeBracket + 2);
+                    if (closeParen > closeBracket + 1)
+                    {
+                        result.Append(line.Substring(i, closeParen - i + 1));
+                        i = closeParen + 1;
+                        continue;
+                    }
+                }
+            }
+
             if (line[i] == '[')
             {
                 int closeLabel = line.IndexOf(']', i + 1);

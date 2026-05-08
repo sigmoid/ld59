@@ -121,6 +121,18 @@
 /processorParam:Quality=Best
 /build:audio/maximize_003.ogg
 
+#begin audio/mouse_click_down.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/mouse_click_down.wav
+
+#begin audio/mouse_click_up.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/mouse_click_up.wav
+
 #begin audio/open_001.ogg
 /importer:OggImporter
 /processor:SoundEffectProcessor
@@ -142,20 +154,11 @@
 #begin files/root/orpheus/arrest_record.enc
 /copy:files/root/orpheus/arrest_record.enc
 
-#begin files/root/orpheus/assignments030526.enc
-/copy:files/root/orpheus/assignments030526.enc
-
 #begin files/root/orpheus/meeting_minutes.txt
 /copy:files/root/orpheus/meeting_minutes.txt
 
 #begin files/root/orpheus/mine_map.img
 /copy:files/root/orpheus/mine_map.img
-
-#begin files/root/orpheus/operations_guide.enc
-/copy:files/root/orpheus/operations_guide.enc
-
-#begin files/root/orpheus/orpheus.enc
-/copy:files/root/orpheus/orpheus.enc
 
 #begin files/root/orpheus/phone_call103829.txt
 /copy:files/root/orpheus/phone_call103829.txt
@@ -163,17 +166,11 @@
 #begin files/root/orpheus/phone_call103830.enc
 /copy:files/root/orpheus/phone_call103830.enc
 
-#begin files/root/orpheus/progress_report030126.enc
-/copy:files/root/orpheus/progress_report030126.enc
-
 #begin files/root/orpheus/progress_report030526.enc
 /copy:files/root/orpheus/progress_report030526.enc
 
 #begin files/root/orpheus/progress_report030926.enc
 /copy:files/root/orpheus/progress_report030926.enc
-
-#begin files/root/orpheus/progress_report031326.enc
-/copy:files/root/orpheus/progress_report031326.enc
 
 #begin files/root/reference_material/anastasia_materials/family.txt
 /copy:files/root/reference_material/anastasia_materials/family.txt
@@ -223,6 +220,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/background.png
+
+#begin images/bmtheader.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/bmtheader.png
 
 #begin images/browser_icon.png
 /importer:TextureImporter
@@ -296,6 +305,18 @@
 /processorParam:TextureFormat=Color
 /build:images/file_icon.png
 
+#begin images/flag.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/flag.png
+
 #begin images/image_viewer.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -331,6 +352,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/key_icon.png
+
+#begin images/lithnet_header.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/lithnet_header.png
 
 #begin images/mine_map.png
 /importer:TextureImporter
@@ -404,6 +437,33 @@
 /processorParam:TextureFormat=Color
 /build:images/scramlogo.png
 
+#begin images/settings_icon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/settings_icon.png
+
+#begin images/skeltal.sprite
+/copy:images/skeltal.sprite
+
+#begin images/sklelatal.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/sklelatal.png
+
 #begin images/start_menu.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -460,9 +520,6 @@
 
 #begin www/bigmetrotimes/march/bmt3_13_26.txt
 /copy:www/bigmetrotimes/march/bmt3_13_26.txt
-
-#begin www/bigmetrotimes/march/bmt3_14_26_2.txt
-/copy:www/bigmetrotimes/march/bmt3_14_26_2.txt
 
 #begin www/bigmetrotimes/march/bmt3_14_26.txt
 /copy:www/bigmetrotimes/march/bmt3_14_26.txt

@@ -1,6 +1,8 @@
 
 [ideation](#ideation)
 
+[Random ideas](#Random-ideas)
+
 * [4/27/26](#42726)
 * [4/28/26](#42826)
 * [4/29/26](#42926)
@@ -92,14 +94,14 @@ The player needs some other challenges than just finding cypher keys.
 
 ---
 
-### Walking skeleton
+# Random Ideas
 
-Text / Hex viewer
-Cypher text
-Encryption
-
-Player reads the tutorial, starts by figuring out how to decode simple text files, only the files are gibberish. Player somehow figures out how to decode one of these files
-
+1. Split flap display
+    1. How could I justify this?
+1. Some kind of 3d minigame
+    1. Walking sim?
+1. Elimination game, player can eliminate clues
+1. Warrant system to get more info (papers please matching)
 
 # Ideation
 ---
@@ -313,3 +315,79 @@ Key info
 * one worker was arrested (brother of one of the dead)
 
 * Phone call transcript between two workers (project lead and the person at the mine) unencrypted, reveals encryption key
+
+
+# 5/3/26
+
+"Project {0} is an Anastasia Corporation project led by {1} to mine {2} in {3}.\nWorkers used {4} to mine, but an accident caused {5} and {6} to die by {7}",
+new List<RichTextArea.Slot>
+{
+    new() { InfoType = InfoType.Codename, CorrectSolution = "orpheus"},
+    new() { InfoType = InfoType.Name, CorrectSolution = "yarden imam"},
+    new() { InfoType = InfoType.Resource, CorrectSolution = "lithium"},
+    new() { InfoType = InfoType.Location, CorrectSolution = "chile"},
+    new() { InfoType = InfoType.Tool, CorrectSolution = ""},
+    new() { InfoType = InfoType.Name, CorrectSolution = _workerNames[0]},
+    new() { InfoType = InfoType.Name, CorrectSolution = _workerNames[1]},
+    new() { InfoType = InfoType.CauseOfDeath, CorrectSolution = "atomization"},
+    
+}
+
+Causes of death
+
+- explosion
+- atomization
+- irradiation
+- asphyxiation
+
+Documents
+- Orpheus project doc, lists sites and resources mined
+    - Could be that the resource isn't directly linked and needs to be discovered
+- Scene photos
+- Mine map
+- Project reports
+    - Worker injured and replaced changing assignments
+- Police report 
+    - neighbors complain about noise
+    - Police took photos of the scene
+- Project description for device
+- Assignments
+
+Misleads
+- They suffocated
+- The explosion killed them
+- They were irradiated
+
+Somebody in the mine killed the other guy
+
+The story so far:
+
+in the 70s an eccentric computer genius named Socrates Green created LithOS using a custom programming language that nobody else understood
+Green was inspired by a monolith he had found which gave him knowledge of the alien programming language.
+The operating system far exceeded all other modern technologies, leading the market.
+Hard to believe stories about the capabilities of this operating system diffused through modern folklore, but are mostly considered to be conspiracy theories.
+After a short stint as CEO of a major company, Socrates left it all behind and started to travel the globe, not releasing any more software.
+LithOS software begun building around the kernel in regular software languages. By the 90s, it had fallen behind.
+The Anastasia Corporation was founded in 1990, providing competing software.
+Anastasia grew and begun building devices such as the smart phone.
+Anastasia makes many attempts to hire Socrates, but fails.
+In the early 90s Socrates Green is commited to an asylum after a manic episode
+
+The game begins with the player investigating an Anastasia corporation mining disaster. They discover that the Anastasia Corporation possesses technology which can atomize any matter, which they used to mine
+
+There is a hacking group called the Free Movement Society which seeks to destroy corporations. Eventually they recruit you to join them.
+
+# 5/7/26
+
+I'm back to work and its exhausting
+
+I am thinking of ways that the game could innovate on the formula of golden idol and obra dinn and I haven't really come up with anything yet, so I thought just brainstorming might be the way to go
+ChatGPT suggests that instead of submitting the correct answer, your answers shape the story. This is kinda interesting but falls into the combinatoric explosion where you have to design a million
+different scenarios. I also thought it could be cool if your solutions are "plausible", but can't be proven until you've solved other mysteries. As in, the mysteries have to be consistent with eachother
+in order to truly progress through the game. It has a kinda powergrid type of gameplay that is cool, but could definitely just turn out to not be fun.
+
+It would be cool to incorporate the game I was thinking of that's based on the Wire. The player can use evidence to get approval for wiretaps, street surveillance, etc.
+
+It could be problematic if the 'currency' for gathering information is information.
+
+The way I see it playing out is that the player needs to find multiple pieces of evidence that together are damning enough for a judge to order a wire tap

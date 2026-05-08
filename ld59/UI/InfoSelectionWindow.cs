@@ -39,6 +39,7 @@ public class InfoSelectionWindow : UIPanel
     {
         _rootContainer = new Window(_bounds, "Information", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
         Core.UISystem.AddElement(_rootContainer);
+        _rootContainer.OnWindowClosed += _ => { var cb = _onSelectInfo; _onSelectInfo = null; cb?.Invoke(null); };
 
         var contentBounds = _rootContainer.GetContentBounds();
         var scrollArea = new ScrollArea(new Rectangle(contentBounds.X + 10, contentBounds.Y + 10, contentBounds.Width - 20, contentBounds.Height - 20));
@@ -52,7 +53,8 @@ public class InfoSelectionWindow : UIPanel
 
         foreach(var item in infoItems)
         {
-            var label = new Button(new Rectangle(layoutGroup.GetBoundingBox().X, layoutGroup.GetBoundingBox().Y, layoutGroup.GetBoundingBox().Width - 20, 30), item.Value, Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => { _onSelectInfo?.Invoke(item); });
+            var captured = item;
+            var label = new Button(new Rectangle(layoutGroup.GetBoundingBox().X, layoutGroup.GetBoundingBox().Y, layoutGroup.GetBoundingBox().Width - 20, 30), item.Value, Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => { var cb = _onSelectInfo; _onSelectInfo = null; cb?.Invoke(captured); });
             layoutGroup.AddChild(label);
             scrollArea.RefreshContentBounds();
         }

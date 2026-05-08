@@ -5,14 +5,14 @@
 # Tasks
 
 
-1. If selection window already open in puzzle solution, don't open another one
-1. Add images to web browser
-1. Show which files are encrypted in file explorer
-
-1. Improve minesweeper look
-
+1. Rewrite first puzzle to start monolith story
+    1. Make text more concise
+1. Player can copy paste from the text areas
 1. File search feature
-1. Make all exit button the same color on windows
-1. Add flags to minesweeper
-1. Show garbage for encrypted files
-
+1. Minesweeper
+    1. Better victory screen
+    1. Flags
+    1. Improve window look
+1. Better text + markdown support
+1. Drag and Drop for info
+    1. Can drag and drop into notepad

@@ -28,6 +28,8 @@ public class Minefield : UIPanel
     };
     private float _splashTimer = 0;
     private float _splashDuration = 0.8f;
+    private float _timer;
+    private bool _hasGameStarted = false;
 
     public Minefield(Rectangle bounds)
     {
@@ -48,6 +50,18 @@ public class Minefield : UIPanel
 
     public override void Update(float deltaTime)
     {
+        if(!_hasGameStarted && _inputSequence.Count > 0)
+        {
+            _hasGameStarted = true;
+            _timer = 0;
+        }
+
+        if(_hasGameStarted)
+        {
+            _timer += deltaTime;
+            _statusLabel.Text = $"Time: {_timer.ToString("0.0")}s";
+        }
+
         if(_splashImage.IsVisible())
         {
             _splashTimer += deltaTime;
@@ -92,14 +106,22 @@ public class Minefield : UIPanel
     {
         _rootWindow = new Window(_bounds, "Minefield", Core.DefaultFont);
         _rootWindow.SetColors(ColorPalette.DarkCream, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen);
+        _rootWindow.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
         TaskbarRegistry.Register("Minefield", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/minefield_icon"), _rootWindow);
-        
-        _statusLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, _rootWindow.GetContentBounds().Y + 10, _rootWindow.GetContentBounds().Width - 20, 20), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
+
+        var cb = _rootWindow.GetContentBounds();
+        int headerHeight = 70;
+
+        var headerPanel = new Label(new Rectangle(cb.X, cb.Y, cb.Width, headerHeight), "", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Green);
+        _rootWindow.AddChild(headerPanel);
+
+        _statusLabel = new Label(new Rectangle(cb.X + 10, cb.Y, cb.Width - 110, headerHeight), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
         _rootWindow.AddChild(_statusLabel);
-        var resetButton = new Button(new Rectangle(_rootWindow.GetContentBounds().Right - 90, _rootWindow.GetContentBounds().Y + 10, 80, 30), "Reset", Core.DefaultFont,ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, () => CreateGame());
+
+        var resetButton = new Button(new Rectangle(cb.Right - 90, cb.Y + (headerHeight - 30) / 2, 80, 30), "Reset", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, CreateGame);
         _rootWindow.AddChild(resetButton);
 
-        var gridBounds = new Rectangle(_rootWindow.GetContentBounds().X + 10, _rootWindow.GetContentBounds().Y + 100, _rootWindow.GetContentBounds().Width - 20, _rootWindow.GetContentBounds().Height - 130);
+        var gridBounds = new Rectangle(cb.X + 10, cb.Y + headerHeight + 5, cb.Width - 20, cb.Height - headerHeight - 30);
         var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
 
         var cellWidth = gridBounds.Width / _cellsWide;
@@ -131,11 +153,13 @@ public class Minefield : UIPanel
 
     private void CreateGame()
     {
+        _timer = 0;
         _inputSequence.Clear();
         foreach(var cell in _cells.Values)
         {
             cell.HasMine = false;
             cell.IsRevealed = false;
+            cell.IsFlagged = false;
             cell.NeighborCount = 0;
         }
 
@@ -211,7 +235,8 @@ public class Minefield : UIPanel
 
         _inputSequence.Clear();
         AudioAtlas.Confirmation_003.Play();
-        _statusLabel.Text = "Congratulations! You've cleared the minefield!";
+        _statusLabel.Text = "Cleared! Time: " + _timer.ToString("0.0") + "s";
+        _hasGameStarted = false;
     }
 
     private void dfs((int,int) startCell)
@@ -259,9 +284,13 @@ public class Minefield : UIPanel
             cell.IsRevealed = true;
         }
 
+
         AudioAtlas.Error_004.Play();
         _inputSequence.Clear();
 
-        _statusLabel.Text = "Game Over! Click Reset to try again.";
+        _hasGameStarted = false;
+        _timer = 0;
+
+        _statusLabel.Text = "Game Over!";
     }
 }

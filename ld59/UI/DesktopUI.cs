@@ -83,7 +83,7 @@ public class DesktopUI : UIPanel
         _taskbar.AddChild(_taskbarLayout);
         Core.UISystem.AddElement(_taskbar);
 
-        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 250, taskBarArea.Top, 249, 100)) { Order = 0.9f };
+        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 275, taskBarArea.Top, 275, 100)) { Order = 0.9f };
         Core.UISystem.AddElement(_clockUI);
 
         TaskbarRegistry.OnChanged += RebuildTaskbarApps;

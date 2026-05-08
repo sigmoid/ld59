@@ -73,7 +73,10 @@ public class Game1 : Core
         var mouse = Mouse.GetState();
 
         if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released)
-            AudioAtlas.PlayRandomClick();
+            AudioAtlas.Mouse_Click_Down.Play();
+        
+        if(mouse.LeftButton == ButtonState.Released && _prevMouse.LeftButton == ButtonState.Pressed)
+            AudioAtlas.Mouse_Click_Up.Play();
 
         _prevKeyboard = keyboard;
         _prevMouse = mouse;

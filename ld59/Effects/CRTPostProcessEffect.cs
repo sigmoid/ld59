@@ -5,14 +5,20 @@ using Quartz.Graphics;
 
 public class CRTPostProcessEffect : PostProcessEffect
 {
-    private static readonly Vector2 Curvature = new(8f, 5.5f);
+    private static readonly Vector2 Curvature = new(13f, 6f);
+    private const float ScanBarPeriod = 25f; // seconds per full scroll
+    private float _scanBarPosition = 0f;
 
     public override void Apply(RenderTarget2D source, RenderTarget2D destination, SpriteBatch spriteBatch, GameTime gameTime)
     {
+        _scanBarPosition += (float)gameTime.ElapsedGameTime.TotalSeconds / ScanBarPeriod;
+        if (_scanBarPosition > 1f) _scanBarPosition -= 1f;
+
         Shader.Parameters["curvature"].SetValue(Curvature);
         Shader.Parameters["screenResolution"].SetValue(1080f);
         Shader.Parameters["roundness"].SetValue(25f);
         Shader.Parameters["vignetteOpacity"].SetValue(0.25f);
+        Shader.Parameters["scanBarPosition"].SetValue(_scanBarPosition);
         spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointClamp, null, null, Shader);
         spriteBatch.Draw(source, Vector2.Zero, Color.White);
         spriteBatch.End();

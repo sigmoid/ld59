@@ -30,6 +30,17 @@ public class BrowserTextArea : UIElement
     private bool _hitsDirty = true;
     private int _hoveredHitIndex = -1;
 
+    private Dictionary<int, (Texture2D Tex, int DisplayWidth, int DisplayHeight)> _imageRows = new();
+
+    private class AnimRowState
+    {
+        public SpriteSheet Sheet;
+        public int DisplayWidth, DisplayHeight;
+        public int CurrentFrame;
+        public float Elapsed;
+    }
+    private Dictionary<int, AnimRowState> _animRows = new();
+
     private Slider _scrollbar;
     private bool _scrollbarVisible;
     private bool _syncingScrollbar;
@@ -93,10 +104,31 @@ public class BrowserTextArea : UIElement
         RebuildWrappedLines();
     }
 
+    private bool TryParseImageLine(string line, out string path)
+    {
+        path = null;
+        var trimmed = line.Trim();
+        if (!trimmed.StartsWith("![")) return false;
+        var parenOpen = trimmed.IndexOf("](");
+        if (parenOpen < 0) return false;
+        var parenClose = trimmed.IndexOf(')', parenOpen + 2);
+        if (parenClose < 0) return false;
+        path = trimmed.Substring(parenOpen + 2, parenClose - parenOpen - 2).Trim();
+        return !string.IsNullOrEmpty(path);
+    }
+
+    private Texture2D LoadImage(string path)
+    {
+        try { return Core.Content.Load<Texture2D>(path); }
+        catch { return null; }
+    }
+
     private void RebuildWrappedLines()
     {
         _wrappedLines.Clear();
         _wrapMeta.Clear();
+        _imageRows.Clear();
+        _animRows.Clear();
 
         var tb = GetTextBounds();
         float maxW = tb.Width;
@@ -110,6 +142,43 @@ public class BrowserTextArea : UIElement
                 _wrapMeta.Add((i, 0));
                 continue;
             }
+            if (TryParseImageLine(line, out var imgPath))
+            {
+                if (SpriteSheetLoader.IsSpriteSheetPath(imgPath))
+                {
+                    var sheet = SpriteSheetLoader.Load(imgPath);
+                    if (sheet != null)
+                    {
+                        int dispWidth = sheet.FrameWidth;
+                        int dispHeight = sheet.FrameHeight;
+                        int rowCount = Math.Max(1, (dispHeight + (int)_lineHeight - 1) / (int)_lineHeight);
+                        int firstIdx = _wrappedLines.Count;
+                        _animRows[firstIdx] = new AnimRowState { Sheet = sheet, DisplayWidth = dispWidth, DisplayHeight = dispHeight };
+                        for (int r = 0; r < rowCount; r++)
+                        {
+                            _wrappedLines.Add(string.Empty);
+                            _wrapMeta.Add((i, 0));
+                        }
+                    }
+                }
+                else
+                {
+                    var tex = LoadImage(imgPath);
+                    if (tex != null && tex.Width > 0)
+                    {
+                        int rowCount = Math.Max(1, (tex.Height + (int)_lineHeight - 1) / (int)_lineHeight);
+                        int firstIdx = _wrappedLines.Count;
+                        _imageRows[firstIdx] = (tex, tex.Width, tex.Height);
+                        for (int r = 0; r < rowCount; r++)
+                        {
+                            _wrappedLines.Add(string.Empty);
+                            _wrapMeta.Add((i, 0));
+                        }
+                    }
+                }
+                continue;
+            }
+
             var segs = WrapLine(line, maxW);
             int charPos = 0;
             foreach (var seg in segs)
@@ -277,6 +346,17 @@ public class BrowserTextArea : UIElement
             }
         }
 
+        foreach (var anim in _animRows.Values)
+        {
+            anim.Elapsed += deltaTime;
+            float frameTime = 1f / anim.Sheet.Fps;
+            while (anim.Elapsed >= frameTime)
+            {
+                anim.CurrentFrame = (anim.CurrentFrame + 1) % anim.Sheet.TotalFrames;
+                anim.Elapsed -= frameTime;
+            }
+        }
+
         if (_scrollbarVisible && IsParentWindowFocused()) _scrollbar.Update(deltaTime);
 
         if (_hitsDirty) RebuildHitAreas();
@@ -317,12 +397,31 @@ public class BrowserTextArea : UIElement
         for (int i = 0; i < _wrappedLines.Count; i++)
         {
             int di = i - _scrollOffset;
+
+            if (_imageRows.TryGetValue(i, out var imgData))
+            {
+                float imgY = tb.Y + di * _lineHeight;
+                if ((int)imgY + imgData.DisplayHeight > tb.Y && (int)imgY < tb.Bottom)
+                    spriteBatch.Draw(imgData.Tex, new Rectangle(tb.X, (int)imgY, imgData.DisplayWidth, imgData.DisplayHeight), Color.White);
+                continue;
+            }
+
+            if (_animRows.TryGetValue(i, out var animData))
+            {
+                float imgY = tb.Y + di * _lineHeight;
+                if ((int)imgY + animData.DisplayHeight > tb.Y && (int)imgY < tb.Bottom)
+                    spriteBatch.Draw(animData.Sheet.Texture, new Rectangle(tb.X, (int)imgY, animData.DisplayWidth, animData.DisplayHeight), animData.Sheet.GetFrameRect(animData.CurrentFrame), Color.White);
+                continue;
+            }
+
             if (di < 0) continue;
             if (di >= _maxVisible) break;
 
-            string line = _wrappedLines[i];
-            if (!string.IsNullOrEmpty(line))
-                DrawLine(spriteBatch, line, tb.X, tb.Y + di * _lineHeight, i);
+            {
+                string line = _wrappedLines[i];
+                if (!string.IsNullOrEmpty(line))
+                    DrawLine(spriteBatch, line, tb.X, tb.Y + di * _lineHeight, i);
+            }
         }
 
         spriteBatch.End();

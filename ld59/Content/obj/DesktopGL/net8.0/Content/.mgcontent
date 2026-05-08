@@ -22,6 +22,8 @@
     <File>F:/Dev/LD59/ld59/Content/audio/glass_005.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/glass_006.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/maximize_003.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/mouse_click_down.wav</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/mouse_click_up.wav</File>
     <File>F:/Dev/LD59/ld59/Content/audio/open_001.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/scroll_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/BIOS.spritefont</File>
@@ -29,27 +31,39 @@
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Small.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/bmtheader.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/browser_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/decryptor_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/email_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_explorer.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_folder.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/flag.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/image_viewer.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/key_file_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/key_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/lithnet_header.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/mine_map.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/minefield_cell.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/minefield_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/minefield_mine.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/puzzle_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/scramlogo.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/settings_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/sklelatal.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/chromatic_aberration.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

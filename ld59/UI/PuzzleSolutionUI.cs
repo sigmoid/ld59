@@ -1,70 +1,55 @@
-
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using ld59;
-using Microsoft.VisualBasic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
-
-public class PuzzleSolutionPiece
-{
-    public string ProblemDescription {get;set;}
-    public string PlayerSolution {get;set;}
-    public string CorrectSolution {get;set;}
-    public string[] AcceptableSolutions {get;set;}
-    public InfoType RelatedInfoType {get;set;}
-}
 
 public class PuzzleSolutionUI : UIPanel
 {
     private Rectangle _bounds;
     private Window _rootContainer;
-    private Label _solutionLabel;
+    private RichTextArea _richText;
+    private Label _statusLabel;
     private InfoSelectionWindow _infoSelectionWindow;
-    private Label _resultLabel;
-    private LayoutGroup _problemsLayoutGroup;
     private static int _currentPuzzleIndex = 0;
-
-    private List<PuzzleSolutionPiece> _solutionPieces = new List<PuzzleSolutionPiece>()
-    {
-        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Eutropia", PlayerSolution = "", CorrectSolution = "jack pilgrim", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of The Anastasia Corporation", PlayerSolution = "", CorrectSolution = "lance nightingale", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Lithos Software", PlayerSolution = "", CorrectSolution = "ed sled", RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Who is the CEO of Scram! Games", PlayerSolution = "", CorrectSolution = "rose cantrell", RelatedInfoType = InfoType.Name},
-    };
 
     private static readonly string[] _workerNames = new[] { "Miguel Angel Soto", "Sebastian Araya" };
 
-    private List<PuzzleSolutionPiece> _solutionPieces2 = new List<PuzzleSolutionPiece>()
+    private static readonly (string Template, List<RichTextArea.Slot> Slots)[] _puzzles = new (string, List<RichTextArea.Slot>)[]
     {
-        new PuzzleSolutionPiece() { ProblemDescription = "Name of worker who died", PlayerSolution = "", AcceptableSolutions = _workerNames, RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Name of worker who died", PlayerSolution = "", AcceptableSolutions = _workerNames, RelatedInfoType = InfoType.Name},
-        new PuzzleSolutionPiece() { ProblemDescription = "Cause of death", PlayerSolution = "", CorrectSolution = "suffocation", RelatedInfoType = InfoType.CauseOfDeath},
+        (
+            "Who is the CEO of Eutropia: {0}\n\nWho is the CEO of The Anastasia Corporation: {1}\n\nWho is the CEO of LithOS Software: {2}\n\nWho is the CEO of Scram! Games: {3}",
+            new List<RichTextArea.Slot>
+            {
+                new() { InfoType = InfoType.Name, CorrectSolution = "jack pilgrim" },
+                new() { InfoType = InfoType.Name, CorrectSolution = "lance nightingale" },
+                new() { InfoType = InfoType.Name, CorrectSolution = "ed sled" },
+                new() { InfoType = InfoType.Name, CorrectSolution = "rose cantrell" },
+            }
+        ),
+        (
+            "Project {0} is an Anastasia Corporation project led by {1} to mine {2} in {3}.\nWorkers used {4} to mine, but an accident caused {5} and {6} to die by {7}",
+            new List<RichTextArea.Slot>
+            {
+                new() { InfoType = InfoType.Codename, CorrectSolution = "orpheus"},
+                new() { InfoType = InfoType.Name, CorrectSolution = "yarden imam"},
+                new() { InfoType = InfoType.Resource, CorrectSolution = "lithium"},
+                new() { InfoType = InfoType.Location, CorrectSolution = "chile"},
+                new() { InfoType = InfoType.Tool, CorrectSolution = ""},
+                new() { InfoType = InfoType.Name, CorrectSolution = _workerNames[0]},
+                new() { InfoType = InfoType.Name, CorrectSolution = _workerNames[1]},
+                new() { InfoType = InfoType.CauseOfDeath, CorrectSolution = "atomization"},
+                
+            }
+        ),
     };
-
-    private List<PuzzleSolutionPiece> _solutionPieces3 = new List<PuzzleSolutionPiece>()
-    {
-        new PuzzleSolutionPiece() { ProblemDescription = "What is the name of the assassin who killed Rose Cantrell", PlayerSolution = "", CorrectSolution = "mike poisson", RelatedInfoType = InfoType.Name},
-    };
-
-    private List<List<PuzzleSolutionPiece>> _puzzleSequence = new List<List<PuzzleSolutionPiece>>();
-
-    private List<PuzzleSolutionPiece> _currentSolutionPieces {get {return _puzzleSequence[_currentPuzzleIndex];}}
-
-    private List<Button> _solutionButtons = new List<Button>();
 
     public PuzzleSolutionUI(Rectangle bounds, string solutionText) : base()
     {
         _bounds = bounds;
-
-        _puzzleSequence.Add(_solutionPieces);
-        _puzzleSequence.Add(_solutionPieces2);
-        _puzzleSequence.Add(_solutionPieces3);
-        
-        CreateUI(solutionText);
+        CreateUI();
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -73,89 +58,74 @@ public class PuzzleSolutionUI : UIPanel
         _bounds = bounds;
     }
 
-    public override Rectangle GetBoundingBox()
-    {
-        return _bounds;
-    }
+    public override Rectangle GetBoundingBox() => _bounds;
 
-    private void CreateUI(string solutionText)
+    private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, "Looking Glass", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer = new Window(_bounds, "Looking Glass", Core.DefaultFont,
+            ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
         Core.UISystem.AddElement(_rootContainer);
-        TaskbarRegistry.Register("Looking Glass", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/puzzle_icon"), _rootContainer);
+        TaskbarRegistry.Register("Looking Glass", Core.Content.Load<Texture2D>("images/puzzle_icon"), _rootContainer);
 
-        var contentBounds = _rootContainer.GetContentBounds();
+        var cb = _rootContainer.GetContentBounds();
+        int statusH = 36;
 
-        _problemsLayoutGroup = new VerticalLayoutGroup(new Rectangle(contentBounds.X + 20, contentBounds.Y + 10, contentBounds.Width - 40, contentBounds.Height - 100), 10);
+        _richText = new RichTextArea(
+            new Rectangle(cb.X + 10, cb.Y + 10, cb.Width - 20, cb.Height - statusH - 30),
+            Core.DefaultFont,
+            ColorPalette.ActualWhite, ColorPalette.Black);
+        _richText.OnSlotClicked = (idx, infoType, onSelected) => OpenInfoSelection(infoType, onSelected);
+        _rootContainer.AddChild(_richText);
 
-        PopulateCurrentMystery();
+        _statusLabel = new Label(
+            new Rectangle(cb.X + 10, cb.Bottom - statusH - 10, cb.Width - 20, statusH),
+            "", Core.DefaultFont, ColorPalette.Black, Color.Transparent);
+        _rootContainer.AddChild(_statusLabel);
 
-        _rootContainer.AddChild(_problemsLayoutGroup);
-
-        _solutionLabel = new Label(new Rectangle(contentBounds.X + 20, contentBounds.Bottom - 80, contentBounds.Width - 40, 30), solutionText, Core.DefaultFont, ColorPalette.Black);
-        _rootContainer.AddChild(_solutionLabel);
+        LoadCurrentPuzzle();
     }
 
-    private void PopulateCurrentMystery()
+    private void LoadCurrentPuzzle()
     {
-        _problemsLayoutGroup.ClearChildren();
+        if (_currentPuzzleIndex >= _puzzles.Length) return;
+        var (template, slots) = _puzzles[_currentPuzzleIndex];
+        foreach (var s in slots) s.Value = null;
+        _richText.SetContent(template, slots);
+        _statusLabel.Text = "";
+    }
 
-        foreach(var piece in _currentSolutionPieces)
+    private void OpenInfoSelection(InfoType infoType, Action<string> onValueSelected)
+    {
+        if (_infoSelectionWindow != null) return;
+        var bounds = new Rectangle(_bounds.X + 50, _bounds.Y + 50, _bounds.Width - 100, _bounds.Height - 100);
+        _infoSelectionWindow = new InfoSelectionWindow(bounds, infoType, selectedInfo =>
         {
-            var horizontalGroup = new HorizontalLayoutGroup(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, _problemsLayoutGroup.GetBoundingBox().Width, 150), 5);
-            var pieceLabel = new TextArea(new Rectangle(_problemsLayoutGroup.GetBoundingBox().X, _problemsLayoutGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f), 150), Core.DefaultFont, true, true, Color.White, Color.Black);
-            pieceLabel.Text = piece.ProblemDescription + "\n";
-            Button problemButton = null;
-            problemButton = new Button(new Rectangle(horizontalGroup.GetBoundingBox().X + (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) + 5, horizontalGroup.GetBoundingBox().Y, (int)(_problemsLayoutGroup.GetBoundingBox().Width * 0.5f) - 5, 60), "<SELECT>", Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => OpenInfoSelection(piece.RelatedInfoType, (info) => SelectInfoForButton(info, problemButton, piece)), ColorPalette.Green);
-            _solutionButtons.Add(problemButton);
-            horizontalGroup.AddChild(pieceLabel);
-            horizontalGroup.AddChild(problemButton);
-            _problemsLayoutGroup.AddChild(horizontalGroup);
-        }
-    }
-
-    private void OpenInfoSelection(InfoType infoType, Action<GameInfo> onInfoSelected = null)
-    {
-        _infoSelectionWindow = new InfoSelectionWindow(new Rectangle(_bounds.X + 50, _bounds.Y + 50, _bounds.Width - 100, _bounds.Height - 100), infoType, (selectedInfo) => {
             if (selectedInfo != null)
-            {
-                onInfoSelected?.Invoke(selectedInfo);
-            }
+                onValueSelected(selectedInfo.Value);
             _infoSelectionWindow.CloseWindow();
             Core.UISystem.RemoveElement(_infoSelectionWindow);
+            _infoSelectionWindow = null;
+            TestSolution();
         });
         Core.UISystem.AddElement(_infoSelectionWindow);
     }
 
-    private void SelectInfoForButton(GameInfo info, Button button, PuzzleSolutionPiece piece)
+    private bool IsSlotCorrect(RichTextArea.Slot slot, List<RichTextArea.Slot> allSlots)
     {
-        piece.PlayerSolution = info.Value;
-        button.SetText(info.Value);
-        TestSolution();
-    }
-    
-    private void ShowSuccess()
-    {
-        AudioAtlas.Confirmation_001.Play();
-        var modal = new NotificationPopup(new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 250), "Solution Correct: A new mission has been started.\n");
-        DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
-        Core.UISystem.AddElement(modal);
-    }
+        if (string.IsNullOrEmpty(slot.Value)) return false;
+        var playerVal = slot.Value.Trim().ToLower();
 
-    private bool IsPieceCorrect(PuzzleSolutionPiece piece)
-    {
-        var playerVal = piece.PlayerSolution.Trim().ToLower();
-        if (piece.AcceptableSolutions == null || piece.AcceptableSolutions.Length == 0)
-            return playerVal == piece.CorrectSolution.Trim().ToLower();
+        if (slot.AcceptableSolutions == null || slot.AcceptableSolutions.Length == 0)
+            return playerVal == slot.CorrectSolution?.Trim().ToLower();
 
-        if (!System.Array.Exists(piece.AcceptableSolutions, s => s.Trim().ToLower() == playerVal))
+        if (!System.Array.Exists(slot.AcceptableSolutions, s => s.Trim().ToLower() == playerVal))
             return false;
 
-        // Reject duplicate answers among pieces sharing the same AcceptableSolutions pool
-        foreach (var sibling in _currentSolutionPieces)
+        foreach (var sibling in allSlots)
         {
-            if (sibling != piece && sibling.AcceptableSolutions == piece.AcceptableSolutions
-                && sibling.PlayerSolution.Trim().ToLower() == playerVal)
+            if (sibling != slot && sibling.AcceptableSolutions == slot.AcceptableSolutions
+                && sibling.Value?.Trim().ToLower() == playerVal)
                 return false;
         }
         return true;
@@ -163,58 +133,57 @@ public class PuzzleSolutionUI : UIPanel
 
     private void TestSolution()
     {
-        int correctCount = 0;
-        int completeCount = 0;
-        for(int i = 0; i < _currentSolutionPieces.Count; i++)
+        var slots = _richText.GetSlots();
+        int filled = 0, correct = 0;
+        foreach (var slot in slots)
         {
-            var piece = _currentSolutionPieces[i];
-            if(IsPieceCorrect(piece))
-            {
-                correctCount++;
-            }
-            if(!string.IsNullOrEmpty(piece.PlayerSolution))
-            {
-                completeCount++;
-            }
+            if (!string.IsNullOrEmpty(slot.Value)) filled++;
+            if (IsSlotCorrect(slot, slots)) correct++;
         }
 
-        if(completeCount < _currentSolutionPieces.Count)
+        if (filled < slots.Count)
         {
-            _solutionLabel.Text = $"Solution incomplete.";
-            _solutionLabel.TextColor = ColorPalette.Red;
+            _statusLabel.Text = "Solution incomplete.";
+            _statusLabel.TextColor = ColorPalette.Red;
+            return;
         }
-        else if(correctCount == _currentSolutionPieces.Count)
+
+        if (correct == slots.Count)
         {
             ShowSuccess();
             int completedIndex = _currentPuzzleIndex;
             _currentPuzzleIndex++;
-            if(_currentPuzzleIndex < _puzzleSequence.Count)
-            {
-                PopulateCurrentMystery();
-            }
+            if (_currentPuzzleIndex < _puzzles.Length)
+                LoadCurrentPuzzle();
 
             if (completedIndex == 0)
-            {
-                var emailManager = Core.CurrentScene.GetManager<EmailDataManager>();
-                emailManager?.DeliverEmail("case2_start.eml");
-            }
+                Core.CurrentScene.GetManager<EmailDataManager>()?.DeliverEmail("case2_start.eml");
             else
-            {
                 Game1.Instance.EndGame();
-            }
-        
-            _solutionLabel.Text = "";
-            _solutionLabel.TextColor = ColorPalette.LightGreen;
+
+            _statusLabel.Text = "";
+            return;
         }
-        else if(correctCount == _currentSolutionPieces.Count - 1)
+
+        if (correct == slots.Count - 1)
         {
-            _solutionLabel.Text = $"One piece of information is incorrect.";
-            _solutionLabel.TextColor = ColorPalette.Orange;
+            _statusLabel.Text = "One piece of information is incorrect.";
+            _statusLabel.TextColor = ColorPalette.Orange;
         }
         else
         {
-            _solutionLabel.Text = $"Solution is not correct.";
-            _solutionLabel.TextColor = ColorPalette.Red;
+            _statusLabel.Text = "Solution is not correct.";
+            _statusLabel.TextColor = ColorPalette.Red;
         }
+    }
+
+    private void ShowSuccess()
+    {
+        AudioAtlas.Confirmation_001.Play();
+        var modal = new NotificationPopup(
+            new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 250),
+            "Solution Correct: A new mission has been started.\n");
+        DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
+        Core.UISystem.AddElement(modal);
     }
 }

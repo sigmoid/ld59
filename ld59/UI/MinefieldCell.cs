@@ -11,21 +11,25 @@ public class MinefieldCell : UIElement, IHoverableUIElement
 {
     public bool IsRevealed { get; set; } = false;
     public bool HasMine { get; set; } = false;
+    public bool IsFlagged { get; set; } = false;
     public int NeighborCount { get; set; } = 0;
 
     public Action<(int,int)> OnClick {get;set;}
     private Rectangle _bounds;
     private static Texture2D _mineTexture;
     private static Texture2D _cellTexture;
+    private static Texture2D _flagTexture;
     private (int,int) _position;
     private bool _isHovered = false;
     private bool _isFocused = false;
     private bool _lastLeftClick = true;
+    private bool _lastRightClick = true;
 
     public MinefieldCell(Rectangle bounds, (int,int) position)
     {
         _cellTexture = Core.Content.Load<Texture2D>("images/minefield_cell");
         _mineTexture = Core.Content.Load<Texture2D>("images/minefield_mine");
+        _flagTexture = Core.Content.Load<Texture2D>("images/flag");
         _bounds = bounds;
         _position = position;   
     }
@@ -47,6 +51,11 @@ public class MinefieldCell : UIElement, IHoverableUIElement
 
         _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && _isFocused;
 
+        if(_isHovered && mouseState.RightButton == ButtonState.Pressed && !_lastRightClick)
+        {
+            IsFlagged = !IsFlagged;
+        }
+
         if(_isHovered && mouseState.LeftButton == ButtonState.Pressed && !_lastLeftClick)
         {
             OnClick?.Invoke(_position);
@@ -54,6 +63,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
         }
 
         _lastLeftClick = mouseState.LeftButton == ButtonState.Pressed;
+        _lastRightClick = mouseState.RightButton == ButtonState.Pressed;
 
         base.Update(deltaTime);
     }
@@ -65,6 +75,12 @@ public class MinefieldCell : UIElement, IHoverableUIElement
         {
             var color = (_isHovered ? Color.LightGray : Color.White);
             spriteBatch.Draw(_cellTexture, _bounds, color);
+
+            if(IsFlagged)
+            {
+                var flagRect = new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, _bounds.Height);
+                spriteBatch.Draw(_flagTexture, flagRect, Color.White);
+            }
         }
         else if (HasMine)
         {

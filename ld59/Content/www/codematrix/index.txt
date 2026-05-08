@@ -9,3 +9,7 @@
 Featured Story:
 
 [Who is Jack Pilgrim?](code_matrix_12_26.txt)
+
+Image of the day:
+
+![alt](images/skeltal.sprite)
