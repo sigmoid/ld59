@@ -10,7 +10,7 @@ public class ChromaticAberrationPostProcessEffect : PostProcessEffect
     public override void Initialize(GraphicsDevice graphicsDevice)
     {
         Shader = Core.Content.Load<Effect>("shaders/chromatic_aberration");
-        Priority = 90;
+        Priority = 10;
     }
 
     public override void Apply(RenderTarget2D source, RenderTarget2D destination, SpriteBatch spriteBatch, GameTime gameTime)

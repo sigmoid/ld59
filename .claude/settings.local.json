@@ -4,7 +4,16 @@
       "Bash(python3 -c ' *)",
       "Bash(xxd \"f:/Dev/LD59/ld59/bin/Debug/net8.0/Content/files/root/batch_03/sphynx.enc\")",
       "Bash(xxd \"f:/Dev/LD59/ld59/bin/Debug/net8.0/Content/files/root/batch_03/eagle.enc\")",
-      "Bash(xxd \"f:/Dev/LD59/ld59/Content/files/root/batch_04/nightshade.enc\")"
+      "Bash(xxd \"f:/Dev/LD59/ld59/Content/files/root/batch_04/nightshade.enc\")",
+      "Bash(awk '{ if \\(length > max\\) max = length } END { print max }' \"f:/Dev/LD59/ld59/Content/splash_text.txt\")",
+      "Bash(python3 -)",
+      "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\" -Recurse -Directory -Filter \"*uartz*\")",
+      "Bash(Select-Object -First 20)",
+      "Bash(xargs grep -l \"Draw.*Rounded\\\\|RoundedRectangle\")",
+      "Bash(xargs grep -l \"public.*Draw\\\\|static.*Draw\")",
+      "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\\\\quartz\" -Recurse -Filter \"*PostProc*\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem \"f:\\\\Dev\\\\LD59\\\\quartz\\\\UI\" -Filter \"*.cs\")",
+      "Bash(Select-Object Name)"
     ]
   }
 }

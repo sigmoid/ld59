@@ -35,9 +35,9 @@ public class BrowserUI : UIPanel
     private void CreateUI()
     {
         _rootContainer = new Window(_bounds, "LithNET", Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+            ColorPalette.ActualWhite, ColorPalette.Black,
+            ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("LithNET", Core.Content.Load<Texture2D>("images/browser_icon"), _rootContainer);
 

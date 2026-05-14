@@ -61,8 +61,9 @@ public class DesktopUI : UIPanel
     {
         _toastManager = new ToastManager(Core.UISystem, Core.DefaultFont, new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, _bounds.Height));
 
-        var taskBarArea = new Rectangle(0, _bounds.Height - 100, _bounds.Width, 100);
-        _taskbar = new Canvas(taskBarArea, ColorPalette.Green) { Order = 0.9f };
+        var taskParRoom = 100;
+        var taskBarArea = new Rectangle(taskParRoom, _bounds.Height - 120, _bounds.Width - taskParRoom * 2, 100);
+        _taskbar = new Canvas(taskBarArea, new Color(57,57,57,255), cornerRadius: 15) { Order = 0.9f };
 
         var taskbarLayoutPadding = 10;
         var taskbarLayoutArea = new Rectangle(taskBarArea.X + taskbarLayoutPadding, taskBarArea.Y + taskbarLayoutPadding, taskBarArea.Width - (taskbarLayoutPadding * 2), taskBarArea.Height - (taskbarLayoutPadding * 2));
@@ -83,7 +84,7 @@ public class DesktopUI : UIPanel
         _taskbar.AddChild(_taskbarLayout);
         Core.UISystem.AddElement(_taskbar);
 
-        _clockUI = new ClockUI(new Rectangle(_bounds.Width - 275, taskBarArea.Top, 275, 100)) { Order = 0.9f };
+        _clockUI = new ClockUI(new Rectangle(taskbarLayoutArea.Right - 275, taskBarArea.Top, 275, 100)) { Order = 0.9f };
         Core.UISystem.AddElement(_clockUI);
 
         TaskbarRegistry.OnChanged += RebuildTaskbarApps;
@@ -123,7 +124,7 @@ public class DesktopUI : UIPanel
     {
         if (_startMenuUI == null)
         {
-            _startMenuUI = new StartMenuUI(new Rectangle(5, _taskbar.GetBoundingBox().Top - 700, 400, 700));
+            _startMenuUI = new StartMenuUI(new Rectangle(_taskbar.GetBoundingBox().X  + 5, _taskbar.GetBoundingBox().Top - 700, 400, 700));
             _startMenuUI.OnClose += () => _startMenuUI = null;
             AddChild(_startMenuUI);
         }

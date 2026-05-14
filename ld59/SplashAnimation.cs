@@ -15,11 +15,16 @@ public class SplashAnimation : UIPanel
     private float _postRevealTimer = 0f;
     private bool _done = false;
 
-    private const float LineInterval = 0.095f;
+    private const float LineInterval = 0.035f;
     private const float PostRevealDelay = 1.8f;
 
     private float _cursorBlinkTimer = 0f;
     private bool _cursorVisible = true;
+
+    private float _brightness = 0f;
+    private float _totalTime = 0f;
+    private const float IntroDelay = 0.4f;
+    private const float FadeDuration = 3.2f;
 
     private SpriteFont _font;
 
@@ -40,6 +45,7 @@ public class SplashAnimation : UIPanel
         }
 
         _font = Core.Content.Load<SpriteFont>("fonts/BIOS");
+        AudioAtlas.Degauss.Play();
     }
 
     public override void Update(float deltaTime)
@@ -50,13 +56,20 @@ public class SplashAnimation : UIPanel
             return;
         }
 
+        _totalTime += deltaTime;
+        float t = MathHelper.Clamp((_totalTime - IntroDelay) / FadeDuration, 0f, 1f);
+        _brightness = Ease(t);
+
         if (_revealedLines < _lines.Length)
         {
-            _lineTimer += deltaTime;
-            while (_lineTimer >= LineInterval && _revealedLines < _lines.Length)
+            if (_totalTime >= IntroDelay)
             {
-                _revealedLines++;
-                _lineTimer -= LineInterval;
+                _lineTimer += deltaTime;
+                while (_lineTimer >= LineInterval && _revealedLines < _lines.Length)
+                {
+                    _revealedLines++;
+                    _lineTimer -= LineInterval;
+                }
             }
 
             _cursorBlinkTimer += deltaTime;
@@ -85,10 +98,10 @@ public class SplashAnimation : UIPanel
         base.Draw(spriteBatch);
 
         float lineHeight = _font.MeasureString("A").Y + 1;
-        float x = 30f;
-        float startY = 20f;
+        float x = 0f;
+        float startY = 0f;
         float layerDepth = GetActualOrder() + 0.01f;
-        Color textColor = ColorPalette.LightGreen;
+        Color textColor = ColorPalette.LightGreen * _brightness;
 
         for (int i = 0; i < _revealedLines && i < _lines.Length; i++)
         {
@@ -110,4 +123,13 @@ public class SplashAnimation : UIPanel
     }
 
     public override Rectangle GetBoundingBox() => _bounds;
+
+    private float Ease(float t)
+    {
+        float min_t = 0.5f;
+
+        float v = 1.0f - MathF.Sqrt(1 - MathF.Pow(t, 2));
+
+        return min_t + (1 - min_t) * v;
+    }
 }

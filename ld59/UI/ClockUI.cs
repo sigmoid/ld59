@@ -34,7 +34,7 @@ public class ClockUI : UIElement
 
     public override void Update(float deltaTime)
     {
-        _clockLabel.Text = DateTime.Now.ToString("hh:mm:ss tt");
+        _clockLabel.Text = DateTime.Now.ToString("hh:mm tt");
         _dateLabel.Text = DateTime.Now.ToString("MMMM dd, yyyy");
 
         _backgroundCanvas.Update(deltaTime);
@@ -50,7 +50,7 @@ public class ClockUI : UIElement
 
     private void CreateUI()
     {
-        var backgroundColor = Color.Black * 0.2f;
+        var backgroundColor = Color.Black * 0.0f;
         _backgroundCanvas = new Canvas(_bounds, backgroundColor);
 
         var centerY = _bounds.Y + (_bounds.Height / 2);
@@ -61,8 +61,8 @@ public class ClockUI : UIElement
         var iconElement = new ImageButton(new Rectangle(x - 16, centerY - (iconSize / 2), iconSize, iconSize), settingsIcon, () => OpenSettings());
         _backgroundCanvas.AddChild(iconElement);
 
-        _clockLabel = new Label(new Rectangle(x + iconSize + 10, centerY - 30, _bounds.Width - iconSize - 10, 30), DateTime.Now.ToString("hh:mm:ss tt"), Core.DefaultFont, ColorPalette.ActualWhite);
-        _dateLabel = new Label(new Rectangle(x + iconSize + 10, centerY, _bounds.Width - iconSize - 10, 30), DateTime.Now.ToString("MMMM dd, yyyy"), Core.DefaultFont, ColorPalette.ActualWhite);
+        _clockLabel = new Label(new Rectangle(x + iconSize, centerY - 30, _bounds.Width - iconSize - 30, 30), DateTime.Now.ToString("hh:mm tt"), Core.DefaultFont, ColorPalette.ActualWhite, null, LabelAlignment.Center);
+        _dateLabel = new Label(new Rectangle(x + iconSize , centerY, _bounds.Width - iconSize - 30, 30), DateTime.Now.ToString("MMMM dd, yyyy"), Core.DefaultFont, ColorPalette.ActualWhite, null, LabelAlignment.Center);
 
         _backgroundCanvas.AddChild(_clockLabel);
         _backgroundCanvas.AddChild(_dateLabel);

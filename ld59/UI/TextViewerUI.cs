@@ -48,10 +48,10 @@ public class TextViewerUI : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, _currentFile.Name, Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer = new Window(_bounds, _currentFile.Name, Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("Notepad", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/file_icon"), _rootContainer);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
 
         var textAreaBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);
         _textArea = new TextArea(textAreaBounds, Core.DefaultFont, true, _isReadOnly, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.LightGreen);

@@ -37,7 +37,7 @@ public class InfoSelectionWindow : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, "Information", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer = new Window(_bounds, "Information", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
         Core.UISystem.AddElement(_rootContainer);
         _rootContainer.OnWindowClosed += _ => { var cb = _onSelectInfo; _onSelectInfo = null; cb?.Invoke(null); };
 

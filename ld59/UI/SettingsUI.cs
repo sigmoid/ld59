@@ -25,8 +25,8 @@ public class SettingsUI : UIContainer
     private void CreateUI()
     {
         _rootContainer = new Window(_bounds, "Settings", Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+            ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.AddElement(_rootContainer);
         _rootContainer.OnWindowClosed += _ => Close();
         TaskbarRegistry.Register("Settings",

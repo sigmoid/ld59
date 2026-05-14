@@ -28,7 +28,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     float4 color = tex2D(TextureSampler, input.TextureCoordinates);
 
     float noise = rand(input.TextureCoordinates + frac(time));
-    color.rgb += (noise - 0.5) * intensity;
+    color.rgb *= noise * intensity + (1.0 - intensity);
 
     return color;
 }

@@ -14,7 +14,7 @@ public class KeygenUI : UIPanel
     private Button _generateButton;
     private FileExplorerUI _fileExplorerUI;
     private float _generateTimer = 0;
-    private float _generateDuration = 6;
+    private float _generateDuration = 4;
 
     private readonly List<GameFile> _selectedFiles = [];
     private VerticalLayoutGroup _selectedFilesLayout;
@@ -44,8 +44,8 @@ public class KeygenUI : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, "Keygen", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer = new Window(_bounds, "Keygen", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("Keygen", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/key_icon"), _rootContainer);
         Core.UISystem.WindowManager.SetFocusedWindow(_rootContainer);

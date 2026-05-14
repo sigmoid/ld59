@@ -19,9 +19,9 @@ public class NotificationPopup : UIPanel
 
     private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, "Notification", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+        _rootContainer = new Window(_bounds, "Notification", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
         Core.UISystem.AddElement(_rootContainer);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.WindowManager.SetFocusedWindow(_rootContainer);
 
         var labelBounds = new Rectangle(_rootContainer.GetContentBounds().X + 10, _rootContainer.GetContentBounds().Y + 10, _rootContainer.GetContentBounds().Width - 20, _rootContainer.GetContentBounds().Height - 20);

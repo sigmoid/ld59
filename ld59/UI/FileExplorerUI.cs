@@ -38,8 +38,8 @@ public class FileExplorerUI : UIContainer
 
     private void CreateUI()
     {
-        _rootContainer = new Window(_bounds, "File Explorer", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer = new Window(_bounds, "File Explorer", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.AddElement(_rootContainer);
         _rootContainer.OnWindowClosed += (window) => Close();
         TaskbarRegistry.Register("File Explorer", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/file_folder"), _rootContainer);

@@ -26,6 +26,7 @@ public static class AudioAtlas
     public static SoundEffect Scroll_003 { get; private set; }
     public static SoundEffect Mouse_Click_Down {get; private set;}
     public static SoundEffect Mouse_Click_Up {get; private set;}
+    public static SoundEffect Degauss {get; private set;}
 
     private static readonly SoundEffect[] _clicks = new SoundEffect[5];
     private static readonly SoundEffect[] _glass = new SoundEffect[6];
@@ -59,5 +60,6 @@ public static class AudioAtlas
         Scroll_003 = content.Load<SoundEffect>("audio/scroll_003");
         Mouse_Click_Down = content.Load<SoundEffect>("audio/mouse_click_down");
         Mouse_Click_Up = content.Load<SoundEffect>("audio/mouse_click_up");
+        Degauss = content.Load<SoundEffect>("audio/degauss");
     }
 }

@@ -114,3 +114,8 @@ F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\lithnet_header.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\skeltal.sprite
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\sklelatal.xnb
 F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\flag.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\audio\degauss.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\shaders\degauss.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\images\bluenoise.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\shaders\one_bit_dithering.xnb
+F:\Dev\LD59\ld59\bin\Debug\net8.0\Content\shaders\crt_scanlines.xnb

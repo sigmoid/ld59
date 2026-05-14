@@ -13,6 +13,7 @@
     <File>F:/Dev/LD59/ld59/Content/audio/confirmation_002.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/confirmation_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/confirmation_004.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/degauss.wav</File>
     <File>F:/Dev/LD59/ld59/Content/audio/error_004.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/error_006.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/glass_001.ogg</File>
@@ -31,6 +32,7 @@
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Small.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/bluenoise.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/bmtheader.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/browser_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/decryptor_icon.png</File>
@@ -54,9 +56,15 @@
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/chromatic_aberration.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/crt_scanlines.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/one_bit_dithering.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

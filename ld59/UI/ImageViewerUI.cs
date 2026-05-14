@@ -46,11 +46,11 @@ public class ImageViewerUI : UIPanel
     private void CreateUI(Texture2D texture, string name, int padding)
     {
         _rootContainer = new Window(_bounds, name, Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+            ColorPalette.ActualWhite, ColorPalette.Black,
+            ColorPalette.ActualWhite, ColorPalette.Black, 2);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("Image Viewer", Core.Content.Load<Texture2D>("images/image_viewer"), _rootContainer);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
 
         var content = _rootContainer.GetContentBounds();
         var imageBounds = new Rectangle(content.X + padding, content.Y + padding, texture.Width, texture.Height);
@@ -61,11 +61,11 @@ public class ImageViewerUI : UIPanel
     private void CreateEncryptedUI(string name)
     {
         _rootContainer = new Window(_bounds, name, Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
+            ColorPalette.ActualWhite, ColorPalette.Black,
+            ColorPalette.ActualWhite, ColorPalette.Black, 2);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("Image Viewer", Core.Content.Load<Texture2D>("images/image_viewer"), _rootContainer);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
 
         var content = _rootContainer.GetContentBounds();
         var label = new Label(new Rectangle(content.X + 10, content.Y + 10, content.Width - 20, content.Height - 20), "This file is encrypted.", Core.DefaultFont, ColorPalette.DarkGreen);

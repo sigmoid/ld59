@@ -20,7 +20,7 @@ public class PuzzleSolutionUI : UIPanel
     private static readonly (string Template, List<RichTextArea.Slot> Slots)[] _puzzles = new (string, List<RichTextArea.Slot>)[]
     {
         (
-            "Who is the CEO of Eutropia: {0}\n\nWho is the CEO of The Anastasia Corporation: {1}\n\nWho is the CEO of LithOS Software: {2}\n\nWho is the CEO of Scram! Games: {3}",
+            "Identify the CEOs of the following companies:\n\nEutropia: {0}\n\nThe Anastasia Corporation: {1}\n\nLithOS Software: {2}\n\nScram! Games: {3}",
             new List<RichTextArea.Slot>
             {
                 new() { InfoType = InfoType.Name, CorrectSolution = "jack pilgrim" },
@@ -63,8 +63,8 @@ public class PuzzleSolutionUI : UIPanel
     private void CreateUI()
     {
         _rootContainer = new Window(_bounds, "Looking Glass", Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+            ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("Looking Glass", Core.Content.Load<Texture2D>("images/puzzle_icon"), _rootContainer);
 

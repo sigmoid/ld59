@@ -67,6 +67,12 @@
 /processorParam:Quality=Best
 /build:audio/confirmation_004.ogg
 
+#begin audio/degauss.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/degauss.wav
+
 #begin audio/error_004.ogg
 /importer:OggImporter
 /processor:SoundEffectProcessor
@@ -220,6 +226,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/background.png
+
+#begin images/bluenoise.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=False
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=False
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/bluenoise.png
 
 #begin images/bmtheader.png
 /importer:TextureImporter
@@ -482,11 +500,137 @@
 /processorParam:DebugMode=Auto
 /build:shaders/chromatic_aberration.fx
 
+#begin shaders/crt_scanlines.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/crt_scanlines.fx
+
 #begin shaders/crt.fx
 /importer:EffectImporter
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:shaders/crt.fx
+
+#begin shaders/fluid-simulation/add-smoke.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/add-smoke.fx
+
+#begin shaders/fluid-simulation/advect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/advect.fx
+
+#begin shaders/fluid-simulation/apply-gravity.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/apply-gravity.fx
+
+#begin shaders/fluid-simulation/boundary.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/boundary.fx
+
+#begin shaders/fluid-simulation/buoyancy.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/buoyancy.fx
+
+#begin shaders/fluid-simulation/clamp-velocity.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/clamp-velocity.fx
+
+#begin shaders/fluid-simulation/clamp.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/clamp.fx
+
+#begin shaders/fluid-simulation/compute-divergence.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/compute-divergence.fx
+
+#begin shaders/fluid-simulation/compute-pressure.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/compute-pressure.fx
+
+#begin shaders/fluid-simulation/consume-fuel.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/consume-fuel.fx
+
+#begin shaders/fluid-simulation/diffuse.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/diffuse.fx
+
+#begin shaders/fluid-simulation/dissipation.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/dissipation.fx
+
+#begin shaders/fluid-simulation/gaussian-blur.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/gaussian-blur.fx
+
+#begin shaders/fluid-simulation/ignition.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/ignition.fx
+
+#begin shaders/fluid-simulation/obstacle-to-fuel.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/obstacle-to-fuel.fx
+
+#begin shaders/fluid-simulation/project.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/project.fx
+
+#begin shaders/fluid-simulation/radiance.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/radiance.fx
+
+#begin shaders/fluid-simulation/spread-fire.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/spread-fire.fx
+
+#begin shaders/fluid-simulation/velocity-damping.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/velocity-damping.fx
+
+#begin shaders/one_bit_dithering.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/one_bit_dithering.fx
 
 #begin shaders/static_noise.fx
 /importer:EffectImporter

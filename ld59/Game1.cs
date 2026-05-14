@@ -18,7 +18,7 @@ public class Game1 : Core
     {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
-        Core.ClearColor = ColorPalette.LightGreen;
+        Core.ClearColor = new Color(0,0,0,255);
         Instance = this;
     }
 
@@ -27,9 +27,11 @@ public class Game1 : Core
         base.Initialize();
 
         PostProcessing.AddEffect<CRTPostProcessEffect>();
-        PostProcessing.AddEffect<ChromaticAberrationPostProcessEffect>();
+        PostProcessing.AddEffect<CRTScanlinePostProcessEffect>();
+        PostProcessing.AddEffect<OneBitDitheringPostProcessEffect>();
+        // PostProcessing.AddEffect<ChromaticAberrationPostProcessEffect>();
         var noise = PostProcessing.AddEffect<StaticNoisePostProcessEffect>();
-        noise.Intensity = 0.15f;
+        noise.Intensity = 0.1f;
     }
 
     protected override void LoadContent()
@@ -40,11 +42,17 @@ public class Game1 : Core
         Core.CurrentScene.AddManager(new EmailDataManager());
 
         var screenBounds = new Rectangle(0, 0, GameplayConstants.ScreenWidth, GameplayConstants.ScreenHeight);
+        BootSpinner spinner = null;
         SplashAnimation splash = null;
         splash = new SplashAnimation(screenBounds, () =>
         {
             UISystem.RemoveElement(splash);
-            UISystem.AddElement(new DesktopUI(screenBounds));
+            spinner = new BootSpinner(screenBounds, () =>
+            {
+                UISystem.RemoveElement(spinner);
+                UISystem.AddElement(new DesktopUI(screenBounds));
+            });
+            UISystem.AddElement(spinner);
         });
 
         UISystem.AddElement(splash);

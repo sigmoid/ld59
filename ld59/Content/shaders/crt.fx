@@ -10,10 +10,6 @@
 sampler TextureSampler : register(s0);
 
 float2 curvature = float2(6.0, 4.0);
-float screenResolution = 1080.0;
-float roundness = 8.0;
-float vignetteOpacity = 0.55;
-float scanBarPosition = 0.0;
 
 struct VertexShaderOutput
 {
@@ -38,31 +34,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
         return float4(0.0, 0.0, 0.0, 1.0);
 
-    float4 color = tex2D(TextureSampler, uv);
-
-    // Scanlines
-    float scanline = sin(uv.y * 260.0 * 3.14159);
-    if (scanline < 0)
-    {
-        color.rgb *= 0.98;
-    }
-    else
-    {
-        color.rgb *= 1.03;
-    }
-
-    // Scrolling bright bar
-    float barHalfWidth = 0.06;
-    float dist = abs(uv.y - scanBarPosition);
-    float barFactor = 1.0 - smoothstep(0.0, barHalfWidth, dist);
-    color.rgb *= 1.0 + barFactor * 0.1;
-
-    // Vignette
-    float2 vig2d = clamp((uv * (1.0 - uv)) * screenResolution / roundness, 0.0, 1.0);
-    float vignette = pow(vig2d.x * vig2d.y, vignetteOpacity);
-    color.rgb *= vignette;
-
-    return color;
+    return tex2D(TextureSampler, uv);
 }
 
 technique CRT

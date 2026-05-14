@@ -105,8 +105,8 @@ public class Minefield : UIPanel
     private void CreateUI()
     {
         _rootWindow = new Window(_bounds, "Minefield", Core.DefaultFont);
-        _rootWindow.SetColors(ColorPalette.DarkCream, ColorPalette.DarkGreen, ColorPalette.ActualWhite, ColorPalette.DarkGreen);
-        _rootWindow.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+        _rootWindow.SetColors(ColorPalette.ActualWhite, ColorPalette.Black, ColorPalette.ActualWhite, ColorPalette.Black);
+        _rootWindow.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         TaskbarRegistry.Register("Minefield", Core.Content.Load<Microsoft.Xna.Framework.Graphics.Texture2D>("images/minefield_icon"), _rootWindow);
 
         var cb = _rootWindow.GetContentBounds();
@@ -121,7 +121,7 @@ public class Minefield : UIPanel
         var resetButton = new Button(new Rectangle(cb.Right - 90, cb.Y + (headerHeight - 30) / 2, 80, 30), "Reset", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, CreateGame);
         _rootWindow.AddChild(resetButton);
 
-        var gridBounds = new Rectangle(cb.X + 10, cb.Y + headerHeight + 5, cb.Width - 20, cb.Height - headerHeight - 30);
+        var gridBounds = new Rectangle(cb.X + 10, cb.Y + headerHeight + 25, cb.Width - 20, cb.Height - headerHeight - 60);
         var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
 
         var cellWidth = gridBounds.Width / _cellsWide;

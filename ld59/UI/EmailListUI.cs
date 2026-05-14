@@ -25,9 +25,9 @@ public class EmailListUI : UIContainer
     {
         var emailIcon = Core.Content.Load<Texture2D>("images/email_icon");
         _rootContainer = new Window(_bounds, "Email", Core.DefaultFont,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen,
-            ColorPalette.ActualWhite, ColorPalette.DarkGreen, 2);
-        _rootContainer.SetCloseButtonColors(ColorPalette.DarkGreen, ColorPalette.LightGreen);
+            ColorPalette.ActualWhite, ColorPalette.Black,
+            ColorPalette.ActualWhite, ColorPalette.Black, 2);
+        _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
         _rootContainer.OnWindowClosed += _ =>
         {
             EmailDataManager.OnEmailDelivered -= HandleNewEmail;

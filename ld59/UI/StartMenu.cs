@@ -107,7 +107,7 @@ public class StartMenuUI : UIPanel
 
     private void OpenMinefield()
     {
-        var minefieldUI = new Minefield(new Rectangle(150, 150, 520, 620));
+        var minefieldUI = new Minefield(new Rectangle(150, 150, 520, 650));
         Core.UISystem.AddElement(minefieldUI);
         HideMenu();
     }

@@ -19,6 +19,6 @@ public class StaticNoisePostProcessEffect : PostProcessEffect
     public override void Initialize(GraphicsDevice graphicsDevice)
     {
         Shader = Core.Content.Load<Effect>("shaders/static_noise");
-        Priority = 50;
+        Priority = 500;
     }
 }
