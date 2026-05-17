@@ -17,6 +17,7 @@ namespace ld59.UI
         private Vector2 _prevMouseUV;
         private float _windTime;
         private bool _showVelocity;
+        private bool _showWind;
         private KeyboardState _prevKeyboard;
 
         public FluidSimulator Simulator => _simulator;
@@ -54,11 +55,15 @@ namespace ld59.UI
             var keyboard = Keyboard.GetState();
             if (keyboard.IsKeyDown(Keys.V) && !_prevKeyboard.IsKeyDown(Keys.V))
                 _showVelocity = !_showVelocity;
+            if (keyboard.IsKeyDown(Keys.W) && !_prevKeyboard.IsKeyDown(Keys.W))
+                _showWind = !_showWind;
             _prevKeyboard = keyboard;
 
             var gameTime = new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(deltaTime));
             _simulator.Update(gameTime);
-            if (_showVelocity)
+            if (_showWind)
+                _simulator.DrawWind(_outputRT);
+            else if (_showVelocity)
                 _simulator.DrawVelocity(_outputRT);
             else
                 _simulator.Draw(_outputRT);

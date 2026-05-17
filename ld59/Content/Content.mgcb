@@ -632,6 +632,12 @@
 /processorParam:DebugMode=Auto
 /build:shaders/fluid-simulation/velocity-damping.fx
 
+#begin shaders/fluid-simulation/wind-field.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/fluid-simulation/wind-field.fx
+
 #begin shaders/one_bit_dithering.fx
 /importer:EffectImporter
 /processor:EffectProcessor
