@@ -34,7 +34,7 @@ namespace crash.FluidSimulation
         #region Fluid Sim Properties
 
         private int _gridSize;
-        private float _diffusion = 0.0001f;
+        private float _diffusion = 0.1f;
         private float _forceStrength = 1.0f;
         private float _sourceStrength = 1.0f;
         private float _vorticityScale = 0.125f;
@@ -105,13 +105,14 @@ namespace crash.FluidSimulation
                 // Step 2: DIFFUSION - Viscous and thermal diffusion
                 new DiffuseStep("velocity", diffuseIterations),
                 new GaussianBlurStep("temperature", 1, 8),
-                new DiffuseStep("smoke", 3), // Reduced from diffuseIterations to keep smoke more detailed
+                new DiffuseStep("smoke", 2), // Reduced from diffuseIterations to keep smoke more detailed
 
                 // Step 3: VORTICITY - Add turbulent swirls for more interesting smoke motion
-                // new ComputeVorticityStep(),
-                // new VorticityConfinementStep(_vorticityScale),
+                new ComputeVorticityStep(),
+                new VorticityConfinementStep(_vorticityScale),
 
                 // Step 4: EXTERNAL FORCES - Applied via AddForce() calls
+                new ApplyGravityStep("velocity", 10.0f), // negative = upward rise
 
                 // Step 5: PROJECTION - Make velocity field divergence-free
                 new ComputeDivergenceStep(),
@@ -229,6 +230,35 @@ namespace crash.FluidSimulation
             _renderTargetProvider.Swap("smoke");
         }
 
+        public void AddForceDiffuse(Vector2 position, Vector2 force, float radius)
+        {
+            var scaledAmount = force * _forceStrength;
+
+            var velocityRT = _renderTargetProvider.GetCurrent("velocity");
+            var tempVelocityRT = _renderTargetProvider.GetTemp("velocity");
+
+            Vector2 adjustedPosition = position + UVOffset;
+            adjustedPosition = new Vector2(
+                adjustedPosition.X - MathF.Floor(adjustedPosition.X),
+                adjustedPosition.Y - MathF.Floor(adjustedPosition.Y)
+            );
+
+            _fluidEffect.Parameters["sourceTexture"].SetValue(velocityRT);
+            _fluidEffect.Parameters["cursorPosition"].SetValue(adjustedPosition);
+            _fluidEffect.Parameters["cursorValue"].SetValue(scaledAmount);
+            _fluidEffect.Parameters["radius"].SetValue(radius);
+
+            _graphicsDevice.SetRenderTarget(tempVelocityRT);
+
+            _fluidEffect.CurrentTechnique = _fluidEffect.Techniques["AddValueDiffuse"];
+            _fluidEffect.CurrentTechnique.Passes[0].Apply();
+            Utils.Utils.DrawFullScreenQuad(_graphicsDevice, _gridSize);
+
+            _graphicsDevice.SetRenderTarget(null);
+
+            _renderTargetProvider.Swap("velocity");
+        }
+
         public void SetForce(Vector2 position, Vector2 force, float radius)
         {
             var scaledAmount = force * _forceStrength;
@@ -313,6 +343,21 @@ namespace crash.FluidSimulation
             _graphicsDevice.SetRenderTarget(null);
         }
 
+
+        public void DrawVelocity(RenderTarget2D renderTarget)
+        {
+            _graphicsDevice.SetRenderTarget(renderTarget);
+            _graphicsDevice.Clear(Color.Transparent);
+
+            _fluidEffect.Parameters["renderTargetSize"].SetValue(new Vector2(_gridSize, _gridSize));
+            _fluidEffect.Parameters["velocityTexture"]?.SetValue(_renderTargetProvider.GetCurrent("velocity"));
+
+            _fluidEffect.CurrentTechnique = _fluidEffect.Techniques["VisualizeVelocity"];
+            _fluidEffect.CurrentTechnique.Passes[0].Apply();
+            Utils.Utils.DrawFullScreenQuad(_graphicsDevice, _gridSize);
+
+            _graphicsDevice.SetRenderTarget(null);
+        }
 
         /// <summary>
         /// Gets the render target provider for accessing any render target by name.

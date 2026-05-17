@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 
 using Quartz;
 using Quartz.Graphics;
+using ld59.UI;
 
 namespace ld59;
 
@@ -42,6 +43,11 @@ public class Game1 : Core
         Core.CurrentScene.AddManager(new EmailDataManager());
 
         var screenBounds = new Rectangle(0, 0, GameplayConstants.ScreenWidth, GameplayConstants.ScreenHeight);
+
+        var fluidSim = new UIFluidSimulation(screenBounds);
+        var fluidPrewarmer = new FluidPrewarmer(fluidSim, new Vector2(0.23f, 0.95f));
+        UISystem.AddElement(fluidPrewarmer);
+
         BootSpinner spinner = null;
         SplashAnimation splash = null;
         splash = new SplashAnimation(screenBounds, () =>
@@ -50,7 +56,8 @@ public class Game1 : Core
             spinner = new BootSpinner(screenBounds, () =>
             {
                 UISystem.RemoveElement(spinner);
-                UISystem.AddElement(new DesktopUI(screenBounds));
+                UISystem.RemoveElement(fluidPrewarmer);
+                UISystem.AddElement(new DesktopUI(screenBounds, fluidSim));
             });
             UISystem.AddElement(spinner);
         });

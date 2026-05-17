@@ -88,7 +88,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
         }
         else if(NeighborCount > 0)
         {
-            spriteBatch.DrawString(Core.DefaultFont, NeighborCount.ToString(), new Vector2(_bounds.X + _bounds.Width / 2, _bounds.Y + _bounds.Height / 2) - Core.DefaultFont.MeasureString(NeighborCount.ToString()) / 2, Color.White);
+            spriteBatch.DrawString(Core.DefaultFont, NeighborCount.ToString(), new Vector2(_bounds.X + _bounds.Width / 2, _bounds.Y + _bounds.Height / 2) - Core.DefaultFont.MeasureString(NeighborCount.ToString()) / 2, Color.Black);
         }
 
 

@@ -59,8 +59,8 @@ sampler2D sourceSampler = sampler_state
     Texture = <sourceTexture>;
     MinFilter = Point;
     MagFilter = Point;
-    AddressU = Wrap;
-    AddressV = Wrap;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 texture obstacleTexture;
@@ -86,7 +86,11 @@ float4 AdvectPS(VertexShaderOutput input) : COLOR0
 
     float2 velocity = tex2D(velocitySampler, scrollPos).xy;
 
-    float2 prevPos = frac(scrollPos - velocity * texelSize * timeStep);
+    float2 prevPos = scrollPos - velocity * texelSize * timeStep;
+
+    // Clip at boundaries — anything that advects outside the field is empty, not wrapped
+    if (prevPos.x < 0.0 || prevPos.x > 1.0 || prevPos.y < 0.0 || prevPos.y > 1.0)
+        return float4(0, 0, 0, 0);
 
     // If we're trying to advect from an obstacle, use current position instead (obstacles don't scroll)
     float obsPrev = tex2D(obstacleSampler, pos).r;

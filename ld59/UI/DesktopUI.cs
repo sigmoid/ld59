@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
+using ld59.UI;
 
 public class DesktopUI : UIPanel
 {
@@ -19,15 +20,18 @@ public class DesktopUI : UIPanel
     private FileExplorerUI _fileExplorerUI;
     private static ToastManager _toastManager;
     private ClockUI _clockUI;
+    private UIFluidSimulation _fluidSimulation;
 
     private float _taskbarItemSize = 80;
     private List<UIElement> _taskbarAppItems = new();
     private float _startingNoteTimer = 1f; // delay the starting note a bit so it doesn't get lost in the chaos of the start
+    private Vector2 _smokeCenter = new Vector2(0.23f, 0.95f);
+    private float _smokeTimer = 0;
 
-    public DesktopUI(Rectangle bounds)
+    public DesktopUI(Rectangle bounds, UIFluidSimulation prewarmedFluidSim = null)
     {
         _bounds = bounds;
-
+        _fluidSimulation = prewarmedFluidSim;
         CreateUI();
     }
 
@@ -46,6 +50,8 @@ public class DesktopUI : UIPanel
     {
         base.Update(deltaTime);
 
+        _smokeTimer += deltaTime * 2;
+
         if (_startingNoteTimer > 0)
         {
             _startingNoteTimer -= deltaTime;
@@ -55,6 +61,9 @@ public class DesktopUI : UIPanel
                 emailManager.DeliverEmail("welcome.eml");
             }
         }
+
+        var smokeOffset = new Vector2((float)Math.Sin(_smokeTimer) * 0.01f, (float)Math.Cos(_smokeTimer * 1.5f) * 0.01f);
+        _fluidSimulation.Simulator.AddSmoke(_smokeCenter + smokeOffset, 10f * deltaTime, 0.02f);
     }
 
     private void CreateUI()
@@ -76,6 +85,9 @@ public class DesktopUI : UIPanel
         // var fileExplorerTexture = Core.Content.Load<Texture2D>("images/file_explorer");
         // var fileExplorerButton = new ImageButton(new Rectangle(0, 0, (int)_taskbarItemSize, (int)_taskbarItemSize), fileExplorerTexture, () => ActivateFileExplorer());
         // _taskbarLayout.AddChild(fileExplorerButton);
+
+        _fluidSimulation ??= new UIFluidSimulation(new Rectangle(0, 0, _bounds.Width, _bounds.Height));
+        AddChild(_fluidSimulation);
 
         _backgroundTexture = Core.Content.Load<Texture2D>("images/background");
         var background = new UIImage(_backgroundTexture, new Rectangle(0, 0, _bounds.Width, _bounds.Height));

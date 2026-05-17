@@ -187,6 +187,12 @@
 #begin files/root/reference_material/anastasia_materials/values.txt
 /copy:files/root/reference_material/anastasia_materials/values.txt
 
+#begin FluidEffect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:FluidEffect.fx
+
 #begin fonts/BIOS.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
@@ -218,9 +224,9 @@
 #begin images/background.png
 /importer:TextureImporter
 /processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyColor=255,255,255,255
 /processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
+/processorParam:GenerateMipmaps=True
 /processorParam:PremultiplyAlpha=True
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False

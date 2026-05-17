@@ -27,6 +27,7 @@
     <File>F:/Dev/LD59/ld59/Content/audio/mouse_click_up.wav</File>
     <File>F:/Dev/LD59/ld59/Content/audio/open_001.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/scroll_003.ogg</File>
+    <File>F:/Dev/LD59/ld59/Content/FluidEffect.fx</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/BIOS.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Browser.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
@@ -55,12 +56,51 @@
     <File>F:/Dev/LD59/ld59/Content/images/sklelatal.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/chromatic_aberration.fx</File>
-    <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/crt_scanlines.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/add-smoke.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/advect.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/apply-gravity.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/boundary.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/buoyancy.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/clamp-velocity.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/clamp.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/compute-divergence.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/compute-pressure.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/consume-fuel.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/diffuse.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/dissipation.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/gaussian-blur.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/ignition.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/obstacle-to-fuel.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/project.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/radiance.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/spread-fire.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/velocity-damping.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/one_bit_dithering.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
