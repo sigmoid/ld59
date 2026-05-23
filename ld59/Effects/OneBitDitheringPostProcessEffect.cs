@@ -5,8 +5,8 @@ using Quartz.Graphics;
 
 public class OneBitDitheringPostProcessEffect : PostProcessEffect
 {
-    public Color DarkColor { get; set; } = Color.Black;
-    public Color BrightColor { get; set; } = ColorPalette.White;
+    public Color DarkColor { get; set; } = new Color(0x22, 0x1f, 0x34);
+    public Color BrightColor { get; set; } = new Color(0xff, 0xfa, 0xf0);
 
     private RenderTarget2D _stateA;
     private RenderTarget2D _stateB;

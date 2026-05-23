@@ -52,7 +52,7 @@ public class SettingsUI : UIContainer
             new Rectangle(x + labelW + 20, y + 5, fsButtonW, 36),
             GetFullscreenLabel(),
             Core.DefaultFont,
-            ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite,
+            ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite,
             () =>
             {
                 Core.Graphics.ToggleFullScreen();

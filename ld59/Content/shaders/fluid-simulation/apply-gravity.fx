@@ -1,3 +1,4 @@
+
 #ifndef RENDERTARGETSIZE_DECLARED
 float2 renderTargetSize;
 #define RENDERTARGETSIZE_DECLARED

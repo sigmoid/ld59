@@ -51,11 +51,11 @@ public class StartMenuItemUI : UIElement, IHoverableUIElement
     {
         if (_isHovered)
         {
-            spriteBatch.Draw(_pixel, _bounds,ColorPalette.LightGreen);
+            spriteBatch.Draw(_pixel, _bounds,Color.SlateGray);
         }
         else
         {
-            spriteBatch.Draw(_pixel, _bounds, ColorPalette.LightGreen * 0.5f);
+            spriteBatch.Draw(_pixel, _bounds, ColorPalette.Black);
         }
         if (_icon != null)
         {
@@ -65,7 +65,7 @@ public class StartMenuItemUI : UIElement, IHoverableUIElement
         {
             var font = Core.DefaultFont;
             var textPosition = new Vector2(_bounds.X + _bounds.Height + 25, _bounds.Y + (_bounds.Height / 2) - (font.MeasureString(_text).Y / 2));
-            spriteBatch.DrawString(font, _text, textPosition, ColorPalette.Black);
+            spriteBatch.DrawString(font, _text, textPosition, ColorPalette.White);
         }
         base.Draw(spriteBatch);
     }

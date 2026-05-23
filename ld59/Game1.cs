@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -14,6 +15,9 @@ public class Game1 : Core
     private KeyboardState _prevKeyboard;
     private MouseState _prevMouse;
     private VictoryScreen _victoryScreen;
+    private double _fpsAccumulator;
+    private int _fpsFrameCount;
+    private double _fpsReportInterval = 5.0;
 
     public Game1() : base("Glory, Glory, Anastasia", 1920, 1080, false, "fonts/Default")
     {
@@ -27,13 +31,13 @@ public class Game1 : Core
     {
         base.Initialize();
 
-        PostProcessing.AddEffect<CRTPostProcessEffect>();
+        // PostProcessing.AddEffect<CRTPostProcessEffect>();
         PostProcessing.AddEffect<CRTScanlinePostProcessEffect>();
         PostProcessing.AddEffect<OneBitDitheringPostProcessEffect>();
         // PostProcessing.AddEffect<ChromaticAberrationPostProcessEffect>();
-        var noise = PostProcessing.AddEffect<StaticNoisePostProcessEffect>();
-        noise.Intensity = 0.1f;
-    }
+        // var noise = PostProcessing.AddEffect<StaticNoisePostProcessEffect>();
+        // noise.Intensity = 0.1f;
+}
 
     protected override void LoadContent()
     {
@@ -49,17 +53,23 @@ public class Game1 : Core
         UISystem.AddElement(fluidPrewarmer);
 
         BootSpinner spinner = null;
+        FullscreenPrompt fullscreenPrompt = null;
         SplashAnimation splash = null;
         splash = new SplashAnimation(screenBounds, () =>
         {
             UISystem.RemoveElement(splash);
-            spinner = new BootSpinner(screenBounds, () =>
+            fullscreenPrompt = new FullscreenPrompt(screenBounds, () =>
             {
-                UISystem.RemoveElement(spinner);
-                UISystem.RemoveElement(fluidPrewarmer);
-                UISystem.AddElement(new DesktopUI(screenBounds, fluidSim));
+                UISystem.RemoveElement(fullscreenPrompt);
+                spinner = new BootSpinner(screenBounds, () =>
+                {
+                    UISystem.RemoveElement(spinner);
+                    UISystem.RemoveElement(fluidPrewarmer);
+                    UISystem.AddElement(new DesktopUI(screenBounds, fluidSim));
+                });
+                UISystem.AddElement(spinner);
             });
-            UISystem.AddElement(spinner);
+            UISystem.AddElement(fullscreenPrompt);
         });
 
         UISystem.AddElement(splash);
@@ -95,6 +105,15 @@ public class Game1 : Core
 
         _prevKeyboard = keyboard;
         _prevMouse = mouse;
+
+        _fpsAccumulator += gameTime.ElapsedGameTime.TotalSeconds;
+        _fpsFrameCount++;
+        if (_fpsAccumulator >= _fpsReportInterval)
+        {
+            Console.WriteLine($"Avg FPS (last {_fpsReportInterval}s): {_fpsFrameCount / _fpsAccumulator:F1}");
+            _fpsAccumulator = 0;
+            _fpsFrameCount = 0;
+        }
 
         base.Update(gameTime);
     }

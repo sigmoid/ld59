@@ -49,11 +49,11 @@ namespace crash.FluidSimulation
 
         private List<IFluidSimulationStep> _simulationSteps;
         private RenderTargetProvider _renderTargetProvider;
-        private WindFieldStep _windFieldStep;
+        private WindDivergenceStep _windDivergenceStep;
 
-        public float WindStrength      { get => _windFieldStep.Strength;       set => _windFieldStep.Strength       = value; }
-        public float WindScale         { get => _windFieldStep.Scale;           set => _windFieldStep.Scale          = value; }
-        public float WindEvolutionSpeed{ get => _windFieldStep.EvolutionSpeed;  set => _windFieldStep.EvolutionSpeed = value; }
+        public float WindIntensity     { get => _windDivergenceStep.Intensity;      set => _windDivergenceStep.Intensity      = value; }
+        public float WindScale         { get => _windDivergenceStep.Scale;          set => _windDivergenceStep.Scale          = value; }
+        public float WindEvolutionSpeed{ get => _windDivergenceStep.EvolutionSpeed; set => _windDivergenceStep.EvolutionSpeed = value; }
 
         public FluidSimulator(GraphicsDevice graphicsDevice, int gridSize)
         {
@@ -102,7 +102,7 @@ namespace crash.FluidSimulation
 
         private void CreateSimulationSteps()
         {
-            _windFieldStep ??= new WindFieldStep();
+            _windDivergenceStep ??= new WindDivergenceStep();
             _simulationSteps = new List<IFluidSimulationStep>
             {
                 // Step 1: ADVECTION - Transport quantities along velocity field
@@ -110,16 +110,15 @@ namespace crash.FluidSimulation
 
                 // Step 2: DIFFUSION - Viscous and thermal diffusion
                 new DiffuseStep("velocity", diffuseIterations),
-                new GaussianBlurStep("temperature", 1, 8),
-                new DiffuseStep("smoke", 2), // Reduced from diffuseIterations to keep smoke more detailed
+                // new GaussianBlurStep("temperature", 1, 8),
+                new DiffuseStep("smoke", 2),
 
                 // Step 3: VORTICITY - Add turbulent swirls for more interesting smoke motion
                 // new ComputeVorticityStep(),
                 // new VorticityConfinementStep(_vorticityScale),
 
-                // Step 4: EXTERNAL FORCES - Applied via AddForce() calls
-                new ApplyGravityStep("velocity", 10.0f), // negative = upward rise
-                _windFieldStep,
+                // Step 4: EXTERNAL FORCES
+                new ApplyGravityStep("velocity", 10.0f),
 
                 // Step 5: PROJECTION - Make velocity field divergence-free
                 new ComputeDivergenceStep(),
@@ -350,11 +349,6 @@ namespace crash.FluidSimulation
             _graphicsDevice.SetRenderTarget(null);
         }
 
-
-        public void DrawWind(RenderTarget2D renderTarget)
-        {
-            _windFieldStep.DrawWind(_graphicsDevice, _gridSize, renderTarget);
-        }
 
         public void DrawVelocity(RenderTarget2D renderTarget)
         {

@@ -144,46 +144,51 @@ public class PuzzleSolutionUI : UIPanel
         if (filled < slots.Count)
         {
             _statusLabel.Text = "Solution incomplete.";
-            _statusLabel.TextColor = ColorPalette.Red;
+            _statusLabel.TextColor = ColorPalette.Black;
             return;
         }
 
         if (correct == slots.Count)
         {
-            ShowSuccess();
+            string msg = _currentPuzzleIndex == 0 ? "Case File Closed." : "Investigation Complete.";
             int completedIndex = _currentPuzzleIndex;
             _currentPuzzleIndex++;
             if (_currentPuzzleIndex < _puzzles.Length)
                 LoadCurrentPuzzle();
-
-            if (completedIndex == 0)
-                Core.CurrentScene.GetManager<EmailDataManager>()?.DeliverEmail("case2_start.eml");
-            else
-                Game1.Instance.EndGame();
-
             _statusLabel.Text = "";
+
+            ShowSuccess(msg, () =>
+            {
+                if (completedIndex == 0)
+                    Core.CurrentScene.GetManager<EmailDataManager>()?.DeliverEmail("case2_start.eml");
+                else
+                    Game1.Instance.EndGame();
+            });
             return;
         }
 
         if (correct == slots.Count - 1)
         {
             _statusLabel.Text = "One piece of information is incorrect.";
-            _statusLabel.TextColor = ColorPalette.Orange;
+            _statusLabel.TextColor = ColorPalette.Black;
         }
         else
         {
             _statusLabel.Text = "Solution is not correct.";
-            _statusLabel.TextColor = ColorPalette.Red;
+            _statusLabel.TextColor = ColorPalette.Black;
         }
     }
 
-    private void ShowSuccess()
+    private void ShowSuccess(string message, Action onComplete = null)
     {
         AudioAtlas.Confirmation_001.Play();
-        var modal = new NotificationPopup(
-            new Rectangle(_rootContainer.GetBoundingBox().Center.X - 300, _rootContainer.GetBoundingBox().Center.Y - 50, 600, 250),
-            "Solution Correct: A new mission has been started.\n");
-        DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
-        Core.UISystem.AddElement(modal);
+        SolutionSuccessOverlay overlay = null;
+        overlay = new SolutionSuccessOverlay(_rootContainer.GetContentBounds(), message, () =>
+        {
+            Core.UISystem.RemoveElement(overlay);
+            DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
+            onComplete?.Invoke();
+        }) { Order = 0.85f };
+        Core.UISystem.AddElement(overlay);
     }
 }

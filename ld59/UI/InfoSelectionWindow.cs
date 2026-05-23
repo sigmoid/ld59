@@ -54,7 +54,7 @@ public class InfoSelectionWindow : UIPanel
         foreach(var item in infoItems)
         {
             var captured = item;
-            var label = new Button(new Rectangle(layoutGroup.GetBoundingBox().X, layoutGroup.GetBoundingBox().Y, layoutGroup.GetBoundingBox().Width - 20, 30), item.Value, Core.DefaultFont, ColorPalette.Green, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => { var cb = _onSelectInfo; _onSelectInfo = null; cb?.Invoke(captured); });
+            var label = new Button(new Rectangle(layoutGroup.GetBoundingBox().X, layoutGroup.GetBoundingBox().Y, layoutGroup.GetBoundingBox().Width - 20, 30), item.Value, Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, () => { var cb = _onSelectInfo; _onSelectInfo = null; cb?.Invoke(captured); });
             layoutGroup.AddChild(label);
             scrollArea.RefreshContentBounds();
         }

@@ -115,10 +115,10 @@ public class Minefield : UIPanel
         var headerPanel = new Label(new Rectangle(cb.X, cb.Y, cb.Width, headerHeight), "", Core.DefaultFont, ColorPalette.ActualWhite, ColorPalette.Green);
         _rootWindow.AddChild(headerPanel);
 
-        _statusLabel = new Label(new Rectangle(cb.X + 10, cb.Y, cb.Width - 110, headerHeight), "Click a cell to start!", Core.DefaultFont, ColorPalette.ActualWhite);
+        _statusLabel = new Label(new Rectangle(cb.X + 10, cb.Y, cb.Width - 110, headerHeight), "Click a cell to start!", Core.DefaultFont, ColorPalette.Black);
         _rootWindow.AddChild(_statusLabel);
 
-        var resetButton = new Button(new Rectangle(cb.Right - 90, cb.Y + (headerHeight - 30) / 2, 80, 30), "Reset", Core.DefaultFont, ColorPalette.DarkGreen, ColorPalette.LightGreen, ColorPalette.ActualWhite, CreateGame);
+        var resetButton = new Button(new Rectangle(cb.Right - 90, cb.Y + (headerHeight - 30) / 2, 80, 30), "Reset", Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, CreateGame);
         _rootWindow.AddChild(resetButton);
 
         var gridBounds = new Rectangle(cb.X + 10, cb.Y + headerHeight + 25, cb.Width - 20, cb.Height - headerHeight - 60);
@@ -138,7 +138,7 @@ public class Minefield : UIPanel
             }
         }
 
-        _coordinatesLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, gridBounds.Bottom + 5, _rootWindow.GetContentBounds().Width - 20, 20), "", Core.DefaultFont, ColorPalette.ActualWhite);
+        _coordinatesLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, gridBounds.Bottom + 5, _rootWindow.GetContentBounds().Width - 20, 20), "", Core.DefaultFont, ColorPalette.Black);
         _rootWindow.AddChild(_coordinatesLabel);
 
         CreateGame();

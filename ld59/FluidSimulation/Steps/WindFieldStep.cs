@@ -7,7 +7,7 @@ using Quartz;
 
 public class WindFieldStep : IFluidSimulationStep
 {
-    public float Strength = 15f;
+    public float Strength = 1500f;
     public float Scale = 1f;
     public float EvolutionSpeed = 0.5f;
 

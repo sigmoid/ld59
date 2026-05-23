@@ -15,9 +15,7 @@ namespace ld59.UI
         private Rectangle _bounds;
 
         private Vector2 _prevMouseUV;
-        private float _windTime;
         private bool _showVelocity;
-        private bool _showWind;
         private KeyboardState _prevKeyboard;
 
         public FluidSimulator Simulator => _simulator;
@@ -45,25 +43,19 @@ namespace ld59.UI
 
             if (deltaTime > 0f)
             {
-                var delta = (uv - _prevMouseUV) / deltaTime;
-                _simulator.AddForce(_prevMouseUV, delta * 5f, 0.1f);
+                var delta = EaseOutQuartForce((uv - _prevMouseUV) / deltaTime, 32f);
+                _simulator.AddForceDiffuse(_prevMouseUV, delta * 4f, 0.035f);
             }
             _prevMouseUV = uv;
-
-            //ApplyWind(deltaTime);
 
             var keyboard = Keyboard.GetState();
             if (keyboard.IsKeyDown(Keys.V) && !_prevKeyboard.IsKeyDown(Keys.V))
                 _showVelocity = !_showVelocity;
-            if (keyboard.IsKeyDown(Keys.W) && !_prevKeyboard.IsKeyDown(Keys.W))
-                _showWind = !_showWind;
             _prevKeyboard = keyboard;
 
             var gameTime = new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(deltaTime));
             _simulator.Update(gameTime);
-            if (_showWind)
-                _simulator.DrawWind(_outputRT);
-            else if (_showVelocity)
+            if (_showVelocity)
                 _simulator.DrawVelocity(_outputRT);
             else
                 _simulator.Draw(_outputRT);
@@ -79,23 +71,13 @@ namespace ld59.UI
 
         public override void SetBounds(Rectangle bounds) => _bounds = bounds;
 
-        private void ApplyWind(float deltaTime)
+        private static Vector2 EaseOutQuartForce(Vector2 v, float maxMag)
         {
-            _windTime += deltaTime;
-
-            // Three layered frequencies: slow base swell, medium gusts, quick flutter
-            float gust = MathF.Sin(_windTime * 0.5f)  * 0.55f
-                       + MathF.Sin(_windTime * 1.7f)  * 0.30f
-                       + MathF.Sin(_windTime * 3.9f)  * 0.15f;
-
-            var force = new Vector2(gust * 0.6f, MathF.Sin(_windTime * 0.4f) * 0.01f);
-
-            // Five horizontal strips with overlapping radius to cover the whole field
-            for (int i = 0; i < 5; i++)
-            {
-                float y = (i + 0.5f) / 5f;
-                _simulator.AddForce(new Vector2(0.5f, y), force, 0.55f);
-            }
+            float mag = v.Length();
+            if (mag < 1e-5f) return Vector2.Zero;
+            float t = MathF.Min(mag / maxMag, 1f);
+            float eased = 1f - MathF.Pow(1f - t, 4f);
+            return v / mag * eased * maxMag;
         }
 
         public override void OnRemovedFromUI()

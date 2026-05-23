@@ -64,10 +64,12 @@ public class EmailListItemUI : UIElement
             new Vector2(_bounds.X + 26, _bounds.Y + 34),
             ColorPalette.DarkCream, 0, Vector2.Zero, 0.85f, SpriteEffects.None, order + 0.001f);
 
-        // Bottom divider
-        spriteBatch.Draw(_pixel,
-            new Rectangle(_bounds.X, _bounds.Bottom - 1, _bounds.Width, 1),
-            null, ColorPalette.LightGreen, 0, Vector2.Zero, SpriteEffects.None, order + 0.001f);
+        // Outline
+        var outlineDepth = order + 0.002f;
+        spriteBatch.Draw(_pixel, new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, 1),                    null, Color.Black, 0, Vector2.Zero, SpriteEffects.None, outlineDepth);
+        spriteBatch.Draw(_pixel, new Rectangle(_bounds.X, _bounds.Bottom - 1, _bounds.Width, 1),           null, Color.Black, 0, Vector2.Zero, SpriteEffects.None, outlineDepth);
+        spriteBatch.Draw(_pixel, new Rectangle(_bounds.X, _bounds.Y, 1, _bounds.Height),                   null, Color.Black, 0, Vector2.Zero, SpriteEffects.None, outlineDepth);
+        spriteBatch.Draw(_pixel, new Rectangle(_bounds.Right - 1, _bounds.Y, 1, _bounds.Height),           null, Color.Black, 0, Vector2.Zero, SpriteEffects.None, outlineDepth);
 
         base.Draw(spriteBatch);
     }

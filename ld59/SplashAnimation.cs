@@ -24,7 +24,7 @@ public class SplashAnimation : UIPanel
     private float _brightness = 0f;
     private float _totalTime = 0f;
     private const float IntroDelay = 0.4f;
-    private const float FadeDuration = 3.2f;
+    private const float FadeDuration = 2.2f;
 
     private SpriteFont _font;
 

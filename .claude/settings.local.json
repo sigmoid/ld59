@@ -14,7 +14,9 @@
       "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\\\\quartz\" -Recurse -Filter \"*PostProc*\" -ErrorAction SilentlyContinue)",
       "Bash(Get-ChildItem \"f:\\\\Dev\\\\LD59\\\\quartz\\\\UI\" -Filter \"*.cs\")",
       "Bash(Select-Object Name)",
-      "Bash(xargs wc -l)"
+      "Bash(xargs wc -l)",
+      "Bash(dir /s /b f:\\\\Dev\\\\LD59\\\\ld59)",
+      "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\\\\ld59\" -Directory)"
     ]
   }
 }

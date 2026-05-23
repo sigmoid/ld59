@@ -133,7 +133,7 @@ public class BrowserUI : UIPanel
         foreach (var (label, href) in page.Links)
         {
             string captured = href;
-            var color = WebPage.VisitedUrls.Contains(href) ? ColorPalette.VisitedLink : ColorPalette.InfoName;
+            var color = ColorPalette.Black;
             _contentArea.AddLink(label, color, () => Navigate(captured));
         }
 

@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
 using Quartz;
+using System;
+
 
 public class ApplyGravityStep : IFluidSimulationStep
 {
@@ -28,7 +30,7 @@ public class ApplyGravityStep : IFluidSimulationStep
 
         _effect.Parameters["velocityTexture"].SetValue(source);
         _effect.Parameters["gravity"].SetValue(_gravity);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f)); // Clamp to avoid instability
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
 
         _effect.CurrentTechnique = _effect.Techniques["ApplyGravity"];

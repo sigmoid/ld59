@@ -4,6 +4,7 @@
 
 # Tasks
 
+1. Figure out why smoke decreases over time
 1. Rewrite first puzzle to start monolith story
     1. Make text more concise
 1. File search feature

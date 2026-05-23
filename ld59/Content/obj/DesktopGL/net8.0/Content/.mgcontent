@@ -32,6 +32,7 @@
     <File>F:/Dev/LD59/ld59/Content/fonts/Browser.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Small.spritefont</File>
+    <File>F:/Dev/LD59/ld59/Content/fonts/Victory.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/bluenoise.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/bmtheader.png</File>
@@ -77,11 +78,14 @@
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/radiance.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/spread-fire.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/velocity-damping.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/wind-divergence.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/wind-field.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/one_bit_dithering.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
