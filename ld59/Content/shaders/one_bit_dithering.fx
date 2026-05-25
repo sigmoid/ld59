@@ -3,8 +3,8 @@
     #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
-    #define VS_SHADERMODEL vs_4_0_level_9_1
-    #define PS_SHADERMODEL ps_4_0_level_9_1
+    #define VS_SHADERMODEL vs_4_0
+    #define PS_SHADERMODEL ps_4_0
 #endif
 
 sampler TextureSampler : register(s0);
@@ -15,11 +15,28 @@ float3 brightColor = float3(1.0, 1.0, 1.0);
 float px = 0;
 float py = 0;
 
-struct VertexShaderOutput
+struct VSInput
 {
-    float4 Color : COLOR0;
-    float2 TextureCoordinates : TEXCOORD0;
+    float4 Position : POSITION0;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
 };
+
+struct VSOutput
+{
+    float4 Position : SV_POSITION;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
+};
+
+VSOutput MainVS(VSInput input)
+{
+    VSOutput output;
+    output.Position = float4(input.TexCoord.x * 2.0 - 1.0, -(input.TexCoord.y * 2.0 - 1.0), 0.0, 1.0);
+    output.Color    = input.Color;
+    output.TexCoord = input.TexCoord;
+    return output;
+}
 
 // State texture layout:
 //   R = original luminance (preserved throughout)
@@ -37,9 +54,9 @@ float neighborErr(float2 uv, float dx, float dy)
 
 // --- Init: convert source colour to (lum, 0, 0, 1) ---
 
-float4 InitPS(VertexShaderOutput input) : COLOR
+float4 InitPS(VSOutput input) : COLOR
 {
-    float4 c = tex2D(TextureSampler, input.TextureCoordinates);
+    float4 c = tex2D(TextureSampler, input.TexCoord);
     float lum = dot(c.rgb, float3(0.299, 0.587, 0.114));
     return float4(lum, 0.0, 0.0, 1.0);
 }
@@ -54,9 +71,9 @@ float4 InitPS(VertexShaderOutput input) : COLOR
 // Equivalently, pixel (x,y) receives 1/8 of the error from:
 //   (x-1,y)  (x-2,y)  (x+1,y-1)  (x,y-1)  (x-1,y-1)  (x,y-2)
 
-float4 DiffusePS(VertexShaderOutput input) : COLOR
+float4 DiffusePS(VSOutput input) : COLOR
 {
-    float2 uv  = input.TextureCoordinates;
+    float2 uv  = input.TexCoord;
     float4 cur = tex2D(TextureSampler, uv);
 
     int fx = int(uv.x * resolution.x);
@@ -81,24 +98,36 @@ float4 DiffusePS(VertexShaderOutput input) : COLOR
 
 // --- Composite: map binary B channel to dark/bright colour ---
 
-float4 CompositePS(VertexShaderOutput input) : COLOR
+float4 CompositePS(VSOutput input) : COLOR
 {
-    float4 s = tex2D(TextureSampler, input.TextureCoordinates);
+    float4 s = tex2D(TextureSampler, input.TexCoord);
     float3 c = s.z > 0.5 ? brightColor : darkColor;
     return float4(c, 1.0);
 }
 
 technique InitPass
 {
-    pass Pass1 { PixelShader = compile PS_SHADERMODEL InitPS(); }
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader  = compile PS_SHADERMODEL InitPS();
+    }
 }
 
 technique DiffusePass
 {
-    pass Pass1 { PixelShader = compile PS_SHADERMODEL DiffusePS(); }
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader  = compile PS_SHADERMODEL DiffusePS();
+    }
 }
 
 technique CompositePass
 {
-    pass Pass1 { PixelShader = compile PS_SHADERMODEL CompositePS(); }
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader  = compile PS_SHADERMODEL CompositePS();
+    }
 }

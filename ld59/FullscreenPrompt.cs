@@ -13,7 +13,7 @@ public class FullscreenPrompt : UIPanel
 
     private static readonly string[] _promptLines =
     {
-        "  Fullscreen? Y/N",
+        "Fullscreen? Y/N",
     };
 
     private int _revealedLines = 0;
@@ -40,7 +40,7 @@ public class FullscreenPrompt : UIPanel
         _bounds = bounds;
         _onComplete = onComplete;
         AddChild(new Canvas(bounds, ColorPalette.Black));
-        _font = Core.Content.Load<SpriteFont>("fonts/BIOS");
+        _font = Core.Content.Load<SpriteFont>("fonts/Prompt");
         _prevKeys = Keyboard.GetState();
     }
 
@@ -116,8 +116,8 @@ public class FullscreenPrompt : UIPanel
         // Block height: prompt lines + gap + [Y] + 1.5 gap + [N] + 2 gap + input line
         float totalBlockHeight = (_promptLines.Length + 6.5f) * lineHeight;
 
-        string yText = "    [Y]  Fullscreen";
-        string nText = "    [N]  Windowed";
+        string yText = "[Y]  Fullscreen";
+        string nText = "[N]  Windowed";
         float maxWidth = 0f;
         foreach (var line in _promptLines)
             maxWidth = MathF.Max(maxWidth, _font.MeasureString(line).X);

@@ -1,0 +1,133 @@
+<Scene>
+  <Entities>
+    <Entity Name="12140_Skull_v3_L2">
+      <Position3D>
+        <X>-192.2932</X>
+        <Y>-23.2550</Y>
+        <Z>-3.1067</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/12140_Skull_v3_L2" Type="String"/>
+        <Property Name="TexturePath" Value="images/scramlogo" Type="String"/>
+        <Property Name="Scale" Value="0.144291,0.144291,0.144291" Type="Vector3"/>
+        <Property Name="RotationEuler" Value="-0.147389,0.880807,0.293485" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Cube">
+      <Position3D>
+        <X>0.0000</X>
+        <Y>-711.5999</Y>
+        <Z>-0.0000</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Cube.001" Type="String"/>
+        <Property Name="Scale" Value="5.919158,5.919158,5.919158" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Cube.001">
+      <Position3D>
+        <X>0.0000</X>
+        <Y>878.4863</Y>
+        <Z>-0.0000</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Cube.002" Type="String"/>
+        <Property Name="Scale" Value="5.919158,5.919158,5.919158" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="FinalBaseMesh">
+      <Position3D>
+        <X>87.9196</X>
+        <Y>-23.2550</Y>
+        <Z>6.9378</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/FinalBaseMesh.001" Type="String"/>
+        <Property Name="Scale" Value="3.041824,3.041824,3.041824" Type="Vector3"/>
+        <Property Name="RotationEuler" Value="1.759127,-0.494478,-0.026160" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Plane">
+      <Position3D>
+        <X>0.0000</X>
+        <Y>0.0000</Y>
+        <Z>-290.4355</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Plane" Type="String"/>
+        <Property Name="TexturePath" Value="images/bluenoise" Type="String"/>
+        <Property Name="Scale" Value="2.958857,2.958857,2.958857" Type="Vector3"/>
+        <Property Name="RotationEuler" Value="1.658063,-0.000000,0.000000" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Point">
+      <Position3D>
+        <X>-80.4933</X>
+        <Y>55.6490</Y>
+        <Z>90.5884</Z>
+      </Position3D>
+      <Component Type="PointLight">
+        <Property Name="Range" Value="500.0" Type="Single"/>
+        <Property Name="Intensity" Value="1.635" Type="Single"/>
+        <Property Name="Color" Value="1.0000,1.0000,1.0000,1.0" Type="Color"/>
+      </Component>
+    </Entity>
+    <Entity Name="Point.001">
+      <Position3D>
+        <X>-126.7288</X>
+        <Y>0.0000</Y>
+        <Z>101.1220</Z>
+      </Position3D>
+      <Component Type="PointLight">
+        <Property Name="Range" Value="500.0" Type="Single"/>
+        <Property Name="Intensity" Value="3.463" Type="Single"/>
+        <Property Name="Color" Value="1.0000,1.0000,1.0000,1.0" Type="Color"/>
+      </Component>
+    </Entity>
+    <Entity Name="Sphere">
+      <Position3D>
+        <X>-271.4995</X>
+        <Y>0.0000</Y>
+        <Z>-178.5933</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Sphere" Type="String"/>
+        <Property Name="Scale" Value="1.000000,1.000000,1.000000" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Sphere.001">
+      <Position3D>
+        <X>147.2924</X>
+        <Y>0.0000</Y>
+        <Z>-65.2200</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Sphere.001" Type="String"/>
+        <Property Name="Scale" Value="0.499062,0.499062,0.499062" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Torus">
+      <Position3D>
+        <X>-41.8230</X>
+        <Y>27.4387</Y>
+        <Z>-196.0594</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Torus" Type="String"/>
+        <Property Name="Scale" Value="1.000000,1.000000,1.000000" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="Torus.001">
+      <Position3D>
+        <X>-41.8230</X>
+        <Y>27.4387</Y>
+        <Z>293.4081</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath" Value="models/Torus.001" Type="String"/>
+        <Property Name="Scale" Value="1.000000,1.000000,1.000000" Type="Vector3"/>
+        <Property Name="RotationEuler" Value="-0.359863,-0.182407,-0.502271" Type="Vector3"/>
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

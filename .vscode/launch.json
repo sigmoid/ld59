@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ld59 Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build ld59",
+            "program": "${workspaceFolder}/ld59/bin/Debug/net9.0-windows/ld59.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/ld59/bin/Debug/net9.0-windows",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}

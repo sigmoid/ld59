@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-public enum FileType { Text, Image }
+public enum FileType { Text, Image, Scene3D }
 
 public class GameFile
 {

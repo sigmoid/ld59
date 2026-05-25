@@ -126,6 +126,11 @@ public class StartMenuUI : UIPanel
             var imageViewer = new ImageViewerUI(file);
             Core.UISystem.AddElement(imageViewer);
         }
+        else if (file.FileType == FileType.Scene3D)
+        {
+            var sceneViewer = new Scene3DViewerUI(file);
+            Core.UISystem.AddElement(sceneViewer);
+        }
         else
         {
             var textViewer = new TextViewerUI(new Rectangle(150, 150, 600, 800), file);

@@ -181,12 +181,12 @@ public class PuzzleSolutionUI : UIPanel
 
     private void ShowSuccess(string message, Action onComplete = null)
     {
-        AudioAtlas.Confirmation_001.Play();
+        AudioAtlas.MysterySolved.Play();
+        // DesktopUI.ToastManager.ShowSuccess("Case Closed", 5, Toast.ToastPosition.TopRight);
         SolutionSuccessOverlay overlay = null;
         overlay = new SolutionSuccessOverlay(_rootContainer.GetContentBounds(), message, () =>
         {
             Core.UISystem.RemoveElement(overlay);
-            DesktopUI.ToastManager.ShowSuccess("Mystery Solved", 5, Toast.ToastPosition.TopRight);
             onComplete?.Invoke();
         }) { Order = 0.85f };
         Core.UISystem.AddElement(overlay);

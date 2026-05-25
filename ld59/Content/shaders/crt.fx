@@ -3,19 +3,36 @@
     #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
-    #define VS_SHADERMODEL vs_4_0_level_9_1
-    #define PS_SHADERMODEL ps_4_0_level_9_1
+    #define VS_SHADERMODEL vs_4_0
+    #define PS_SHADERMODEL ps_4_0
 #endif
 
 sampler TextureSampler : register(s0);
 
 float2 curvature = float2(6.0, 4.0);
 
-struct VertexShaderOutput
+struct VSInput
 {
-    float4 Color : COLOR0;
-    float2 TextureCoordinates : TEXCOORD0;
+    float4 Position : POSITION0;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
 };
+
+struct VSOutput
+{
+    float4 Position : SV_POSITION;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
+};
+
+VSOutput MainVS(VSInput input)
+{
+    VSOutput output;
+    output.Position = float4(input.TexCoord.x * 2.0 - 1.0, -(input.TexCoord.y * 2.0 - 1.0), 0.0, 1.0);
+    output.Color    = input.Color;
+    output.TexCoord = input.TexCoord;
+    return output;
+}
 
 float2 curveRemapUV(float2 uv)
 {
@@ -26,11 +43,10 @@ float2 curveRemapUV(float2 uv)
     return uv;
 }
 
-float4 MainPS(VertexShaderOutput input) : COLOR
+float4 MainPS(VSOutput input) : COLOR
 {
-    float2 uv = curveRemapUV(input.TextureCoordinates);
+    float2 uv = curveRemapUV(input.TexCoord);
 
-    // Pixels outside the warped screen area are black
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
         return float4(0.0, 0.0, 0.0, 1.0);
 
@@ -41,6 +57,7 @@ technique CRT
 {
     pass Pass1
     {
-        PixelShader = compile PS_SHADERMODEL MainPS();
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader  = compile PS_SHADERMODEL MainPS();
     }
 }

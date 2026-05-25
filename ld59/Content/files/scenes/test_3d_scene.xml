@@ -1,0 +1,48 @@
+<Scene>
+  <Entities>
+    <Entity Name="TestBox">
+      <Position3D>
+        <X>-2</X>
+        <Y>0</Y>
+        <Z>0</Z>
+      </Position3D>
+      <Component Type="BoxPrimitive3D">
+        <Property Name="Scale" Value="1.5,1.5,1.5" Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="BaseMesh">
+      <Position3D>
+        <X>2</X>
+        <Y>0</Y>
+        <Z>0</Z>
+      </Position3D>
+      <Component Type="Mesh3D">
+        <Property Name="ModelPath"   Value="models/skull"       Type="String"/>
+        <Property Name="TexturePath" Value="images/bluenoise"  Type="String"/>
+        <Property Name="Scale"       Value="0.01,0.01,0.01"    Type="Vector3"/>
+      </Component>
+    </Entity>
+    <Entity Name="KeyLight">
+      <Position3D>
+        <X>29</X>
+        <Y>50</Y>
+        <Z>3</Z>
+      </Position3D>
+      <Component Type="PointLight">
+        <Property Name="Range"     Value="100"  Type="Single"/>
+        <Property Name="Intensity" Value="5.5" Type="Single"/>
+      </Component>
+    </Entity>
+    <Entity Name="FillLight">
+      <Position3D>
+        <X>-20</X>
+        <Y>10</Y>
+        <Z>5</Z>
+      </Position3D>
+      <Component Type="PointLight">
+        <Property Name="Range"     Value="100" Type="Single"/>
+        <Property Name="Intensity" Value="2.0" Type="Single"/>
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

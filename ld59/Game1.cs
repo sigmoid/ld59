@@ -23,7 +23,7 @@ public class Game1 : Core
     {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
-        Core.ClearColor = new Color(0,0,0,255);
+        Core.ClearColor = new Color(255,255,255,255);
         Instance = this;
     }
 

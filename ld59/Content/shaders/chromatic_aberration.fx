@@ -3,23 +3,40 @@
     #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
-    #define VS_SHADERMODEL vs_4_0_level_9_1
-    #define PS_SHADERMODEL ps_4_0_level_9_1
+    #define VS_SHADERMODEL vs_4_0
+    #define PS_SHADERMODEL ps_4_0
 #endif
 
 sampler TextureSampler : register(s0);
 
 float strength = 0.003;
 
-struct VertexShaderOutput
+struct VSInput
 {
-    float4 Color : COLOR0;
-    float2 TextureCoordinates : TEXCOORD0;
+    float4 Position : POSITION0;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
 };
 
-float4 MainPS(VertexShaderOutput input) : COLOR
+struct VSOutput
 {
-    float2 uv = input.TextureCoordinates;
+    float4 Position : SV_POSITION;
+    float4 Color    : COLOR0;
+    float2 TexCoord : TEXCOORD0;
+};
+
+VSOutput MainVS(VSInput input)
+{
+    VSOutput output;
+    output.Position = float4(input.TexCoord.x * 2.0 - 1.0, -(input.TexCoord.y * 2.0 - 1.0), 0.0, 1.0);
+    output.Color    = input.Color;
+    output.TexCoord = input.TexCoord;
+    return output;
+}
+
+float4 MainPS(VSOutput input) : COLOR
+{
+    float2 uv = input.TexCoord;
     float2 offset = (uv - 0.5) * strength;
 
     float r = tex2D(TextureSampler, uv - offset).r;
@@ -34,6 +51,7 @@ technique ChromaticAberration
 {
     pass Pass1
     {
-        PixelShader = compile PS_SHADERMODEL MainPS();
+        VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader  = compile PS_SHADERMODEL MainPS();
     }
 }

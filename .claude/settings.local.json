@@ -16,7 +16,9 @@
       "Bash(Select-Object Name)",
       "Bash(xargs wc -l)",
       "Bash(dir /s /b f:\\\\Dev\\\\LD59\\\\ld59)",
-      "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\\\\ld59\" -Directory)"
+      "Bash(Get-ChildItem -Path \"f:\\\\Dev\\\\LD59\\\\ld59\" -Directory)",
+      "Bash(ls \"C:/Users/adams/.nuget/packages/monogame.framework.windowsdx/\" 2>/dev/null || echo \"not found\")",
+      "Read(//c/Users/adams/.nuget/packages/monogame.framework.windowsdx/**)"
     ]
   }
 }

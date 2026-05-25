@@ -3,7 +3,7 @@ namespace crash.FluidSimulation.Steps;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Quartz;
-using System.Numerics;
+using Microsoft.Xna.Framework;
 
 public class DiffuseStep : IFluidSimulationStep
 {

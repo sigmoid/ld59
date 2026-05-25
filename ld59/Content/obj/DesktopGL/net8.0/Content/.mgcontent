@@ -25,18 +25,21 @@
     <File>F:/Dev/LD59/ld59/Content/audio/maximize_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/mouse_click_down.wav</File>
     <File>F:/Dev/LD59/ld59/Content/audio/mouse_click_up.wav</File>
+    <File>F:/Dev/LD59/ld59/Content/audio/mystery-solved.wav</File>
     <File>F:/Dev/LD59/ld59/Content/audio/open_001.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/audio/scroll_003.ogg</File>
     <File>F:/Dev/LD59/ld59/Content/FluidEffect.fx</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/BIOS.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Browser.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Default.spritefont</File>
+    <File>F:/Dev/LD59/ld59/Content/fonts/Prompt.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Small.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/fonts/Victory.spritefont</File>
     <File>F:/Dev/LD59/ld59/Content/images/background.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/bluenoise.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/bmtheader.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/browser_icon.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/crumpled_paper.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/decryptor_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/email_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/file_explorer.png</File>
@@ -44,6 +47,7 @@
     <File>F:/Dev/LD59/ld59/Content/images/file_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/flag.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/image_viewer.png</File>
+    <File>F:/Dev/LD59/ld59/Content/images/IMG_0982-2.jpg</File>
     <File>F:/Dev/LD59/ld59/Content/images/key_file_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/key_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/lithnet_header.png</File>
@@ -56,6 +60,11 @@
     <File>F:/Dev/LD59/ld59/Content/images/settings_icon.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/sklelatal.png</File>
     <File>F:/Dev/LD59/ld59/Content/images/start_menu.png</File>
+    <File>F:/Dev/LD59/ld59/Content/models/12140_Skull_v3_L2.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/FinalBaseMesh.001.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/human_base.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Icosphere.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/skull.fbx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/chromatic_aberration.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/crt_scanlines.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/crt.fx</File>
@@ -81,9 +90,30 @@
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/wind-divergence.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/fluid-simulation/wind-field.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/one_bit_dithering.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/debug-cubemap.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/point-light-mesh.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/point-light.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/shaders/shadow-depth.fx</File>
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Cube.001.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Plane.fbx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

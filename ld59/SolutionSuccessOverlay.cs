@@ -15,9 +15,10 @@ public class SolutionSuccessOverlay : UIPanel
     private float _timer = 0f;
     private bool _done = false;
 
-    private const float FadeInDuration = 0.7f;
-    private const float HoldDuration = 1.4f;
-    private const float TotalDuration = FadeInDuration + HoldDuration;
+    private const float WhiteFadeInDuration = 0.4f;
+    private const float TextFadeInDuration  = 2.5f;
+    private const float HoldDuration        = 1.0f;
+    private const float TotalDuration = WhiteFadeInDuration + TextFadeInDuration + HoldDuration;
 
     public SolutionSuccessOverlay(Rectangle bounds, string message, Action onComplete)
     {
@@ -51,12 +52,12 @@ public class SolutionSuccessOverlay : UIPanel
     {
         base.Draw(spriteBatch);
 
-        float whiteAlpha = MathHelper.Clamp(_timer / FadeInDuration, 0f, 1f);
+        float whiteAlpha = MathHelper.Clamp(_timer / WhiteFadeInDuration, 0f, 1f);
         float depth = GetActualOrder() + 0.01f;
 
         spriteBatch.Draw(_pixel, _bounds, null, Color.White * whiteAlpha, 0, Vector2.Zero, SpriteEffects.None, depth);
 
-        float textAlpha = MathHelper.Clamp((_timer - FadeInDuration * 0.6f) / (FadeInDuration * 0.4f), 0f, 1f);
+        float textAlpha = MathHelper.Clamp((_timer - WhiteFadeInDuration) / TextFadeInDuration, 0f, 1f);
         if (textAlpha <= 0f) return;
 
         var textSize = _font.MeasureString(_message);
@@ -64,7 +65,7 @@ public class SolutionSuccessOverlay : UIPanel
             _bounds.Center.X - textSize.X / 2f,
             _bounds.Center.Y - textSize.Y / 2f);
 
-        spriteBatch.DrawString(_font, _message, textPos, Color.Black * textAlpha,
+        spriteBatch.DrawString(_font, _message, textPos, Color.Lerp(Color.White, Color.Black, textAlpha),
             0, Vector2.Zero, 1f, SpriteEffects.None, depth + 0.001f);
     }
 

@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using System.Text;
 using Quartz;
-using System.Numerics;
+using Microsoft.Xna.Framework;
 
 namespace crash.FluidSimulation.Steps
 {

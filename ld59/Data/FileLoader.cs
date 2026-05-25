@@ -67,6 +67,12 @@ public class FileLoader
             }
         }
 
+        if (fileObj.Name.EndsWith(".scene3d"))
+        {
+            fileObj.FileType = FileType.Scene3D;
+            fileObj.Content = gameFileContent.Trim();
+        }
+
         return fileObj;
     }
 
