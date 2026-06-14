@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -41,7 +42,7 @@ public class BuoyancyStep : IFluidSimulationStep
         _effect.Parameters["ambientTemperature"].SetValue(_ambientTemperature);
         _effect.Parameters["heatBuoyancyConstant"].SetValue(_heatBuoyancyConstant);
         _effect.Parameters["gravity"].SetValue(_gravity);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.CurrentTechnique = _effect.Techniques["Buoyancy"];
         _effect.CurrentTechnique.Passes[0].Apply();
 

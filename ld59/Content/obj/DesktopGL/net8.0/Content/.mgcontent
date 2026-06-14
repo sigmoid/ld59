@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SourceFileCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <Profile>Reach</Profile>
+  <Profile>HiDef</Profile>
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
@@ -97,8 +97,24 @@
     <File>F:/Dev/LD59/ld59/Content/shaders/static_noise.fx</File>
     <File>F:/Dev/LD59/ld59/Content/models/Cube.001.fbx</File>
     <File>F:/Dev/LD59/ld59/Content/models/Plane.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Torus.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Cube.002.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Sphere.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Sphere.001.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Torus.001.fbx</File>
+    <File>F:/Dev/LD59/ld59/Content/models/bluenoise.png</File>
+    <File>F:/Dev/LD59/ld59/Content/models/scramlogo.png</File>
+    <File>F:/Dev/LD59/ld59/Content/models/Cesar_D_LaTorre_Jacket.fbx</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

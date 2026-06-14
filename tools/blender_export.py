@@ -29,7 +29,7 @@ import shutil
 import math
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION  ← edit these
@@ -40,11 +40,11 @@ POSITION_SCALE         = 100.0         # Blender internal units are meters; mult
 LIGHT_INTENSITY_SCALE  = 1.0           # fine-tune multiplier on top of calibrated base (1.0 = calibrated)
 LIGHT_RANGE_SCALE      = 1.0           # fine-tune multiplier on top of calibrated base (1.0 = calibrated)
 
-# Calibration point: a 39.7 W Blender point light was visually matched to
-# Range=300, Intensity=1.0 in-game.  Change these if you re-calibrate.
-_REF_WATTS     = 39.7
-_REF_RANGE     = 500.0
-_REF_INTENSITY = 1.0
+# Calibration point: a 500 W Blender point light was visually matched to
+# Range=2000, Intensity=0.838 in-game.  Change these if you re-calibrate.
+_REF_WATTS     = 500.0
+_REF_RANGE     = 2000.0
+_REF_INTENSITY = 0.838
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Change-of-basis: Blender Z-up → MonoGame Y-up
@@ -153,13 +153,21 @@ def _get_base_color_texture(obj):
             return fp, bname
     return None, None
 
-def _export_fbx(mesh_data, fbx_path):
+def _has_armature(obj):
+    return any(m.type == 'ARMATURE' for m in obj.modifiers)
+
+def _export_fbx(obj, fbx_path):
     """
-    Export mesh_data as an FBX at origin with Y-up axes.
-    A temporary zero-transform object is created and removed.
+    Export obj as an FBX at origin with Y-up axes.
+    The evaluated (depsgraph) mesh is used, so armature poses, shape keys,
+    and other modifiers are baked into static geometry before export.
     """
+    depsgraph  = bpy.context.evaluated_depsgraph_get()
+    eval_obj   = obj.evaluated_get(depsgraph)
+    baked_mesh = bpy.data.meshes.new_from_object(eval_obj, depsgraph=depsgraph)
+
     bpy.ops.object.select_all(action='DESELECT')
-    tmp = bpy.data.objects.new("__ld59_export_tmp__", mesh_data)
+    tmp = bpy.data.objects.new("__ld59_export_tmp__", baked_mesh)
     bpy.context.scene.collection.objects.link(tmp)
     tmp.select_set(True)
     bpy.context.view_layer.objects.active = tmp
@@ -179,12 +187,13 @@ def _export_fbx(mesh_data, fbx_path):
         use_mesh_modifiers   = True,
         add_leaf_bones       = False,
         bake_anim            = False,
-        path_mode            = 'COPY',
+        path_mode            = 'STRIP',
         embed_textures       = False,
     )
 
     bpy.context.scene.collection.objects.unlink(tmp)
     bpy.data.objects.remove(tmp)
+    bpy.data.meshes.remove(baked_mesh)
     print(f"  FBX  → {fbx_path}")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -212,18 +221,24 @@ def export_scene():
 
         # ── Mesh ──────────────────────────────────────────────────────────────
         if obj.type == 'MESH':
-            mesh_key  = obj.data.name
-            safe_name = mesh_key.replace(" ", "_")
+            # Posed objects (armature modifier) get a unique FBX per object so
+            # each pose is captured independently.  Static objects deduplicate
+            # by mesh data block as before.
+            if _has_armature(obj):
+                export_key = f"__posed__{obj.name}"
+                safe_name  = obj.name.replace(" ", "_")
+            else:
+                export_key = obj.data.name
+                safe_name  = obj.data.name.replace(" ", "_")
 
-            # Export FBX once per unique mesh data block
-            if mesh_key not in exported_meshes:
+            if export_key not in exported_meshes:
                 fbx_rel  = f"models/{safe_name}.fbx"
                 fbx_path = os.path.join(GAME_CONTENT_DIR, fbx_rel)
-                _export_fbx(obj.data, fbx_path)
+                _export_fbx(obj, fbx_path)
                 new_mgcb_models.append(fbx_rel)
-                exported_meshes[mesh_key] = f"models/{safe_name}"
+                exported_meshes[export_key] = f"models/{safe_name}"
 
-            model_key = exported_meshes[mesh_key]   # no extension (Content.Load key)
+            model_key = exported_meshes[export_key]   # no extension (Content.Load key)
 
             wm        = obj.matrix_world
             game_pos  = _pos_game(wm.to_translation())
@@ -252,23 +267,58 @@ def export_scene():
                 if tex_rel not in new_mgcb_textures:
                     new_mgcb_textures.append(tex_rel)
 
-                # Copy to models/ so the FBX's local texture reference resolves
-                # during the MonoGame content build (embed_textures=False writes
-                # just the bare filename next to the FBX).
-                models_tex_dst = os.path.join(models_dir, tex_base + ext)
-                if os.path.normcase(os.path.abspath(tex_path)) != \
-                   os.path.normcase(os.path.abspath(models_tex_dst)):
-                    shutil.copy2(tex_path, models_tex_dst)
-                    print(f"  TEX  → {models_tex_dst}")
-                models_tex_rel = f"models/{tex_base}{ext}"
-                if models_tex_rel not in new_mgcb_textures:
-                    new_mgcb_textures.append(models_tex_rel)
 
             _prop(comp, "Scale", _v3str(*game_scl), "Vector3")
 
             # Only write RotationEuler when non-trivial
             if any(abs(r) > 1e-4 for r in game_rot):
                 _prop(comp, "RotationEuler", _v3str(*game_rot), "Vector3")
+
+        # ── Camera ───────────────────────────────────────────────────────────
+        elif obj.type == 'CAMERA':
+            game_pos = _pos_game(obj.matrix_world.to_translation())
+
+            # Camera local forward is -Z; rotate to world, then apply Y-up basis swap
+            bl_fwd = obj.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))
+            bl_fwd.normalize()
+            # same axis swap as _pos_game: X→X, Z→Y, -Y→Z
+            look_dist = POSITION_SCALE * 10   # 10 Blender units look distance
+            game_target = (
+                game_pos[0] + bl_fwd.x * look_dist,
+                game_pos[1] + bl_fwd.z * look_dist,
+                game_pos[2] - bl_fwd.y * look_dist,
+            )
+
+            ent  = ET.SubElement(entities, "Entity", Name=obj.name)
+            _add_pos3d(ent, game_pos)
+
+            comp = ET.SubElement(ent, "Component", Type="SceneCamera")
+            _prop(comp, "Target",      _v3str(*game_target), "Vector3")
+            _prop(comp, "FieldOfView", f"{obj.data.angle_y:.6f}",  "Single")
+            print(f"  CAM  {obj.name}  pos={game_pos}  target={game_target}  fov={math.degrees(obj.data.angle_y):.1f}°")
+
+        # ── Sun (directional) light ──────────────────────────────────────────────
+        elif obj.type == 'LIGHT' and obj.data.type == 'SUN':
+            light    = obj.data
+            game_pos = _pos_game(obj.matrix_world.to_translation())
+            color    = light.color
+
+            # Local -Z is the photon direction; negate → toward-light, then axis-swap.
+            bl_photon = obj.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))
+            bl_photon.normalize()
+            toward = (-bl_photon.x, -bl_photon.z, bl_photon.y)   # game Y=bl Z, game Z=-bl Y
+
+            intensity = light.energy * LIGHT_INTENSITY_SCALE
+
+            ent  = ET.SubElement(entities, "Entity", Name=obj.name)
+            _add_pos3d(ent, game_pos)
+
+            comp = ET.SubElement(ent, "Component", Type="DirectionalLight")
+            _prop(comp, "Direction",   _v3str(*toward),       "Vector3")
+            _prop(comp, "Intensity",   f"{intensity:.3f}",    "Single")
+            _prop(comp, "Color",       f"{color.r:.4f},{color.g:.4f},{color.b:.4f},1.0", "Color")
+            _prop(comp, "CastShadows", "True",                "Boolean")
+            print(f"  SUN  {obj.name}  dir={toward}  intensity={intensity:.3f}")
 
         # ── Point light ───────────────────────────────────────────────────────
         elif obj.type == 'LIGHT' and obj.data.type == 'POINT':

@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -31,7 +32,7 @@ public class VelocityDampingStep : IFluidSimulationStep
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
         _effect.Parameters["velocityTexture"].SetValue(currentVelocity);
         _effect.Parameters["velocityDampingCoefficient"].SetValue(_dampingCoefficient);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
 
         _effect.CurrentTechnique = _effect.Techniques["VelocityDamping"];
 

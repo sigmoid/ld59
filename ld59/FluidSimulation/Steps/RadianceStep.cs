@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
@@ -37,7 +38,7 @@ public class RadianceStep : IFluidSimulationStep
         _effect.Parameters["temperatureTexture"].SetValue(temperatureRT);
         _effect.Parameters["ambientTemperature"].SetValue(_ambientTemperature);
         _effect.Parameters["maxTemperature"].SetValue(_maxTemperature);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.Parameters["coolingRate"].SetValue(_coolingRate);
         _effect.CurrentTechnique.Passes[0].Apply();
         Utils.DrawFullScreenQuad(device, gridSize);

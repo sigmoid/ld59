@@ -43,7 +43,7 @@ namespace ld59.UI
 
             if (deltaTime > 0f)
             {
-                var delta = EaseOutQuartForce((uv - _prevMouseUV) / deltaTime, 32f);
+                var delta = EaseOutQuartForce((uv - _prevMouseUV) / deltaTime, 8f);
                 _simulator.AddForceDiffuse(_prevMouseUV, delta * 4f, 0.035f);
             }
             _prevMouseUV = uv;
@@ -99,7 +99,8 @@ namespace ld59.UI
             var smokeOffset = new Vector2(
                 (float)Math.Sin(_smokeTimer) * 0.01f,
                 (float)Math.Cos(_smokeTimer * 1.5f) * 0.01f);
-            fluidSim.Simulator.AddSmoke(smokeCenter + smokeOffset, 10f * deltaTime, 0.02f);
+            fluidSim.Simulator.AddSmoke(smokeCenter + smokeOffset, 30f * deltaTime, 0.02f);
+            fluidSim.Simulator.AddForceDiffuse(smokeCenter + smokeOffset, new Vector2(0, -500.5f) * deltaTime, 0.03f);
             fluidSim.Update(deltaTime);
         }
 

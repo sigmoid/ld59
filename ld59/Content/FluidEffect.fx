@@ -251,11 +251,9 @@ float4 VisualizePS(VertexShaderOutput input) : COLOR0
     float obstacle = tex2D(obstacleSampler, scrollTexCoord).r;
     float smoke = tex2D(smokeSampler, scrollTexCoord).r;
 
-    float4 finalColor = float4(smoke, smoke, smoke, 1.0);
+    float4 finalColor = float4(1.0 - smoke, 1.0 - smoke, 1.0 - smoke, 1.0);
 
-
-
-    return 1.0 - finalColor;
+    return finalColor;
 }
 
 float4 VisualizeVelocityPS(VertexShaderOutput input) : COLOR0

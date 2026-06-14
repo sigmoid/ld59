@@ -391,3 +391,16 @@ It would be cool to incorporate the game I was thinking of that's based on the W
 It could be problematic if the 'currency' for gathering information is information.
 
 The way I see it playing out is that the player needs to find multiple pieces of evidence that together are damning enough for a judge to order a wire tap
+
+---
+
+Solitaire engine planning
+
+Renderer
+    - Render any card
+    - Move a card around the screen
+
+Logic Engine
+    - API to place cards on stacks
+        - validation
+        - effects

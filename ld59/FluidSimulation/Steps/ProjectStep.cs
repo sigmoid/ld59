@@ -24,11 +24,11 @@ public class ProjectStep : IFluidSimulationStep
     public void Execute(GraphicsDevice device, int gridSize, IRenderTargetProvider renderTargetProvider, float deltaTime)
     {
         var velocityRT = renderTargetProvider.GetCurrent(_velocityName);
+        var tempVelocityRT = renderTargetProvider.GetTemp(_velocityName);
         var pressureRT = renderTargetProvider.GetCurrent(_pressureName);
         var obstacleRT = renderTargetProvider.GetCurrent("obstacle");
 
-        device.SetRenderTarget(null);
-        device.SetRenderTarget(velocityRT);
+        device.SetRenderTarget(tempVelocityRT);
 
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
         _effect.Parameters["texelSize"].SetValue(new Vector2(1f / gridSize, 1f / gridSize));
@@ -42,5 +42,6 @@ public class ProjectStep : IFluidSimulationStep
         Utils.DrawFullScreenQuad(device, gridSize);
 
         device.SetRenderTarget(null);
+        renderTargetProvider.Swap(_velocityName);
     }
 }

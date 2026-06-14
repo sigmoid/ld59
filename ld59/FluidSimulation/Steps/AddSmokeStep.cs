@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -42,7 +43,7 @@ public class AddSmokeStep : IFluidSimulationStep
         _effect.Parameters["fuelTexture"].SetValue(fuelRT);
         _effect.Parameters["smokeTexture"].SetValue(smokeRT);
         _effect.Parameters["smokeEmissionRate"].SetValue(_smokeEmissionRate);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.Parameters["minFuelThreshold"].SetValue(_minFuelThreshold);
         _effect.Parameters["ignitionTemperature"].SetValue(_ignitionTemperature);
         _effect.CurrentTechnique = _effect.Techniques["AddSmoke"];

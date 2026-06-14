@@ -85,6 +85,21 @@ public class StartMenuUI : UIPanel
         var browserButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 700, _layoutGroup.GetBoundingBox().Width, 80), browserIcon, "LithNET", () => OpenBrowser());
         _layoutGroup.AddChild(browserButton);
 
+        var pinballIcon = Core.Content.Load<Texture2D>("images/pinball_icon");
+        var pinballButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 800, _layoutGroup.GetBoundingBox().Width, 80), pinballIcon, "Pinball", () => {
+            var pinballUI = new PinballUI(new Rectangle(150, 150, 700, 800));
+            Core.UISystem.AddElement(pinballUI);
+            HideMenu();
+        });
+        _layoutGroup.AddChild(pinballButton);
+
+        var solitaireIcon = Core.Content.Load<Texture2D>("images/file_icon");
+        var solitaireButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 900, _layoutGroup.GetBoundingBox().Width, 80), solitaireIcon, "Solitaire", () => {
+            _ = new SolitaireUI(new Rectangle(150, 150, 800, 700));
+            HideMenu();
+        });
+        _layoutGroup.AddChild(solitaireButton);
+
         _rootElement.AddChild(_layoutGroup);
 
         Core.UISystem.AddElement(_rootElement);

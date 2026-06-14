@@ -67,6 +67,26 @@ samplerCUBE ShadowCubeSampler3 = sampler_state
     MagFilter = Linear;
 };
 
+// Directional light
+bool     HasDirLight;
+float3   DirLightDirection;   // normalized, toward light (the "L" vector)
+float3   DirLightColor;
+float    DirLightIntensity;
+
+bool     HasDirShadow;
+float4x4 DirShadowMatrix;
+float    DirShadowStep;   // texelSize * blurRadius, pre-multiplied on CPU
+
+texture  DirShadowMap;
+sampler2D DirShadowSampler = sampler_state
+{
+    Texture   = <DirShadowMap>;
+    MinFilter = Linear;
+    MagFilter = Linear;
+    AddressU  = Clamp;
+    AddressV  = Clamp;
+};
+
 struct VertexInput
 {
     float4 Position : POSITION;
@@ -166,6 +186,29 @@ float SampleShadow3(float3 worldPos)
     return (currentDist - 0.005) < storedDist ? 1.0 : 0.0;
 }
 
+float3 CalcDirLight(float3 normal)
+{
+    float diff = saturate(dot(normal, DirLightDirection));
+    return DirLightColor * (DirLightIntensity * diff);
+}
+
+// 3x3 PCF — use tex2Dlod so sampling is safe inside any control flow.
+float SampleDirShadow(float3 worldPos)
+{
+    float4 sc  = mul(float4(worldPos, 1.0), DirShadowMatrix);
+    // UV: negate Y for DX convention (NDC +1 = top = UV 0).
+    float2 uv      = float2(sc.x, -sc.y) / sc.w * 0.5 + 0.5;
+    float  current = sc.z / sc.w * 0.5 + 0.5 - 0.002;
+    if (uv.x < 0.001 || uv.x > 0.999 || uv.y < 0.001 || uv.y > 0.999)
+        return 1.0;
+    float shadow = 0.0;
+    for (int x = -1; x <= 1; x++)
+        for (int y = -1; y <= 1; y++)
+            shadow += current < tex2Dlod(DirShadowSampler,
+                          float4(uv + float2(x, y) * DirShadowStep, 0, 0)).r ? 1.0 : 0.0;
+    return shadow / 9.0;
+}
+
 float4 PS(VertexOutput input) : COLOR
 {
     float3 normal = normalize(input.Normal);
@@ -176,6 +219,8 @@ float4 PS(VertexOutput input) : COLOR
     float sh1 = ShadowsEnabled ? SampleShadow1(input.WorldPos) : 1.0;
     float sh2 = ShadowsEnabled ? SampleShadow2(input.WorldPos) : 1.0;
     float sh3 = ShadowsEnabled ? SampleShadow3(input.WorldPos) : 1.0;
+    // Sample directional shadow outside control flow for the same reason.
+    float shDir = HasDirShadow ? SampleDirShadow(input.WorldPos) : 1.0;
 
     float3 lighting = AmbientColor;
     int n  = int(NumLights);
@@ -189,6 +234,9 @@ float4 PS(VertexOutput input) : COLOR
         else if (i == 3 && ns > 3) shadow = sh3;
         lighting += shadow * CalcPointLight(input.WorldPos, normal, LightPositions[i], LightColors[i]);
     }
+
+    if (HasDirLight)
+        lighting += shDir * CalcDirLight(normal);
 
     float3 diffuse = HasTexture ? tex2D(DiffuseSampler, input.TexCoord).rgb : DiffuseColor;
     return float4(diffuse * saturate(lighting), 1.0);

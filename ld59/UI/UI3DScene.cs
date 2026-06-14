@@ -13,6 +13,7 @@ public class UI3DScene : UIElement
     private readonly Scene _scene;
     private readonly RenderTarget2D _renderTarget;
     private readonly Effect _shadowEffect;
+    private readonly Effect _dirShadowEffect;
     private readonly Texture2D _pixel;
     private readonly int _rtWidth;
     private readonly int _rtHeight;
@@ -54,7 +55,8 @@ public class UI3DScene : UIElement
             DepthFormat.Depth24, 0,
             RenderTargetUsage.PreserveContents);
 
-        _shadowEffect = Core.Content.Load<Effect>("shaders/shadow-depth");
+        _shadowEffect    = Core.Content.Load<Effect>("shaders/shadow-depth");
+        _dirShadowEffect = Core.Content.Load<Effect>("shaders/shadow-depth-dir");
     }
 
     private void InitializeCameraAngles()
@@ -130,7 +132,7 @@ public class UI3DScene : UIElement
         // Shadow pass — renders all 6 cube faces
         device.DepthStencilState = DepthStencilState.Default;
         device.RasterizerState   = RasterizerState.CullNone;
-        _scene.DrawShadowPass(device, _shadowEffect);
+        _scene.DrawShadowPass(device, _shadowEffect, _dirShadowEffect);
 
         // Main scene pass
         device.SetRenderTarget(_renderTarget);

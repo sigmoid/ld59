@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -29,7 +30,7 @@ public class AdvectFieldStep : IFluidSimulationStep
         var currentVelocity = renderTargetProvider.GetCurrent("velocity");
         var obstacleRT = renderTargetProvider.GetCurrent("obstacle");
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.Parameters["texelSize"].SetValue(new Vector2(1f / gridSize, 1f / gridSize));
         _effect.Parameters["velocityTexture"].SetValue(currentVelocity);
         _effect.Parameters["sourceTexture"].SetValue(source);

@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
@@ -28,7 +29,7 @@ public class WindFieldStep : IFluidSimulationStep
         device.SetRenderTarget(destination);
 
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.Parameters["time"].SetValue(_time);
         _effect.Parameters["windStrength"].SetValue(Strength);
         _effect.Parameters["windScale"].SetValue(Scale);

@@ -63,7 +63,8 @@ public class DesktopUI : UIPanel
         }
 
         var smokeOffset = new Vector2((float)Math.Sin(_smokeTimer) * 0.01f, (float)Math.Cos(_smokeTimer * 1.5f) * 0.01f);
-        _fluidSimulation.Simulator.AddSmoke(_smokeCenter + smokeOffset, 10f * deltaTime, 0.02f);
+        _fluidSimulation.Simulator.AddSmoke(_smokeCenter + smokeOffset, 30f * deltaTime, 0.02f);
+        _fluidSimulation.Simulator.AddForceDiffuse(_smokeCenter + smokeOffset, new Vector2(0, -500.5f) * deltaTime, 0.03f);
     }
 
     private void CreateUI()
@@ -136,7 +137,7 @@ public class DesktopUI : UIPanel
     {
         if (_startMenuUI == null)
         {
-            _startMenuUI = new StartMenuUI(new Rectangle(_taskbar.GetBoundingBox().X  + 5, _taskbar.GetBoundingBox().Top - 700, 400, 700));
+            _startMenuUI = new StartMenuUI(new Rectangle(_taskbar.GetBoundingBox().X  + 5, _taskbar.GetBoundingBox().Top - 900, 400, 900));
             _startMenuUI.OnClose += () => _startMenuUI = null;
             AddChild(_startMenuUI);
         }

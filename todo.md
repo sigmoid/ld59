@@ -3,7 +3,10 @@
 [Ideas](ideas.md)
 
 # Tasks
+1. Make in game lighting closely match blender ligthing
+1. Add outlines to 3d renderer
 
+1. Add desktop icons
 1. Figure out why smoke decreases over time
 1. Rewrite first puzzle to start monolith story
     1. Make text more concise

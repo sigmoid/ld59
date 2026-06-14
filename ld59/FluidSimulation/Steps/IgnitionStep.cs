@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -39,7 +40,7 @@ public class IgnitionStep : IFluidSimulationStep
         _effect.Parameters["ignitionTemperature"].SetValue(_ignitionTemperature);
         _effect.Parameters["fuelBurnTemperature"].SetValue(_fuelBurnTemperature);
         _effect.Parameters["minFuelThreshold"].SetValue(_minFuelThreshold);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.CurrentTechnique.Passes[0].Apply();
 
         Utils.DrawFullScreenQuad(device, gridSize);

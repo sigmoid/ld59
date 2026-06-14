@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Microsoft.Xna.Framework;
@@ -38,7 +39,7 @@ public class ConsumeFuelState : IFluidSimulationStep
         _effect.Parameters["fuelTexture"].SetValue(fuelRT);
         _effect.Parameters["ignitionTemperature"].SetValue(_ignitionTemperature);
         _effect.Parameters["fuelConsumptionRate"].SetValue(_fuelConsumptionRate);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.CurrentTechnique = _effect.Techniques["ConsumeFuel"];
         _effect.CurrentTechnique.Passes[0].Apply();
         Utils.DrawFullScreenQuad(device, gridSize);

@@ -111,14 +111,14 @@ namespace crash.FluidSimulation
                 // Step 2: DIFFUSION - Viscous and thermal diffusion
                 new DiffuseStep("velocity", diffuseIterations),
                 // new GaussianBlurStep("temperature", 1, 8),
-                new DiffuseStep("smoke", 2),
+                new DiffuseStep("smoke", 4),
 
                 // Step 3: VORTICITY - Add turbulent swirls for more interesting smoke motion
                 // new ComputeVorticityStep(),
                 // new VorticityConfinementStep(_vorticityScale),
 
                 // Step 4: EXTERNAL FORCES
-                new ApplyGravityStep("velocity", 10.0f),
+                // new ApplyGravityStep("velocity", 10.0f),
 
                 // Step 5: PROJECTION - Make velocity field divergence-free
                 new ComputeDivergenceStep(),
@@ -160,7 +160,7 @@ namespace crash.FluidSimulation
 
         public void Update(GameTime gameTime)
         {
-            _fluidEffect.Parameters["timeStep"].SetValue((float)gameTime.ElapsedGameTime.TotalSeconds);
+            _fluidEffect.Parameters["timeStep"].SetValue(MathF.Max(0.001f, (float)gameTime.ElapsedGameTime.TotalSeconds));
             _fluidEffect.Parameters["diffusion"].SetValue(_diffusion);
             _fluidEffect.Parameters["texelSize"].SetValue(new Vector2(1.0f / _gridSize, 1.0f / _gridSize));
             _fluidEffect.Parameters["sourceStrength"].SetValue(_sourceStrength);

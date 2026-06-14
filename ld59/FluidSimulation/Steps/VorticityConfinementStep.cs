@@ -1,5 +1,6 @@
 namespace crash.FluidSimulation.Steps;
 
+using System;
 using Microsoft.Xna.Framework.Graphics;
 using crash.FluidSimulation.Utils;
 using Quartz;
@@ -27,7 +28,7 @@ public class VorticityConfinementStep : IFluidSimulationStep
 
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
         _effect.Parameters["texelSize"].SetValue(new Vector2(1f / gridSize, 1f / gridSize));
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.Parameters["vorticityScale"].SetValue(_vorticityScale);
         _effect.Parameters["velocityTexture"].SetValue(velocityRT);
         _effect.Parameters["vorticityTexture"].SetValue(vorticityRT);

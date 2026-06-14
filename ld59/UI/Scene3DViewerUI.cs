@@ -24,7 +24,8 @@ public class Scene3DViewerUI : UIPanel
 
         var cb = _rootContainer.GetContentBounds();
         var scene = LoadScene(file);
-        scene.AmbientLightColor = new Color(0.4f, 0.4f, 0.4f, 1f);
+        scene.AmbientLightColor = Color.White;
+        scene.LightingEnabled   = true;
         scene.SceneScale = 0.01f;
         var sceneView = new UI3DScene(cb, scene);
         sceneView.CameraPosition = new Vector3(0f, 1.5f, 4f);

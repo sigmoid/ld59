@@ -1,3 +1,4 @@
+using System;
 using crash.FluidSimulation;
 using crash.FluidSimulation.Steps;
 using crash.FluidSimulation.Utils;
@@ -30,7 +31,7 @@ public class FieldDissipationStep : IFluidSimulationStep
         _effect.Parameters["renderTargetSize"].SetValue(new Vector2(gridSize, gridSize));
         _effect.Parameters["fieldTexture"].SetValue(source);
         _effect.Parameters["dissipationRate"].SetValue(_dissipationRate);
-        _effect.Parameters["timeStep"].SetValue(deltaTime);
+        _effect.Parameters["timeStep"].SetValue(MathF.Max(deltaTime, 0.001f));
         _effect.CurrentTechnique = _effect.Techniques["Dissipate"];
         _effect.CurrentTechnique.Passes[0].Apply();
 

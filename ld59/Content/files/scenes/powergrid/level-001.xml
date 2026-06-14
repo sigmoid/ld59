@@ -1,0 +1,65 @@
+<Scene>
+  <Entities>
+    <Entity Name="level">
+      <Position>
+        <X>0</X>
+        <Y>0</Y>
+      </Position>
+      <Component Type="PowergridLevelComponent">
+        <Property Name="HoldingSlots" Value="3" Type="int" />
+        <Data>1,1,2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n0">
+      <Position>
+        <X>0</X>
+        <Y>0</Y>
+      </Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>n1</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n1">
+      <Position>
+        <X>2</X>
+        <Y>0</Y>
+      </Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Data>n2,n4</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n2">
+      <Position>
+        <X>4</X>
+        <Y>0</Y>
+      </Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsGoal" Value="true" Type="bool" />
+        <Data>n3</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n3">
+      <Position>
+        <X>6</X>
+        <Y>0</Y>
+      </Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+      </Component>
+    </Entity>
+    <Entity Name="n4">
+      <Position>
+        <X>2</X>
+        <Y>2</Y>
+      </Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="HeldTokenPower" Value="1" Type="int" />
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>
