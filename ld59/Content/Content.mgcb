@@ -223,6 +223,15 @@
 #begin files/scenes/powergrid/level-002.xml
 /copy:files/scenes/powergrid/level-002.xml
 
+#begin files/scenes/powergrid/mirror-assembly.xml
+/copy:files/scenes/powergrid/mirror-assembly.xml
+
+#begin files/scenes/powergrid/locked-mirror.xml
+/copy:files/scenes/powergrid/locked-mirror.xml
+
+#begin files/scenes/powergrid/delay-intro.xml
+/copy:files/scenes/powergrid/delay-intro.xml
+
 #begin FluidEffect.fx
 /importer:EffectImporter
 /processor:EffectProcessor

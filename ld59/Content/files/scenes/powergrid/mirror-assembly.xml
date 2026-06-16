@@ -1,0 +1,76 @@
+<Scene>
+  <Entities>
+    <Entity Name="level">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowergridLevelComponent">
+        <Property Name="HoldingSlots" Value="3" Type="int" />
+        <Data>inventory:1,1</Data>
+      </Component>
+    </Entity>
+
+    <!-- AND gate + goal: fires only when BOTH inputs (TU, BU) arrive on the same tick. -->
+    <Entity Name="S">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="And" Type="enum" />
+        <Data>goal</Data>
+      </Component>
+    </Entity>
+    <Entity Name="goal">
+      <Position><X>2</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsGoal" Value="true" Type="bool" />
+      </Component>
+    </Entity>
+
+    <!-- The two inputs into S -->
+    <Entity Name="TU">
+      <Position><X>0</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent"><Data>S</Data></Component>
+    </Entity>
+    <Entity Name="BU">
+      <Position><X>0</X><Y>-2</Y></Position>
+      <Component Type="PowerNodeComponent"><Data>S</Data></Component>
+    </Entity>
+
+    <!-- Top branch: short (TA, 2 hops to S) or long (Tm -> Tmid, 3 hops to S) -->
+    <Entity Name="TA">
+      <Position><X>-3</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>TU</Data>
+      </Component>
+    </Entity>
+    <Entity Name="Tmid">
+      <Position><X>-2</X><Y>4</Y></Position>
+      <Component Type="PowerNodeComponent"><Data>TU</Data></Component>
+    </Entity>
+    <Entity Name="Tm">
+      <Position><X>-4</X><Y>4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>Tmid</Data>
+      </Component>
+    </Entity>
+
+    <!-- Bottom branch: short (Ba, 2 hops) or long (Bm -> Bmid, 3 hops) -->
+    <Entity Name="Ba">
+      <Position><X>-3</X><Y>-2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>BU</Data>
+      </Component>
+    </Entity>
+    <Entity Name="Bmid">
+      <Position><X>-2</X><Y>-4</Y></Position>
+      <Component Type="PowerNodeComponent"><Data>BU</Data></Component>
+    </Entity>
+    <Entity Name="Bm">
+      <Position><X>-4</X><Y>-4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>Bmid</Data>
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

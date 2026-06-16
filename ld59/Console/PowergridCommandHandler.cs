@@ -21,7 +21,7 @@ public class PowergridCommandHandler : ConsoleCommandHandler
         }
 
         string levelName = args.Length > 0 ? args[0] : null;
-        var ui = new PowergridUI(new Rectangle(150, 100, 900, 700), levelName);
+        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), levelName);
         Core.UISystem.AddElement(ui);
     }
 

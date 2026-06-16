@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless unit-test harness for the Powergrid pulse simulation engine.
+    It compile-includes the real engine source files from ../ld59 and supplies lightweight stubs
+    for Vector2 / Entity / Component (Stubs.cs), so the solver can be exercised with no MonoGame
+    dependency and no content pipeline. Run with: dotnet run, project PowergridSimTests.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>PowergridSimTests</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Stubs.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="..\ld59\UI\Powergrid\PuzzleGraph.cs"         Link="Engine\PuzzleGraph.cs" />
+    <Compile Include="..\ld59\UI\Powergrid\Connection.cs"          Link="Engine\Connection.cs" />
+    <Compile Include="..\ld59\UI\Powergrid\Geometry.cs"            Link="Engine\Geometry.cs" />
+    <Compile Include="..\ld59\UI\Powergrid\PowerNodeComponent.cs"  Link="Engine\PowerNodeComponent.cs" />
+    <Compile Include="..\ld59\UI\Powergrid\EdgeLockComponent.cs"   Link="Engine\EdgeLockComponent.cs" />
+  </ItemGroup>
+
+</Project>

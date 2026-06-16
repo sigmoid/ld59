@@ -7,7 +7,7 @@
       </Position>
       <Component Type="PowergridLevelComponent">
         <Property Name="HoldingSlots" Value="3" Type="int" />
-        <Data>inventory:1,1;activation:p0>p1</Data>
+        <Data>inventory:1,1;activation:a0>a1</Data>
       </Component>
     </Entity>
 
@@ -16,7 +16,6 @@
         <X>0</X>
         <Y>0</Y>
       </Position>
-      <Tag>puzzle:p0</Tag>
       <Component Type="PowerNodeComponent">
         <Property Name="IsAnchor" Value="true" Type="bool" />
         <Data>g0</Data>
@@ -27,7 +26,6 @@
         <X>2</X>
         <Y>0</Y>
       </Position>
-      <Tag>puzzle:p0</Tag>
       <Component Type="PowerNodeComponent">
         <Property Name="IsGoal" Value="true" Type="bool" />
       </Component>
@@ -38,7 +36,6 @@
         <X>10</X>
         <Y>0</Y>
       </Position>
-      <Tag>puzzle:p1</Tag>
       <Component Type="PowerNodeComponent">
         <Property Name="IsAnchor" Value="true" Type="bool" />
         <Data>g1</Data>
@@ -49,7 +46,6 @@
         <X>12</X>
         <Y>0</Y>
       </Position>
-      <Tag>puzzle:p1</Tag>
       <Component Type="PowerNodeComponent">
         <Property Name="IsGoal" Value="true" Type="bool" />
       </Component>

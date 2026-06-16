@@ -1,0 +1,49 @@
+<Scene>
+  <Entities>
+    <Entity Name="level">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowergridLevelComponent">
+        <Property Name="HoldingSlots" Value="3" Type="int" />
+        <Data>inventory:1,1</Data>
+      </Component>
+    </Entity>
+
+    <!-- AND gate + goal. The two inputs reach it via paths of DIFFERENT length, so the only way to
+         fire the gate is to delay the short-path emitter so both pulses arrive on the same tick. -->
+    <Entity Name="M">
+      <Position><X>4</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="And" Type="enum" />
+        <Data>G</Data>
+      </Component>
+    </Entity>
+    <Entity Name="G">
+      <Position><X>6</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsGoal" Value="true" Type="bool" />
+      </Component>
+    </Entity>
+
+    <!-- Short path: A -> M (1 hop). Needs delay +1 to line up with the long path. -->
+    <Entity Name="A">
+      <Position><X>0</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>M</Data>
+      </Component>
+    </Entity>
+
+    <!-- Long path: B -> X -> M (2 hops). -->
+    <Entity Name="B">
+      <Position><X>0</X><Y>-2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Data>X</Data>
+      </Component>
+    </Entity>
+    <Entity Name="X">
+      <Position><X>2</X><Y>-2</Y></Position>
+      <Component Type="PowerNodeComponent"><Data>M</Data></Component>
+    </Entity>
+  </Entities>
+</Scene>

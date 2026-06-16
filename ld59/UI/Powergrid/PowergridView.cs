@@ -9,7 +9,7 @@ using Quartz.UI;
 
 namespace ld59.UI.Powergrid;
 
-public enum EditTool { Select, AddNode, Connect, Delete }
+public enum EditTool { Select, AddNode, Connect, Delete, Lock, Key, Link }
 
 /// <summary>
 /// 2D top-down viewport for a Powergrid level. Owns a pan/zoom camera and renders the puzzle graph
@@ -63,6 +63,14 @@ public class PowergridView : UIElement
     private Point _moveLast;
     private PowerNodeComponent _connectSource;
 
+    // 2b authoring state
+    public EdgeLockComponent SelectedLock { get; private set; }
+    private bool _lockDragging;
+    private Vector2 _lockStart;
+    private EdgeLockComponent _keyLock;     // lock awaiting a key node (Key tool)
+    private PowerNodeComponent _linkSource; // first node picked (Link tool)
+    private const float LockHitDistance = 8f;
+
     // Play state (runtime; resets each session)
     private readonly List<int> _inventory = new();
     private int?[] _holding = new int?[3];
@@ -75,6 +83,13 @@ public class PowergridView : UIElement
     private float _rejectTimer;
     private Vector2 _rejectPos;
     private bool Dragging => _handKind != HandKind.None;
+
+    // Pulse-simulation run state (play mode). A run is started/stepped/reset via the toolbar; auto-play
+    // advances one tick every TickDuration seconds and animates pulses travelling along energised edges.
+    private bool _runStarted;     // a run has begun (vs. the placement phase)
+    private bool _autoPlay;       // auto-advance on the timer (Run) vs. manual (Step)
+    private float _tickProgress;  // [0,1] elapsed fraction of the current tick (drives pulse-dot position)
+    private const float TickDuration = 0.35f;
 
     public Scene Scene => _scene;
     public PowergridLevelController Controller => _controller;
@@ -113,7 +128,8 @@ public class PowergridView : UIElement
     public override Rectangle GetBoundingBox() => _bounds;
     public override void SetBounds(Rectangle bounds) => _bounds = bounds;
 
-    /// <summary>Reloads inventory/holding from the level config. Drops anything in hand.</summary>
+    /// <summary>Reloads inventory/holding from the level config and clears any in-progress run. Drops
+    /// anything in hand.</summary>
     public void ResetPlayState()
     {
         ReturnHandToOrigin();
@@ -124,9 +140,54 @@ public class PowergridView : UIElement
             foreach (var n in graph.Nodes)
             {
                 n.PlacedTokenPower = 0;
-                n.Discovered = false;
+                n.PlacedTokenDelay = 0;
                 n.HeldTokenCollected = false;
             }
+        ResetSimulation();   // clears lit/energised state and re-applies the discovery baseline
+    }
+
+    // ── Pulse-simulation controls (wired to the Run/Step/Reset toolbar buttons) ──
+
+    /// <summary>True while a run is in progress or halted (vs. the placement phase).</summary>
+    public bool RunStarted => _runStarted;
+
+    private bool AnyRunning() => _controller.Graphs.Any(g => g.IsRunning);
+
+    /// <summary>Run (auto-play): start a fresh run if none is live, then auto-advance on the timer.</summary>
+    public void RunSimulation()
+    {
+        if (!_runStarted || !AnyRunning())
+        {
+            _controller.StartAll();
+            _runStarted = true;
+        }
+        _autoPlay = true;
+        _tickProgress = 0f;
+    }
+
+    /// <summary>Step: advance exactly one tick (starting the run on the first press), no auto-play.</summary>
+    public void StepSimulation()
+    {
+        _autoPlay = false;
+        if (!_runStarted || !AnyRunning())
+        {
+            _controller.StartAll();   // first press shows t=0 (just-emitted anchors)
+            _runStarted = true;
+        }
+        else
+        {
+            _controller.StepAll();
+        }
+        _tickProgress = 0f;
+    }
+
+    /// <summary>Reset back to the placement phase: nothing lit, locks closed, unsolved.</summary>
+    public void ResetSimulation()
+    {
+        _controller.ResetAllRuns();
+        _runStarted = false;
+        _autoPlay = false;
+        _tickProgress = 0f;
     }
 
     #region Camera transforms
@@ -184,12 +245,17 @@ public class PowergridView : UIElement
         bool leftRelease = !left &&  _prevLeftPressed;
 
         int scroll = mouse.ScrollWheelValue;
-        if (inside && GraphRegion.Contains(mp) && scroll != _prevScroll)
-        {
-            float factor = MathF.Pow(1.1f, (scroll - _prevScroll) / 120f);
-            _zoom = MathHelper.Clamp(_zoom * factor, MinZoom, MaxZoom);
-        }
+        int scrollDelta = scroll - _prevScroll;
         _prevScroll = scroll;
+        if (scrollDelta != 0 && inside && GraphRegion.Contains(mp))
+        {
+            // Scrolling over a placed emitter adjusts its firing delay; otherwise it zooms.
+            var emitter = !EditMode ? HitTestNode(mp) : null;
+            if (emitter != null && emitter.IsAnchor && emitter.PlacedTokenPower > 0)
+                AdjustEmitterDelay(emitter, scrollDelta > 0 ? 1 : -1);
+            else
+                _zoom = MathHelper.Clamp(_zoom * MathF.Pow(1.1f, scrollDelta / 120f), MinZoom, MaxZoom);
+        }
 
         if (_rejectTimer > 0) _rejectTimer -= deltaTime;
 
@@ -216,8 +282,28 @@ public class PowergridView : UIElement
 
         _controller.Update(deltaTime);
 
-        if (!EditMode) CollectHeldTokens();
+        if (!EditMode)
+        {
+            AdvanceAutoPlay(deltaTime);
+            CollectHeldTokens();
+        }
         UpdateCameraSnap(deltaTime);
+    }
+
+    /// <summary>While auto-playing, accumulate time and step the simulation one tick per TickDuration,
+    /// stopping when every run has halted. <see cref="_tickProgress"/> drives the pulse-dot animation.</summary>
+    private void AdvanceAutoPlay(float deltaTime)
+    {
+        if (!_runStarted || !_autoPlay) return;
+
+        if (!AnyRunning()) { _autoPlay = false; _tickProgress = 0f; return; }
+
+        _tickProgress += deltaTime / TickDuration;
+        while (_tickProgress >= 1f)
+        {
+            _tickProgress -= 1f;
+            if (!_controller.StepAll()) { _autoPlay = false; _tickProgress = 0f; break; }
+        }
     }
 
     /// <summary>When idle (not panning/dragging) and near an active puzzle, ease the camera to centre it.</summary>
@@ -314,7 +400,7 @@ public class PowergridView : UIElement
                 if (graph != null && graph.CanRemovePower(node))
                 {
                     _handKind = HandKind.FromNode; _handPower = node.PlacedTokenPower; _handNode = node;
-                    node.PlacedTokenPower = 0; _handPos = mp; return true;
+                    node.PlacedTokenPower = 0; node.PlacedTokenDelay = 0; _handPos = mp; return true;
                 }
                 Reject(WorldToScreen(node.Entity.Position));
             }
@@ -376,6 +462,15 @@ public class PowergridView : UIElement
 
     private void Reject(Vector2 screenPos) { _rejectTimer = 0.4f; _rejectPos = screenPos; }
 
+    /// <summary>Changes a placed emitter's firing delay, clamped to [0, tickCap-1]. Resets any
+    /// in-progress run so the new timing takes effect on the next Run.</summary>
+    private void AdjustEmitterDelay(PowerNodeComponent emitter, int delta)
+    {
+        int cap = _controller.GraphOf(emitter)?.TickCap ?? 64;
+        emitter.PlacedTokenDelay = MathHelper.Clamp(emitter.PlacedTokenDelay + delta, 0, Math.Max(0, cap - 1));
+        if (_runStarted) ResetSimulation();
+    }
+
     private Rectangle HoldingSlotRect(int i)
     {
         int y = BarRect.Y + (BarRect.Height - SlotSize) / 2;
@@ -410,6 +505,7 @@ public class PowergridView : UIElement
                 {
                     var hit = HitTestNode(mp);
                     Selected = hit;
+                    SelectedLock = hit == null ? LockHitTest(mp) : null;
                     _movingNode = hit;
                     _moveLast = mp;
                 }
@@ -441,8 +537,55 @@ public class PowergridView : UIElement
             case EditTool.Delete:
                 if (leftClick && inside)
                 {
-                    var hit = HitTestNode(mp);
-                    if (hit != null) DeleteNode(hit);
+                    var node = HitTestNode(mp);
+                    if (node != null) { DeleteNode(node); break; }
+
+                    var conn = ConnectionHitTest(mp);
+                    if (conn != null) { RemoveConnection(conn); break; }
+
+                    if (DeleteActivationAt(mp)) break;
+
+                    var lck = LockHitTest(mp);
+                    if (lck != null) DeleteLock(lck);
+                }
+                break;
+
+            case EditTool.Lock:
+                if (leftClick && inside) { _lockDragging = true; _lockStart = ScreenToWorld(mp); }
+                if (leftRelease && _lockDragging)
+                {
+                    _lockDragging = false;
+                    var end = ScreenToWorld(mp);
+                    if (Vector2.Distance(_lockStart, end) > 0.2f) AddLock(_lockStart, end);
+                }
+                break;
+
+            case EditTool.Key:
+                if (leftClick && inside)
+                {
+                    var node = HitTestNode(mp);
+                    if (node != null && _keyLock != null)
+                    {
+                        _keyLock.KeyNode = node.Entity.Name;
+                        _keyLock = null;
+                        MarkDirty();
+                    }
+                    else
+                    {
+                        _keyLock = LockHitTest(mp); // pick the lock first, then a node
+                    }
+                }
+                break;
+
+            case EditTool.Link:
+                if (leftClick && inside)
+                {
+                    var node = HitTestNode(mp);
+                    if (node != null)
+                    {
+                        if (_linkSource == null) _linkSource = node;
+                        else { ToggleActivation(_linkSource, node); _linkSource = null; }
+                    }
                 }
                 break;
         }
@@ -450,19 +593,19 @@ public class PowergridView : UIElement
 
     private void MarkDirty() => _needsRebuild = true;
 
-    private string UniqueNodeName()
+    private string UniqueName(string prefix)
     {
         var existing = _scene.GetEntities().Select(e => e.Name).ToHashSet();
         for (int i = 1; ; i++)
         {
-            var name = $"node{i}";
+            var name = $"{prefix}{i}";
             if (!existing.Contains(name)) return name;
         }
     }
 
     private void AddNodeAt(Vector2 world)
     {
-        var entity = new Entity { Name = UniqueNodeName() };
+        var entity = new Entity { Name = UniqueName("node") };
         entity.LocalPosition = world;
         var node = new PowerNodeComponent();
         entity.AddComponent(node);
@@ -492,9 +635,108 @@ public class PowergridView : UIElement
         }
         _scene.RemoveEntity(node.Entity);
         if (Selected == node) Selected = null;
+        if (_linkSource == node) _linkSource = null;
         MarkDirty();
     }
 
+    // ── Locks / keys ──────────────────────────────────────────────────────
+    private EdgeLockComponent LockHitTest(Point screen)
+    {
+        var p = new Vector2(screen.X, screen.Y);
+        foreach (var graph in _controller.Graphs)
+            foreach (var lck in graph.Locks)
+                if (DistPointSeg(p, WorldToScreen(lck.PointA), WorldToScreen(lck.PointB)) <= LockHitDistance)
+                    return lck;
+        return null;
+    }
+
+    private void AddLock(Vector2 a, Vector2 b)
+    {
+        var entity = new Entity { Name = UniqueName("lock") };
+        var lck = new EdgeLockComponent { PointA = a, PointB = b };
+        entity.AddComponent(lck);
+        _scene.AddEntity(entity);
+        SelectedLock = lck; Selected = null;
+        MarkDirty();
+    }
+
+    private void DeleteLock(EdgeLockComponent lck)
+    {
+        _scene.RemoveEntity(lck.Entity);
+        if (SelectedLock == lck) SelectedLock = null;
+        if (_keyLock == lck) _keyLock = null;
+        MarkDirty();
+    }
+
+    // ── Connections ───────────────────────────────────────────────────────
+    private Connection ConnectionHitTest(Point screen)
+    {
+        var p = new Vector2(screen.X, screen.Y);
+        foreach (var graph in _controller.Graphs)
+            foreach (var conn in graph.Connections)
+                if (DistPointSeg(p, WorldToScreen(conn.StartPos), WorldToScreen(conn.EndPos)) <= LockHitDistance)
+                    return conn;
+        return null;
+    }
+
+    private void RemoveConnection(Connection conn)
+    {
+        conn.From.OutgoingNodeNames.Remove(conn.To.Entity.Name);
+        MarkDirty();
+    }
+
+    // ── Activation links (stored by node name; puzzles are auto-detected) ──
+    private void ToggleActivation(PowerNodeComponent a, PowerNodeComponent b)
+    {
+        if (_controller.GraphOf(a) == _controller.GraphOf(b)) return; // same puzzle — no self-link
+
+        var lvl = EnsureLevelComponent();
+        var edge = (a.Entity.Name, b.Entity.Name);
+        if (!lvl.Activations.Remove(edge)) lvl.Activations.Add(edge);
+        MarkDirty();
+    }
+
+    private bool DeleteActivationAt(Point screen)
+    {
+        var p = new Vector2(screen.X, screen.Y);
+        foreach (var (from, to) in _controller.ActivationEdges)
+        {
+            var ga = _controller.GraphContainingNode(from);
+            var gb = _controller.GraphContainingNode(to);
+            if (ga == null || gb == null) continue;
+            if (DistPointSeg(p, WorldToScreen(ga.Centroid), WorldToScreen(gb.Centroid)) <= LockHitDistance)
+            {
+                EnsureLevelComponent().Activations.Remove((from, to));
+                MarkDirty();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private PowergridLevelComponent EnsureLevelComponent()
+    {
+        foreach (var e in _scene.GetEntities())
+        {
+            var lvl = e.GetComponent<PowergridLevelComponent>();
+            if (lvl != null) return lvl;
+        }
+        var entity = new Entity { Name = UniqueName("level") };
+        var comp = new PowergridLevelComponent();
+        entity.AddComponent(comp);
+        _scene.AddEntity(entity);
+        return comp;
+    }
+
+    private static float DistPointSeg(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        float lenSq = ab.LengthSquared();
+        float t = lenSq > 0 ? MathHelper.Clamp(Vector2.Dot(p - a, ab) / lenSq, 0f, 1f) : 0f;
+        return Vector2.Distance(p, a + ab * t);
+    }
+
+    // ── Inspector ops ─────────────────────────────────────────────────────
     public void ToggleAnchor() { if (Selected != null) { Selected.IsAnchor = !Selected.IsAnchor; MarkDirty(); } }
     public void ToggleGoal()   { if (Selected != null) { Selected.IsGoal   = !Selected.IsGoal;   MarkDirty(); } }
 
@@ -527,6 +769,72 @@ public class PowergridView : UIElement
 
     public void DeleteSelected() { if (Selected != null) DeleteNode(Selected); }
 
+    /// <summary>Clears all placed tokens (called when entering edit mode for a clean authoring slate).</summary>
+    public void ClearPlacedTokens()
+    {
+        foreach (var graph in _controller.Graphs)
+            foreach (var n in graph.Nodes)
+                n.PlacedTokenPower = 0;
+        MarkDirty();
+    }
+
+    /// <summary>Toggles the discovery/fog mechanic for the selected node's whole puzzle.</summary>
+    public void ToggleDiscovery()
+    {
+        if (Selected == null) return;
+        var graph = _controller.GraphOf(Selected);
+        if (graph == null) return;
+
+        var lvl = EnsureLevelComponent();
+        if (graph.DiscoveryEnabled)
+        {
+            var names = graph.Nodes.Select(n => n.Entity.Name).ToHashSet();
+            lvl.DiscoveryNodes.RemoveAll(names.Contains);
+        }
+        else
+        {
+            lvl.DiscoveryNodes.Add(Selected.Entity.Name);
+        }
+        MarkDirty();
+    }
+
+    public bool SelectedPuzzleDiscovery
+        => Selected != null && _controller.GraphOf(Selected) is { DiscoveryEnabled: true };
+
+    /// <summary>Effective pulse-simulation tick cap for the selected node's puzzle (0 if no selection).</summary>
+    public int SelectedPuzzleTickCap
+        => Selected != null && _controller.GraphOf(Selected) is { } g ? g.TickCap : 0;
+
+    /// <summary>Adjusts (and persists) the per-puzzle tick cap for the selected node's puzzle.</summary>
+    public void AdjustTickCap(int delta)
+    {
+        if (Selected == null) return;
+        var graph = _controller.GraphOf(Selected);
+        if (graph == null) return;
+
+        int cap = Math.Max(1, graph.TickCap + delta);
+        graph.TickCap = cap;                          // immediate feedback this session
+        EnsureLevelComponent().TickCaps[graph.Id] = cap; // persist override keyed by puzzle id
+        MarkDirty();
+    }
+
+    // ── Level config editing (inventory) ──────────────────────────────────
+    public void AddInventoryToken(int power) { EnsureLevelComponent().Inventory.Add(power); MarkDirty(); }
+    public void ClearInventory() { EnsureLevelComponent().Inventory.Clear(); MarkDirty(); }
+
+    public string EditorInventoryText
+    {
+        get
+        {
+            foreach (var e in _scene.GetEntities())
+            {
+                var lvl = e.GetComponent<PowergridLevelComponent>();
+                if (lvl != null) return lvl.Inventory.Count > 0 ? string.Join(",", lvl.Inventory) : "(empty)";
+            }
+            return "(empty)";
+        }
+    }
+
     #endregion
 
     #region Drawing
@@ -541,7 +849,11 @@ public class PowergridView : UIElement
 
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, rasterizer);
 
-        spriteBatch.Draw(_pixel, _bounds, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0f);
+        // Gray viewport; each puzzle gets a white background sized to its nodes.
+        spriteBatch.Draw(_pixel, _bounds, null, Color.Gray, 0f, Vector2.Zero, SpriteEffects.None, 0f);
+        foreach (var graph in _controller.Graphs)
+            if (TryGetPuzzleScreenRect(graph, out var rect))
+                spriteBatch.Draw(_pixel, rect, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.05f);
 
         foreach (var graph in _controller.Graphs)
         {
@@ -556,6 +868,8 @@ public class PowergridView : UIElement
             if (!EditMode && !graph.IsActive)
                 DrawInactiveMask(spriteBatch, graph);
         }
+
+        DrawActivationLinks(spriteBatch); // both modes
 
         if (EditMode) DrawEditOverlay(spriteBatch);
         else DrawPlayOverlay(spriteBatch);
@@ -577,6 +891,15 @@ public class PowergridView : UIElement
         float thickness = conn.IsActive ? 3f : 1.5f;
         DrawLine(sb, a, b, thickness, color);
         DrawArrowHead(sb, a, b, color, thickness);
+
+        // A pulse travelling this edge this tick: a bright dot eased from start to end across the tick.
+        if (conn.IsActive && _runStarted && !EditMode)
+        {
+            var p = Vector2.Lerp(a, b, MathHelper.Clamp(_tickProgress, 0f, 1f));
+            float r = MathF.Max(4f, _zoom * 0.10f);
+            sb.Draw(_circleFilled, new Rectangle((int)(p.X - r), (int)(p.Y - r), (int)(r * 2), (int)(r * 2)),
+                null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.46f);
+        }
     }
 
     private void DrawArrowHead(SpriteBatch sb, Vector2 from, Vector2 to, Color color, float thickness)
@@ -616,10 +939,24 @@ public class PowergridView : UIElement
 
         if (node.NodeKind == NodeKind.And) DrawCenterMark(sb, center, _andGate, "&", dst.Width);
         else if (node.NodeKind == NodeKind.Xor) DrawCenterMark(sb, center, _xorGate, "^", dst.Width);
-        else if (node.PlacedTokenPower > 0) DrawCenterText(sb, center, node.PlacedTokenPower.ToString(), ColorPalette.ActualWhite);
+        // A placed emitter shows its firing delay (the meaningful, player-set value), e.g. "+0", "+2".
+        else if (node.PlacedTokenPower > 0) DrawCenterText(sb, center, "+" + node.PlacedTokenDelay, ColorPalette.ActualWhite);
 
         if (node.IsAnchor) DrawRoleMarker(sb, center, diameter, _anchorMarker, "A");
         if (node.IsGoal)   DrawRoleMarker(sb, center, diameter, null, "G");
+
+        // Held token waiting to be discovered (shown in edit always; in play until collected).
+        if (node.HeldTokenPower > 0 && (EditMode || !node.HeldTokenCollected))
+            DrawHeldBadge(sb, center, diameter, node.HeldTokenPower);
+    }
+
+    private void DrawHeldBadge(SpriteBatch sb, Vector2 nodeCenter, float diameter, int power)
+    {
+        float s = diameter * 0.46f;
+        var c = new Vector2(nodeCenter.X + diameter * 0.42f, nodeCenter.Y - diameter * 0.42f);
+        sb.Draw(_circleOutlined, new Rectangle((int)(c.X - s / 2), (int)(c.Y - s / 2), (int)s, (int)s),
+            null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.45f);
+        DrawCenterText(sb, c, power.ToString(), ColorPalette.Black);
     }
 
     private void DrawCenterMark(SpriteBatch sb, Vector2 center, Texture2D tex, string fallback, int boxSize)
@@ -652,22 +989,31 @@ public class PowergridView : UIElement
         DrawCenterText(sb, pos, fallback, ColorPalette.Black);
     }
 
-    private void DrawInactiveMask(SpriteBatch sb, PuzzleGraph graph)
+    /// <summary>Screen-space bounding box of a puzzle's (drawn) nodes plus padding. False if nothing is drawn.</summary>
+    private bool TryGetPuzzleScreenRect(PuzzleGraph graph, out Rectangle rect)
     {
-        if (graph.Nodes.Count == 0) return;
-
         float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+        int count = 0;
         foreach (var n in graph.Nodes)
         {
+            if (!EditMode && !n.Discovered) continue;
             var s = WorldToScreen(n.Entity.Position);
             minX = MathF.Min(minX, s.X); minY = MathF.Min(minY, s.Y);
             maxX = MathF.Max(maxX, s.X); maxY = MathF.Max(maxY, s.Y);
+            count++;
         }
+        if (count == 0) { rect = default; return false; }
 
-        float pad = NodeWorldRadius * _zoom + 16;
-        var rect = new Rectangle(
+        float pad = NodeWorldRadius * _zoom + 60;
+        rect = new Rectangle(
             (int)(minX - pad), (int)(minY - pad),
             (int)(maxX - minX + pad * 2), (int)(maxY - minY + pad * 2));
+        return true;
+    }
+
+    private void DrawInactiveMask(SpriteBatch sb, PuzzleGraph graph)
+    {
+        if (!TryGetPuzzleScreenRect(graph, out var rect)) return;
 
         sb.Draw(_pixel, rect, null, new Color(0, 0, 0, 120), 0f, Vector2.Zero, SpriteEffects.None, 0.18f);
 
@@ -677,26 +1023,69 @@ public class PowergridView : UIElement
         sb.DrawString(_font, label, center - size * 0.5f, ColorPalette.ActualWhite, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.17f);
     }
 
+    /// <summary>Point where the ray from a rectangle's centre toward <paramref name="target"/> exits the rect.</summary>
+    private static Vector2 RectEdgeToward(Rectangle r, Vector2 target)
+    {
+        var center = new Vector2(r.X + r.Width / 2f, r.Y + r.Height / 2f);
+        var dir = target - center;
+        if (dir == Vector2.Zero) return center;
+        float tx = dir.X > 0 ? (r.Right - center.X) / dir.X : dir.X < 0 ? (r.Left - center.X) / dir.X : float.MaxValue;
+        float ty = dir.Y > 0 ? (r.Bottom - center.Y) / dir.Y : dir.Y < 0 ? (r.Top - center.Y) / dir.Y : float.MaxValue;
+        return center + dir * MathF.Min(tx, ty);
+    }
+
+    /// <summary>White arrows from the boundary of one puzzle's background to the next (drawn in both modes).
+    /// Many-to-many: each stored edge is drawn independently, so one puzzle may point to several.</summary>
+    private void DrawActivationLinks(SpriteBatch sb)
+    {
+        foreach (var (from, to) in _controller.ActivationEdges)
+        {
+            var ga = _controller.GraphContainingNode(from);
+            var gb = _controller.GraphContainingNode(to);
+            if (ga == null || gb == null || ga == gb) continue;
+            if (!TryGetPuzzleScreenRect(ga, out var ra) || !TryGetPuzzleScreenRect(gb, out var rb)) continue;
+
+            var bc = new Vector2(rb.X + rb.Width / 2f, rb.Y + rb.Height / 2f);
+            var ac = new Vector2(ra.X + ra.Width / 2f, ra.Y + ra.Height / 2f);
+            var a = RectEdgeToward(ra, bc);
+            var b = RectEdgeToward(rb, ac);
+            DrawLine(sb, a, b, 2f, ColorPalette.ActualWhite);
+            DrawArrowHead(sb, a, b, ColorPalette.ActualWhite, 2f);
+        }
+    }
+
     private void DrawEditOverlay(SpriteBatch sb)
     {
+        var mp = Core.GetTransformedMousePoint();
+
         if (Selected != null)
             DrawRing(sb, WorldToScreen(Selected.Entity.Position), NodeWorldRadius * _zoom + 4f, ColorPalette.Black, 2f);
 
+        if (_linkSource != null)
+            DrawRing(sb, WorldToScreen(_linkSource.Entity.Position), NodeWorldRadius * _zoom + 4f, ColorPalette.Orange, 2f);
+
+        // Lock highlights.
+        if (SelectedLock != null)
+            DrawLine(sb, WorldToScreen(SelectedLock.PointA), WorldToScreen(SelectedLock.PointB), 5f, ColorPalette.Black);
+        if (_keyLock != null)
+            DrawLine(sb, WorldToScreen(_keyLock.PointA), WorldToScreen(_keyLock.PointB), 5f, ColorPalette.Orange);
+
         if (_connectSource != null)
-        {
-            var from = WorldToScreen(_connectSource.Entity.Position);
-            var mp = Core.GetTransformedMousePoint();
-            DrawLine(sb, from, new Vector2(mp.X, mp.Y), 2f, Color.Gray);
-        }
+            DrawLine(sb, WorldToScreen(_connectSource.Entity.Position), new Vector2(mp.X, mp.Y), 2f, Color.Gray);
+
+        if (_lockDragging)
+            DrawLine(sb, WorldToScreen(_lockStart), new Vector2(mp.X, mp.Y), 3f, Color.Gray);
     }
 
     private void DrawPlayOverlay(SpriteBatch sb)
     {
         DrawInventoryBar(sb);
 
-        // Solved banner when every puzzle that has a goal is solved.
         var withGoals = _controller.Graphs.Where(g => g.Nodes.Any(n => n.IsGoal)).ToList();
-        if (withGoals.Count > 0 && withGoals.All(g => g.IsSolved))
+        bool solved = withGoals.Count > 0 && withGoals.All(g => g.IsSolved);
+
+        // Solved banner when every puzzle that has a goal is solved.
+        if (solved)
         {
             const string msg = "SOLVED";
             var size = _font.MeasureString(msg) * 1.5f;
@@ -704,7 +1093,22 @@ public class PowergridView : UIElement
             sb.DrawString(_font, msg, pos, ColorPalette.DarkGreen, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 0.2f);
         }
 
+        DrawRunStatus(sb, solved);
+
         if (Dragging) DrawToken(sb, new Vector2(_handPos.X, _handPos.Y), SlotSize * 0.5f, _handPower);
+    }
+
+    /// <summary>Top-left status: placement prompt, running tick counter, or halted/solved.</summary>
+    private void DrawRunStatus(SpriteBatch sb, bool solved)
+    {
+        int tick = _controller.Graphs.Count > 0 ? _controller.Graphs.Max(g => g.CurrentTick) : 0;
+        string status;
+        if (!_runStarted) status = "Place tokens on anchors  -  scroll an emitter to set its delay  -  then Run";
+        else if (AnyRunning()) status = $"Running...  t={tick}";
+        else status = solved ? $"Solved at t={tick}" : $"Halted  t={tick}";
+
+        var pos = new Vector2(GraphRegion.X + 10, GraphRegion.Y + 8);
+        sb.DrawString(_font, status, pos, ColorPalette.Black, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.2f);
     }
 
     private void DrawInventoryBar(SpriteBatch sb)

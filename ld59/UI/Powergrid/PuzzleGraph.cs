@@ -6,17 +6,22 @@ using Microsoft.Xna.Framework;
 namespace ld59.UI.Powergrid;
 
 /// <summary>
-/// Runtime model + solver for one sub-puzzle: a directed graph of <see cref="PowerNodeComponent"/>s
-/// connected by <see cref="Connection"/>s, with optional <see cref="EdgeLockComponent"/>s. Rebuilt
-/// each session from the scene's components (never serialized).
+/// Runtime model + <b>pulse simulation</b> for one sub-puzzle: a directed graph of
+/// <see cref="PowerNodeComponent"/>s connected by <see cref="Connection"/>s, with optional
+/// <see cref="EdgeLockComponent"/>s. Rebuilt each session from the scene's components (never serialized).
 ///
-/// Ported from the original jam game's LevelManager, with cleanups:
-///  - Distribution flows only along connection segments (the original's second, unconditional loop
-///    over raw outgoing connections bypassed locks/crossings — dropped here so they actually gate flow).
-///  - A fixpoint loop replaces the original's frame-to-frame event nudging, so satisfying a gate or
-///    unlocking a lock admits power within the same Update().
-///  - "Solved" means the goal node is *powered* (power reached it), matching the design doc, rather
-///    than the original's "goal holds a token".
+/// <para>v2 mechanics (see POWERGRID_DESIGN.md → "Pulse Simulation Redesign"). The static instant-power
+/// model is gone. The player drops emitter tokens on anchors and runs a time-stepped simulation:</para>
+/// <list type="bullet">
+///   <item>Discrete clock, <b>one edge per tick</b>. Anchors with a token emit a pulse at tick 0.</item>
+///   <item>Pulses travel forward along directed edges and <b>split to all outputs</b> at a fan-out.</item>
+///   <item>Pulses don't weaken; a node may <b>re-fire</b>, so a <see cref="TickCap"/> bounds the run.</item>
+///   <item>Per-tick arrival counts drive cancellation/gates: a Normal node emits on exactly 1 arrival
+///         and annihilates on ≥ 2; <b>AND</b> emits on ≥ 2; <b>XOR</b> emits on exactly 1.</item>
+///   <item>Two <b>physically crossing</b> edges energised on the same tick cancel each other.</item>
+///   <item>A lock <b>latches open</b> once its key node has fired this run.</item>
+///   <item><b>Arrival wins</b>: any pulse reaching a goal solves the puzzle.</item>
+/// </list>
 /// </summary>
 public class PuzzleGraph
 {
@@ -28,13 +33,41 @@ public class PuzzleGraph
     /// <summary>Endpoint inset from node centres, so lines visually meet circle edges and crossing
     /// tests use edge points. Matches the original LinePadding (~ node radius).</summary>
     private const float LinePadding = 0.4f;
-    private const int MaxFixpointIterations = 16;
 
+    /// <summary>Maximum simulation ticks before a run halts (bounds cyclic/echoing pulses). Editable
+    /// per puzzle; the controller sets this from the level config.</summary>
+    public int TickCap = 64;
+
+    /// <summary>Whether this sub-puzzle is currently active (witness-style chaining). Inactive puzzles
+    /// don't run. Distinct from a node's per-tick <see cref="PowerNodeComponent.IsActive"/>.</summary>
     public bool IsActive = true;
+
+    /// <summary>True once any pulse has reached a goal node during the current/last run.</summary>
     public bool IsSolved { get; private set; }
 
-    /// <summary>Sub-puzzle id (from the entity tag); used for activation chaining.</summary>
+    /// <summary>True while a run is in progress (between <see cref="StartRun"/> and the tick the run halts).</summary>
+    public bool IsRunning { get; private set; }
+
+    /// <summary>True once a run has halted (solved, ran dry, or hit the tick cap).</summary>
+    public bool IsFinished { get; private set; }
+
+    /// <summary>The tick most recently produced by <see cref="StepTick"/> (0 = just-emitted anchors).</summary>
+    public int CurrentTick { get; private set; }
+
+    /// <summary>Nodes emitting on <see cref="CurrentTick"/> (the wavefront source for the next step).</summary>
+    private readonly List<PowerNodeComponent> _firingNow = new();
+
+    /// <summary>Placed emitters with their (player-set) fire tick, captured at <see cref="StartRun"/>.
+    /// An emitter is injected as a fresh source on the tick equal to its delay.</summary>
+    private readonly List<(PowerNodeComponent node, int delay)> _emitters = new();
+    private int _maxDelay;
+
+    /// <summary>Sub-puzzle id (smallest node name in the component); used for activation chaining.</summary>
     public string Id { get; set; } = "default";
+
+    /// <summary>When false (default), all nodes are visible from the start. When true, the fog/discovery
+    /// mechanic applies (nodes hidden until a pulse reaches them).</summary>
+    public bool DiscoveryEnabled { get; set; }
 
     /// <summary>Average of node positions — used for camera snap and the inactive mask.</summary>
     public Vector2 Centroid
@@ -63,6 +96,7 @@ public class PuzzleGraph
         BuildConnections(resolve);
         PopulateCompetingConnections();
         PopulateLocks();
+        ResetRun();
     }
 
     private static Vector2 Pos(PowerNodeComponent n) => n.Entity.Position;
@@ -113,7 +147,8 @@ public class PuzzleGraph
                 var ci = _allConnections[i];
                 var cj = _allConnections[j];
 
-                // Edges meeting at a shared node are not "crossing".
+                // Edges meeting at a shared node are not "crossing" (so a fan-out's own outputs never
+                // cancel one another).
                 if (SharesEndpoint(ci, cj)) continue;
 
                 if (Geometry.DoLinesIntersect(ci.StartPos, ci.EndPos, cj.StartPos, cj.EndPos))
@@ -142,266 +177,181 @@ public class PuzzleGraph
 
     #endregion
 
-    #region Power distribution
+    #region Pulse simulation
 
-    public void Update()
+    /// <summary>Clears all run state back to the placement phase: nothing lit, locks closed, unsolved.</summary>
+    public void ResetRun()
     {
-        ResetState();
+        IsRunning = false;
+        IsFinished = false;
+        IsSolved = false;
+        CurrentTick = 0;
+        _firingNow.Clear();
+        _emitters.Clear();
+        _maxDelay = 0;
 
-        HashSet<PowerNodeComponent> lastSignature = null;
-        for (int iter = 0; iter < MaxFixpointIterations; iter++)
+        foreach (var n in _nodes)
         {
-            UpdateLockStates();
-
-            // Snapshot source power *before* clearing, so gates evaluate against the previous pass.
-            var srcPower = _nodes.ToDictionary(n => n, GetPower);
-
-            foreach (var n in _nodes)
-            {
-                n.PoweredFrom.Clear();
-                n.IsActive = false;
-            }
-            foreach (var c in _allConnections)
-                c.IsActive = false;
-
-            foreach (var n in _nodes)
-            {
-                if (srcPower[n] > 0)
-                {
-                    n.IsActive = true;
-                    Distribute(n, srcPower[n], new HashSet<PowerNodeComponent>());
-                }
-            }
-
-            var signature = _nodes.Where(n => n.IsActive).ToHashSet();
-            if (lastSignature != null && signature.SetEquals(lastSignature)) break;
-            lastSignature = signature;
+            n.IsActive = false;
+            n.FiredThisRun = false;
+            // Discovery: with fog off everything is visible; with fog on, only anchors/goals start revealed.
+            n.Discovered = !DiscoveryEnabled || n.IsAnchor || n.IsGoal;
         }
+        foreach (var c in _allConnections) c.IsActive = false;
+        foreach (var l in _locks) l.IsLocked = true;
+    }
 
-        var goals = _nodes.Where(n => n.IsGoal).ToList();
-        IsSolved = goals.Count > 0 && goals.All(g => g.IsActive);
+    /// <summary>Begins a run: each placed emitter is scheduled to fire on its delay tick; delay-0
+    /// emitters fire immediately at tick 0.</summary>
+    public void StartRun()
+    {
+        ResetRun();
+        if (!IsActive) { IsFinished = true; return; }
 
-        RevealPass();
+        foreach (var n in _nodes)
+            if (n.IsAnchor && n.PlacedTokenPower > 0)
+            {
+                int delay = Math.Max(0, n.PlacedTokenDelay);
+                _emitters.Add((n, delay));
+                if (delay > _maxDelay) _maxDelay = delay;
+            }
+
+        foreach (var (node, delay) in _emitters)
+            if (delay == 0) FireSource(node);
+
+        LatchLocks();
+
+        IsRunning = _emitters.Count > 0 && !IsSolved && TickCap > 0;
+        IsFinished = !IsRunning;
+    }
+
+    /// <summary>Marks a node as a fresh pulse source on the current tick (an emitter firing, or a
+    /// re-emitting junction): adds it to the firing set and lights it.</summary>
+    private void FireSource(PowerNodeComponent node)
+    {
+        if (!_firingNow.Contains(node)) _firingNow.Add(node);
+        node.FiredThisRun = true;
+        node.IsActive = true;
+        node.Discovered = true;
+        if (node.IsGoal) IsSolved = true;   // arrival wins (degenerate anchor-goal)
     }
 
     /// <summary>
-    /// Discovery: anchors and goals are always visible (start/end reference). A powered node reveals
-    /// the nodes its connections point at (the frontier) — even through locks, matching the original,
-    /// so the player can see where to push next. Discovery is sticky for the session.
+    /// Advances the simulation one tick: every node firing this tick energises its valid outbound
+    /// edges (split), crossing edges energised the same tick cancel, then arriving pulses are tallied
+    /// per node and the cancellation/gate rules decide the next firing set. Returns true while the run
+    /// can continue (more firing, no win, cap not reached).
     /// </summary>
-    private void RevealPass()
+    public bool StepTick()
     {
-        foreach (var n in _nodes)
-            if (n.IsAnchor || n.IsGoal)
-                n.Discovered = true;
+        if (!IsRunning) return false;
 
-        foreach (var n in _nodes)
+        // 1. Candidate traversals: outbound edges of the current firing set whose locks are open.
+        var candidates = new List<Connection>();
+        foreach (var n in _firingNow)
+            foreach (var c in _lines[n])
+                if (!HasActiveLock(c))
+                    candidates.Add(c);
+
+        var candidateSet = new HashSet<Connection>(candidates);
+
+        // 2. Crossing resolution: two crossing edges energised on the same tick cancel each other.
+        var survivors = new List<Connection>(candidates.Count);
+        foreach (var c in candidates)
         {
-            if (!n.IsActive) continue;
-            if (_lines.TryGetValue(n, out var lines))
-                foreach (var line in lines)
-                    line.To.Discovered = true;
+            if (c.CompetingConnections != null && c.CompetingConnections.Any(candidateSet.Contains))
+                continue;
+            survivors.Add(c);
         }
-    }
 
-    private void ResetState()
-    {
-        foreach (var n in _nodes)
+        // 3. Clear last tick's transient lit/energised state.
+        foreach (var n in _nodes) n.IsActive = false;
+        foreach (var conn in _allConnections) conn.IsActive = false;
+
+        // 4. Tally arrivals (this tick's traversals land on their targets next tick).
+        var arrivals = new Dictionary<PowerNodeComponent, int>();
+        foreach (var c in survivors)
         {
-            n.PoweredFrom.Clear();
-            n.IsActive = false;
+            c.IsActive = true;   // wire energised during this traversal
+            arrivals[c.To] = arrivals.GetValueOrDefault(c.To) + 1;
         }
-        foreach (var c in _allConnections)
-            c.IsActive = false;
-        foreach (var l in _locks)
-            l.IsLocked = true;
-    }
 
-    private void UpdateLockStates()
-    {
-        foreach (var l in _locks)
-            l.IsLocked = l.KeyNodeRef == null || !l.KeyNodeRef.IsActive;
-    }
-
-    private void Distribute(PowerNodeComponent node, int power, HashSet<PowerNodeComponent> seen)
-    {
-        if (power <= 0 || !seen.Add(node)) return;
-        if (!_lines.TryGetValue(node, out var lines)) return;
-
-        foreach (var line in lines)
+        // 5. Apply cancellation / gate rules → the next firing set; detect goal arrivals.
+        var nextFiring = new List<PowerNodeComponent>();
+        foreach (var (node, count) in arrivals)
         {
-            if (HasActiveLock(line) || HasCrossingConflict(line)) continue;
+            node.IsActive = true;       // lit: a pulse reached it
+            node.Discovered = true;
 
-            line.IsActive = true;
-            line.To.IsActive = true;
-            line.To.PoweredFrom.Add(node);
-            Distribute(line.To, power - 1, seen);
+            if (node.IsGoal) IsSolved = true;   // arrival wins, regardless of cancellation
+
+            if (Emits(node, count))
+            {
+                node.FiredThisRun = true;
+                nextFiring.Add(node);
+            }
         }
+
+        CurrentTick++;
+        _firingNow.Clear();
+        _firingNow.AddRange(nextFiring);
+
+        // Inject any emitters scheduled to fire on this tick (delayed pulses join the wavefront).
+        foreach (var (node, delay) in _emitters)
+            if (delay == CurrentTick) FireSource(node);
+
+        LatchLocks();   // a node that fired this tick may open its lock for the next
+
+        // Keep running while pulses are live OR emitters are still scheduled to fire later.
+        bool more = !IsSolved && CurrentTick < TickCap
+                    && (_firingNow.Count > 0 || CurrentTick < _maxDelay);
+        if (!more)
+        {
+            IsRunning = false;
+            IsFinished = true;
+        }
+        return more;
     }
+
+    /// <summary>Runs from a clean start to the halt condition (solved, ran dry, or tick cap).</summary>
+    public void RunToCompletion()
+    {
+        StartRun();
+        // +2 guard is belt-and-suspenders; StepTick already enforces the cap.
+        for (int guard = 0; guard <= TickCap + 2 && StepTick(); guard++) { }
+    }
+
+    /// <summary>Does an arriving node re-emit, given how many pulses reached it this tick?</summary>
+    private static bool Emits(PowerNodeComponent n, int arrivalCount) => n.NodeKind switch
+    {
+        NodeKind.And => arrivalCount >= 2,
+        NodeKind.Xor => arrivalCount == 1,
+        _            => arrivalCount == 1,   // Normal: lone pulse passes; 2+ annihilate.
+    };
 
     private static bool HasActiveLock(Connection line)
         => line.Locks != null && line.Locks.Any(l => l.IsLocked);
 
-    private static bool HasCrossingConflict(Connection line)
+    /// <summary>Latch open any lock whose key node has fired this run; once open it stays open.</summary>
+    private void LatchLocks()
     {
-        if (line.CompetingConnections == null) return false;
-
-        foreach (var comp in line.CompetingConnections)
-        {
-            if (!comp.IsActive) continue;
-            // A competitor that is itself locked can't carry power, so it isn't a real conflict.
-            if (comp.Locks != null && comp.Locks.Any(l => l.IsLocked)) continue;
-            return true;
-        }
-        return false;
+        foreach (var l in _locks)
+            if (l.IsLocked && l.KeyNodeRef != null && l.KeyNodeRef.FiredThisRun)
+                l.IsLocked = false;
     }
-
-    /// <summary>Power a node supplies as a source this pass (dynamic; reads current PoweredFrom for gates).</summary>
-    private int GetPower(PowerNodeComponent n)
-    {
-        if (n.Removed) return 0;
-
-        return n.NodeKind switch
-        {
-            NodeKind.And => n.PoweredFrom.Count >= 2 ? 1 : 0,
-            NodeKind.Xor => CanAnchorExactlyOnce(n) ? 1 : 0,
-            _ => n.PlacedTokenPower,
-        };
-    }
-
-    private int ConvertPower(PowerNodeComponent n, int inputPower)
-        => n.NodeKind switch
-        {
-            NodeKind.And => n.PoweredFrom.Count >= 2 ? 1 : 0,
-            NodeKind.Xor => CanAnchorExactlyOnce(n) ? 1 : 0,
-            _ => inputPower,
-        };
 
     #endregion
 
-    #region Move validation (used by interaction in a later phase)
+    #region Placement (interaction)
 
+    /// <summary>Tokens may only be placed on anchor nodes, and placement is never rejected (the run
+    /// decides success). The <paramref name="power"/> is ignored by the sim (single emitter type).</summary>
     public bool CanAddPower(PowerNodeComponent slot, int power)
-    {
-        if (!IsActive || slot == null || !_nodes.Contains(slot)) return false;
-        if (HasOverlaps(slot, power)) return false;
-        return CanAnchorFind(slot);
-    }
+        => IsActive && slot != null && slot.IsAnchor && _nodes.Contains(slot);
 
+    /// <summary>An emitter can always be picked back up.</summary>
     public bool CanRemovePower(PowerNodeComponent slot)
-    {
-        if (!IsActive || slot == null || !_nodes.Contains(slot)) return false;
-
-        slot.Removed = true;
-        foreach (var node in _nodes)
-        {
-            if (node == slot) continue;
-            if (GetPower(node) > 0 && !CanAnchorFind(node))
-            {
-                slot.Removed = false;
-                return false;
-            }
-        }
-        slot.Removed = false;
-        return true;
-    }
-
-    public bool CanAnchorFind(PowerNodeComponent destination)
-    {
-        if (destination.IsAnchor && !destination.Removed) return true;
-
-        foreach (var slot in _nodes)
-        {
-            if (slot == destination || !slot.IsAnchor || slot.Removed) continue;
-            if (Search(slot, destination, slot.PlacedTokenPower + 1, new HashSet<PowerNodeComponent>()) != null)
-                return true;
-        }
-        return false;
-    }
-
-    public bool CanAnchorFindTwice(PowerNodeComponent destination)
-    {
-        if (destination.IsAnchor && !destination.Removed) return true;
-
-        foreach (var slot in _nodes)
-        {
-            if (slot == destination || !slot.IsAnchor || slot.Removed) continue;
-
-            var round1 = Search(slot, destination, slot.PlacedTokenPower + 1, new HashSet<PowerNodeComponent>());
-            if (round1 == null) continue;
-
-            var blocked = round1.Where(s => s != slot).ToHashSet();
-            if (Search(slot, destination, slot.PlacedTokenPower + 1, blocked) != null)
-                return true;
-        }
-        return false;
-    }
-
-    public bool CanAnchorExactlyOnce(PowerNodeComponent destination)
-    {
-        if (destination.IsAnchor && !destination.Removed) return true;
-
-        foreach (var slot in _nodes)
-        {
-            if (slot == destination || !slot.IsAnchor || slot.Removed) continue;
-
-            var round1 = Search(slot, destination, slot.PlacedTokenPower + 1, new HashSet<PowerNodeComponent>());
-            if (round1 == null) continue;
-
-            var blocked = round1.Where(s => s != slot).ToHashSet();
-            return Search(slot, destination, slot.PlacedTokenPower + 1, blocked) == null;
-        }
-        return false;
-    }
-
-    private List<PowerNodeComponent> Search(
-        PowerNodeComponent start, PowerNodeComponent destination, int maxDepth, HashSet<PowerNodeComponent> seen)
-    {
-        if (maxDepth <= 0) return null;
-        if (start == destination) return new List<PowerNodeComponent> { start };
-        if (!seen.Add(start)) return null;
-
-        if (start.NodeKind == NodeKind.And && !CanAnchorFindTwice(start)) return null;
-        if (start.NodeKind == NodeKind.Xor && !CanAnchorExactlyOnce(start)) return null;
-
-        var currentPower = start.Removed ? 0 : GetStructuralPower(start);
-        currentPower = Math.Min(currentPower, ConvertPower(start, maxDepth));
-
-        foreach (var connect in _lines[start])
-        {
-            bool isLocked = connect.Locks != null && connect.Locks.Any(l => l.IsLocked);
-            bool hasConflict = connect.CompetingConnections != null && connect.CompetingConnections.Any(c => c.IsActive);
-            if (isLocked || hasConflict) continue;
-
-            var res = Search(connect.To, destination, Math.Max(maxDepth - 1, currentPower), seen);
-            if (res != null)
-            {
-                res.Insert(0, start);
-                return res;
-            }
-        }
-        return null;
-    }
-
-    /// <summary>Structural source strength used by reachability search (placed-token strength).</summary>
-    private static int GetStructuralPower(PowerNodeComponent n)
-        => n.PlacedTokenPower;
-
-    public bool HasOverlaps(PowerNodeComponent slot, int power, HashSet<PowerNodeComponent> seen = null)
-    {
-        if (power <= 0) return false;
-        seen ??= new HashSet<PowerNodeComponent>();
-        if (!seen.Add(slot)) return false;
-
-        foreach (var connect in _lines[slot])
-        {
-            if (connect.CompetingConnections != null && connect.CompetingConnections.Any(c => c.IsActive))
-                return true;
-            if (HasOverlaps(connect.To, power - 1, seen))
-                return true;
-        }
-        return false;
-    }
+        => IsActive && slot != null && _nodes.Contains(slot);
 
     #endregion
 }

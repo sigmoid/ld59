@@ -6,6 +6,86 @@ Powergrid is an in-game program accessible via the console. This document captur
 
 ---
 
+## Pulse Simulation Redesign (v2 mechanics) — SUPERSEDES the static power model
+
+> **Status: engine landed (Phase v2-1).** This section replaces the original "place a token → power floods instantly → every move must be valid" model with a **time-stepped pulse simulation**. The static-validation machinery in `PuzzleGraph` (`CanAddPower`, `CanRemovePower`, `CanAnchorFind*`, `Search`, `HasForcedCrossing`, instant `Distribute`) is retired; the *concepts* of crossings, gates, and locks survive but become time-relative. Sections below this one describe the v1 model and remain as historical context until the rest of the port lands.
+
+### v2 build progress
+- [x] **v2-1 — Engine + headless tests.** `PuzzleGraph` rewritten as a stepped pulse sim (`StartRun`/`StepTick`/`RunToCompletion`/`ResetRun`); `NodeKind` trimmed to `Normal`/`And`/`Xor`; per-puzzle `TickCap` (serialized on `PowergridLevelComponent`, plumbed via the controller); node/connection transient per-tick state; latching locks; placement restricted to anchors. Controller drives runs via `RunAll`/`StartAll`/`StepAll`/`ResetAllRuns`. Verified headlessly: **21/21** in `PowergridSimTests` (`dotnet run --project PowergridSimTests`) covering straight-line solve, cancellation, AND/XOR, fan-out split, simultaneous-vs-staggered crossings, lock latch, arrival-wins, and tick-cap halt. Game project builds clean.
+- [x] **v2-2 — View: pulse animation + Run/Step/Reset controls.** Toolbar Run (auto-play)/Step (single-tick)/Reset buttons in play mode drive the controller's `StartAll`/`StepAll`/`ResetAllRuns`. Auto-play advances one tick per `TickDuration` (0.35s); a bright pulse dot eases along each energised edge via a per-tick progress fraction. Status line shows placement prompt / `Running… t=N` / `Solved at t=N` / `Halted`. Placement already anchor-only (engine `CanAddPower`). Fixed play-mode visibility now that the per-frame solve is gone (discovery baseline applied on reset). **Verified in the running GUI** via a temporary self-driving screenshot harness (now removed): `level-001` rendered the toolbar, animated a pulse along the edges, lit nodes, collected the held token into inventory, and showed "Solved at t=2" + the SOLVED banner. *Known cosmetic:* a destination node lights at the start of its tick while the dot then travels to it (one-tick visual lead) — deferred to the polish pass.
+- [x] **v2-3 — Editor.** Added a per-puzzle **Tick cap** field to the inspector (−/+ by 8, persisted to `PowergridLevelComponent.TickCaps` keyed by puzzle id, live this session). The gate cycle already only walks Normal→And→Xor; the editor never enforced static legality during authoring, so nothing to relax. Build green; not yet eyeballed.
+- [~] **v2-4 — Content.** `level-001.xml`/`level-002.xml` still load and win under the pulse model (trivial intros: place one emitter on the anchor, Run). The two `Symmetry` levels were **converted to AND-gate timing puzzles**:
+  - **`mirror-assembly.xml`** — `S` is now an AND gate fed by a top and a bottom branch, each with a short (2-hop) and long (3-hop) path. Solve by placing the two emitters on a top+bottom pair of **matching length** so both pulses hit the AND on the same tick (`{TA,Ba}` or `{Tm,Bm}`); mismatched pairs miss.
+  - **`locked-mirror.xml`** — AND gate where the bottom has a **correct long path through a key-locked edge** (`BL→Bmid→BU`, lock keyed to `K` which the top lights at t1) and a **decoy short path** (`BS→BU`) that arrives a tick early. Solve is `{TA,BL}`.
+  - Both verified **solvable** by replicating their exact node/lock coordinates in `PowergridSimTests` (intended solutions win, mismatched/decoy placements fail). Still want to eyeball them in the GUI and likely add more levels.
+
+### Challenge expansion — Lever 1: player-set emission delay (DONE, GUI-verified)
+**Problem it solves:** the only player input was *which anchor gets an emitter* — a low-dimensional subset search — so all the timing rules (AND simultaneity, crossing windows, lock latching, cancellation) were fixed properties to discover, not levers to manipulate.
+
+**Mechanic:** each placed emitter has a **firing delay** (`PowerNodeComponent.PlacedTokenDelay`, default 0). It fires on tick = its delay instead of always t=0. The player sets it by **scrolling the mouse wheel over a placed emitter** (shown as a `+N` badge on the token; scroll elsewhere still zooms). Clamped to `[0, TickCap-1]`; changing it resets any in-progress run.
+- **Engine:** `StartRun` captures `(node, delay)` pairs and fires only delay-0 emitters immediately; `StepTick` injects each emitter on the tick equal to its delay (`FireSource`), and the run keeps stepping while pulses are live **or** emitters are still scheduled (`CurrentTick < _maxDelay`).
+- **Why it matters:** staggering pulses lets the player line up ANDs across unequal paths, slip through a crossing one tick after the conflicting pulse, power a key before a payload pulse needs the lock, and use **cancellation as a tool** (deliberately annihilate an unwanted branch).
+- **Verified:** 4 new headless cases (delay lines up an AND across a 1-hop/2-hop split; delay clears a crossing) — engine suite **32/32**. **GUI-verified** via the temporary screenshot harness on the new `delay-intro.xml`: `+1`/`+0` badges render, the delayed pulse lines up the AND gate, "Solved at t=3".
+- **New level:** `delay-intro.xml` — an AND gate fed by a 1-hop and a 2-hop path; the *only* solution is to delay the short-path emitter `+1`. (Tutorial for the mechanic.)
+
+> **Authoring note:** new level XML must be added to `Content/Content.mgcb` as a `/copy:files/scenes/powergrid/<name>.xml` entry, or `Scene.FromFile` won't find it in the build output (it reads from the copied Content dir, not the source tree). This is the deferred "save-deploys-to-content-output" gap.
+
+### The new loop: plan → run → observe → adjust
+1. The player places **pulse-emitter tokens on anchor nodes only**. No move is rejected up front — placement is unconstrained.
+2. The player presses **Run**. The simulation steps forward in discrete ticks; the player watches pulses animate through the grid.
+3. **Win** the moment any pulse reaches a **goal** node.
+4. If unsolved, the player re-places tokens and runs again.
+
+### Locked-in rules (confirmed)
+- **Discrete clock, one edge per tick.** Every edge takes exactly one tick to traverse, regardless of its drawn length. Each token-bearing anchor emits on its **emission-delay tick** (default 0 — see Lever 1).
+- **Pulses travel forward along directed edges only.** A bidirectional pair is two directed edges (unchanged from v1).
+- **Pulses do not weaken.** A pulse propagates until it is *blocked* — by cancellation, a blocked crossing, a dead end, or the re-entry rule (below). Range is not limited by token power.
+- **Split on fan-out.** A pulse entering a node with N outgoing edges spawns one pulse per output (each full strength, since pulses don't weaken).
+- **Combination cancels (count-based, per tick).** When ≥ 2 pulses arrive at the same **normal** node on the same tick, they annihilate — nothing propagates onward from that node that tick. This reuses the v1 count logic (`PoweredFrom.Count`) but evaluated per-tick.
+- **Gates invert / shape combination** (same `GateOutput` math as v1, evaluated on per-tick arrivals):
+  - **AND** — emits only when ≥ 2 inputs arrive on the same tick (does *not* cancel).
+  - **XOR** — emits only when exactly 1 input arrives.
+  - `Symmetry` / `Equality` gates are **removed** in v2 (drop from `NodeKind`; only `Normal`, `And`, `Xor` remain).
+- **Energized lines block crossings, transiently.** A wire is "powered" only during the tick a pulse is traversing it. A pulse on a *physically crossing* edge is cancelled **only if it would traverse during that same tick**; the same crossing is free to use on a different tick. (Crossing pairs are still detected at load via `Geometry.DoLinesIntersect`; the conflict is now temporal, not static.)
+- **Win = first pulse to reach any goal.** Not sustained.
+
+### Propagation model (player's framing)
+A pulse is **an instant of power**, not a persistent charge. At each tick it powers the **connection it is crossing** and the **node it arrives at**; that power is gone the next tick (transient nodes *and* lines). Power **propagates one connection at a time** — it crawls edge-by-edge as an expanding wavefront rather than flooding the reachable graph at once. This is the temporal heart of the puzzle.
+
+### Confirmed (this round)
+- **Single emitter token type.** One token: drop on an anchor, it emits one pulse at `t = 0`. The power-1/power-2 distinction is removed; inventory is just a count of emitters.
+- **Locks latch open once the key is pulsed.** A locked edge stays closed until its key node is pulsed at any tick during the run; from that tick onward it is open for the rest of the run. (Creates "power the key *before* you need the locked edge" ordering puzzles.)
+- **Run UX = auto-play + single-step.** Run auto-plays the simulation tick-by-tick at a fixed rate; a Step button advances exactly one tick; Reset returns to placement. (Optional speed control later.)
+
+- **Fan-out splits to ALL outputs (parallel wavefront).** A pulse arriving at a node with N outbound edges energizes **every** outbound edge on the next tick — one independent pulse per output, all advancing in parallel. "One connection at a time" is satisfied because each individual pulse still occupies exactly one wire per tick. Re-converging branches can arrive at a shared downstream node on the same tick and collide (→ cancellation / gate evaluation).
+- **No spent rule — nodes can re-fire; a hard tick cap bounds the run.** A node re-emits every time it is (validly) pulsed, on whatever tick that happens. A pulse circling a cycle therefore keeps the node oscillating, so the simulation runs for a **fixed maximum tick budget** (configurable per puzzle, e.g. default 64) and then halts. This deliberately enables **loops/echoes as a mechanic** (a cycle becomes a repeating pulse source). The run also ends early the moment a goal is reached.
+
+### Per-tick evaluation order (deterministic)
+Each tick T, for the set of pulses *arriving* at nodes this tick:
+1. Group arriving pulses by destination node.
+2. For each node, count same-tick arrivals and apply its rule:
+   - **Normal:** ≥ 2 arrivals → annihilate (emit nothing this tick); exactly 1 → emit.
+   - **AND:** ≥ 2 arrivals → emit; else nothing.
+   - **XOR:** exactly 1 arrival → emit; else nothing.
+3. A node that emits energizes **all** its outbound connections for tick T+1, unless an outbound edge is **locked** (key not yet pulsed) — locks latch open once their key has fired — or that edge would be **crossing-blocked**: a pulse is cancelled if a *physically crossing* edge is energized on the **same** tick it would traverse.
+4. Mark this tick's emitting nodes and traversed edges as energized-for-T (transient; cleared next tick) for animation and crossing checks.
+5. If any goal node was an arrival this tick → **solved** (arrival wins — a goal is never cancelled by a simultaneous second arrival). If T reaches the cap → **halt (unsolved)**.
+
+### Architecture impact (high level)
+- `PuzzleGraph` gains a **stepped simulation** replacing instant `Distribute`. State per run: a set of *live pulses*, each on one directed edge arriving at a node next tick. A `StepTick()` does the per-tick evaluation above; `RunToCompletion()` loops `StepTick()` until solved or the tick cap. The player's **Step** button calls `StepTick()` once; **Run** auto-plays it on a timer; **Reset** clears run state back to placement.
+- **Retire** static-move validation (`CanAddPower`/`CanRemovePower`/`CanAnchorFind*`/`Search`/`HasForcedCrossing`) and instant `Distribute`. Placement on anchors is always allowed; success is decided by running the sim.
+- `Connection` gains transient per-tick `EnergizedTick` state (for crossing checks + animation). `PowerNodeComponent` keeps transient per-tick arrival state (runtime fields, never serialized). `EdgeLockComponent.IsLocked` becomes a latch that clears once its key node has fired this run.
+- `PowergridLevelComponent` gains a per-puzzle **tick cap** (serialized, **editable per puzzle** in the editor; default ~64).
+- **View layer** animates pulses travelling along edges tick-by-tick (instant on/off styling no longer sufficient) and exposes **Run / Step / Reset**. Token placement restricted to **anchor nodes only**.
+- **Editor** validation that assumed static legality is relaxed; authoring otherwise unchanged (optional tick-cap field).
+
+### Resolved (this round)
+- `Symmetry` / `Equality` gates **removed** for v2 — `NodeKind` keeps only `Normal`, `And`, `Xor`.
+- Tick cap is **editable per puzzle** (serialized on `PowergridLevelComponent`; default ~64).
+- **Arrival wins:** any pulse reaching a goal solves the puzzle, even on a simultaneous double-arrival (no goal cancellation).
+
+---
+
 ## Questions
 
 ### Core Gameplay
@@ -210,7 +290,7 @@ Notes:
 
 - [x] **Phase 0 — Scaffolding.** Swapped the 3D `UI3DScene` for a 2D `PowergridView` in `PowergridUI.cs` (kept the `Scene` save/load wiring). Added the `PowerNodeComponent` skeleton; verified entities round-trip through the serializer headlessly. Build green.
 - [x] **Phase 1 — Components + controller + rendering (shared).** `PowerNodeComponent`, `EdgeLockComponent`, `Connection`, `PuzzleGraph` (faithful `LevelManager` port + cleanups: single distribute loop, fixpoint for locks/gates, goal-powered solved condition), `PowergridLevelController` (post-load name resolution + puzzle grouping by tag), `Geometry`. Camera + world/screen transform. Renders nodes (filled=powered/outlined=unpowered), directed edges with arrowheads + powered styling, gate glyphs, anchor/goal markers (font fallback until sprites exist). Hand-authored `level-001.xml` + `/copy:` content entry. Engine verified headlessly (12/12 distribution/solved assertions). **Not yet eyeballed in the running GUI.**
-- [~] **Phase 2 — Editor.** *2a done:* edit-mode toggle + toolbar (Select/Add/Connect/Delete + Save), node create/move/connect/delete, right-drag pan in edit mode, selection ring + connect rubber-band, and an inspector (cycle kind, toggle anchor/goal, adjust anchor power & held-token, delete). Live controller rebuild on every edit. Save via `Scene.SerializeToFile`. *2b remaining:* lock placement + key assignment, sub-puzzle tagging, activation links, and resolving the save-deploys-to-content-output path so edited levels reload cleanly next run. Not yet eyeballed in the GUI.
+- [x] **Phase 2 — Editor.** *2a:* edit toggle + toolbar, node create/move/connect/delete, right-drag pan, selection ring + connect rubber-band, inspector (kind/anchor/goal/token/held/delete), live rebuild, Save. *2b:* Lock tool (drag to create) + Key tool (assign key node), Link tool (toggle activation edges, drawn as orange arrows between puzzle centroids), inventory editing (inspector Level section), and a Delete tool that removes nodes, connections, locks, *and* activation links by clicking them. **Puzzles are auto-detected as connected components** (no manual tagging) — connecting two groups merges them, splitting separates them. Activation links are stored by node name and resolved to whatever component the node lands in. Held tokens show a badge on the node. Verified headlessly (auto-components/merge/activation 7/7, authored round-trip 7/7). *Deferred to polish:* save-deploys-to-content-output so brand-new levels reload next run.
 - [~] **Phase 3 — Play + validation.** *Done:* `PowergridLevelComponent` (fixed inventory + holding-slot count, serialized), inventory bar (holding slots + available tokens), token drag/drop between inventory/holding/nodes validated by `CanAddPower`/`CanRemovePower`, reject flash, placed-token rendering, solved banner. Engine already supports `Distribute`, crossing conflicts, locks/keys, AND/XOR. *Deferred:* node reveal-on-power (discovery → Phase 4). Play-layer validation verified headlessly (9/9); drag/drop UI not yet eyeballed.
 - [x] **Phase 4 — Both token models + level flow.** Discovery (anchors/goals visible, powered nodes reveal their sticky frontier, node-held tokens granted into inventory). Witness-style activation chaining (a puzzle is active iff all prerequisite puzzles are active+solved; deactivates downstream when an upstream puzzle is unsolved) with an inactive "LOCKED" mask. Shared inventory/holding carries across puzzles in a level (single play state). Camera snap-to-puzzle when idle near a puzzle centroid. Discovery (9/9) and activation (10/10) verified headlessly; camera snap is visual-only.
 - [ ] **Phase 5 — Polish.** Powered/unpowered visual distinction tuned for 1-bit, arrows, lock/key visuals, edit/play toggle UX, status messaging.

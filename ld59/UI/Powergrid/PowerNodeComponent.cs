@@ -42,10 +42,22 @@ public class PowerNodeComponent : Component
     public List<string> OutgoingNodeNames = new();
 
     // ── Runtime-only state (fields → never serialized) ─────────────────────
-    public bool Removed;
+    /// <summary>Pulse-sim v2: non-zero means an emitter token is placed here (anchors only). A node
+    /// emits one pulse during a run when this is &gt; 0. The magnitude no longer affects range
+    /// (single emitter type); kept as an int for inventory/UI compatibility.</summary>
     public int PlacedTokenPower;
+
+    /// <summary>Pulse-sim v2 (Lever 1): the tick at which this emitter fires (player-set, default 0).
+    /// Lets the player stagger pulses to line up gates, dodge crossing windows, and open locks in time.</summary>
+    public int PlacedTokenDelay;
+
+    /// <summary>True while this node is "lit" on the current simulation tick (a pulse is on/at it).
+    /// Transient: set and cleared by <see cref="PuzzleGraph"/> each tick. Drives node rendering.</summary>
     public bool IsActive;
-    public readonly HashSet<PowerNodeComponent> PoweredFrom = new();
+
+    /// <summary>Pulse-sim v2: set true the first time this node emits during the current run, and held
+    /// for the rest of that run. Used to latch open locks keyed off this node.</summary>
+    public bool FiredThisRun;
 
     /// <summary>Discovery: whether the player has revealed this node yet (sticky for the session).</summary>
     public bool Discovered;

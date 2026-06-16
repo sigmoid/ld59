@@ -40,45 +40,67 @@ public class PinballEngine
         }
     }
 
-    public int   SubSteps      { get; set; } = 3;
+    // Physics runs at a fixed rate so the simulation is deterministic and
+    // independent of frame rate. The flipper is the fastest-moving body, so a
+    // fine step keeps its rotation (and therefore the ball's launch angle) from
+    // being quantized to a coarse, frame-rate-dependent slice of the swing.
+    public float PhysicsHz     { get; set; } = 240f;
     public float MaxBallSpeed  { get; set; } = 2000f;
 
     // Fraction of relative tangential velocity removed per flipper contact (0 = no friction, 1 = full grip)
     public float FlipperFriction { get; set; } = 0.25f;
 
+    private float _accumulator;
+
     public void Update(float deltaTime)
     {
-        float stepDt = deltaTime / SubSteps;
+        float stepDt = 1f / PhysicsHz;
 
-        for (int step = 0; step < SubSteps; step++)
+        // Invariant for tunnel-free penetration handling: a ball must not be able
+        // to cross the (thin) flipper segment in a single step. Holds while
+        // MaxBallSpeed * stepDt < ballRadius.
+        _accumulator += deltaTime;
+        // Clamp after a hitch so we don't spiral trying to catch up.
+        if (_accumulator > 0.25f) _accumulator = 0.25f;
+
+        while (_accumulator >= stepDt)
         {
-            foreach (var ball in _table.Balls)
-            {
-                if (_rampBalls.TryGetValue(ball, out var trav))
-                    UpdateRampBall(ball, trav, stepDt);
-                else
-                    UpdateBall(ball, stepDt);
-            }
-
-            var flipperSnapshots = new List<(PinballFlipper Flipper, float PrevAngle)>();
-            foreach (var obstacle in _table.Obstacles)
-                if (obstacle is PinballFlipper f)
-                    flipperSnapshots.Add((f, f.CurrentAngle));
-
-            _table.Update(stepDt);
-
-            foreach (var ball in _table.Balls)
-            {
-                if (_rampBalls.ContainsKey(ball)) continue;
-                DepenetrateBall(ball);
-                foreach (var (flipper, prevAngle) in flipperSnapshots)
-                    ResolveFlipperSweep(ball, flipper, prevAngle);
-            }
-
-            foreach (var ball in _table.Balls)
-                if (!_rampBalls.ContainsKey(ball))
-                    TryEnterRamp(ball);
+            Step(stepDt);
+            _accumulator -= stepDt;
         }
+    }
+
+    private void Step(float stepDt)
+    {
+        foreach (var ball in _table.Balls)
+        {
+            if (_rampBalls.TryGetValue(ball, out var trav))
+                UpdateRampBall(ball, trav, stepDt);
+            else
+                UpdateBall(ball, stepDt);
+        }
+
+        var flipperSnapshots = new List<(PinballFlipper Flipper, float PrevAngle)>();
+        foreach (var obstacle in _table.Obstacles)
+            if (obstacle is PinballFlipper f)
+                flipperSnapshots.Add((f, f.CurrentAngle));
+
+        _table.Update(stepDt);
+
+        foreach (var ball in _table.Balls)
+        {
+            if (_rampBalls.ContainsKey(ball)) continue;
+            DepenetrateBall(ball);
+            // Flipper contact is resolved in exactly one place (the swept resolver),
+            // using the flipper's post-rotation state, so a single substep can't
+            // apply two inconsistent impulses from two different code paths.
+            foreach (var (flipper, prevAngle) in flipperSnapshots)
+                ResolveFlipperSweep(ball, flipper, prevAngle);
+        }
+
+        foreach (var ball in _table.Balls)
+            if (!_rampBalls.ContainsKey(ball))
+                TryEnterRamp(ball);
     }
 
     public void DebugDraw(SpriteBatch batch, Vector2 offset = default)
@@ -154,31 +176,13 @@ public class PinballEngine
         {
             ball.Center = ray.Point;
 
-            // vf = ω × r  (zero for walls)
-            var sfVel = Vector2.Zero;
-            if (ray.Obstacle is PinballFlipper hf)
-            {
-                var r = ray.Point - hf.HingePosition;
-                sfVel = hf.AngularVelocity * new Vector2(-r.Y, r.X);
-            }
+            // Only static obstacles (walls) reach here — flipper contact is handled
+            // exclusively by ResolveFlipperSweep after the flipper has rotated.
+            float vrelN = Vector2.Dot(ball.Velocity, ray.Normal);  // < 0 guaranteed by raycast
 
-            // Relative velocity at contact, pre-impulse
-            var   vrel  = ball.Velocity - sfVel;
-            float vrelN = Vector2.Dot(vrel, ray.Normal);  // < 0 guaranteed by raycast
-
-            // Compressive normal impulse
             float e  = -vrelN < _table.RestingVelocityThreshold ? 0f : restitution;
             float jn = -(1f + e) * vrelN;
             ball.Velocity += jn * ray.Normal;
-
-            // Coulomb friction impulse (flipper only, while rotating)
-            if (ray.Obstacle is PinballFlipper hf2 && MathF.Abs(hf2.AngularVelocity) > 0.5f)
-            {
-                var   tangent = new Vector2(-ray.Normal.Y, ray.Normal.X);
-                float vrelT   = Vector2.Dot(vrel, tangent);
-                float jt      = Math.Clamp(-vrelT, -FlipperFriction * jn, FlipperFriction * jn);
-                ball.Velocity += jt * tangent;
-            }
 
             // Continue with the remaining travel distance after the bounce
             float remaining = moveLen - ray.Distance;
@@ -256,11 +260,16 @@ public class PinballEngine
         {
             var vrel = ball.Velocity - surfaceVel; // pre-impulse relative velocity
 
-            float e  = -relVDotN < _table.RestingVelocityThreshold ? 0f : restitution;
+            // A swinging flipper always launches the ball with full restitution so a
+            // catch-and-shoot is consistent. The resting-velocity threshold (which
+            // suppresses bounce to keep a ball stable on a still flipper) only applies
+            // when the flipper isn't actively moving.
+            bool  swinging = MathF.Abs(flipper.AngularVelocity) > 0.5f;
+            float e  = (!swinging && -relVDotN < _table.RestingVelocityThreshold) ? 0f : restitution;
             float jn = -(1f + e) * relVDotN;
             ball.Velocity += jn * normal;
 
-            if (MathF.Abs(flipper.AngularVelocity) > 0.5f)
+            if (swinging)
             {
                 var   tangent = new Vector2(-normal.Y, normal.X);
                 float vrelT   = Vector2.Dot(vrel, tangent);
@@ -348,11 +357,12 @@ public class PinballEngine
         {
             if (obstacle == ball) continue;
 
+            // Flippers are intentionally excluded: their contact is resolved by the
+            // penetration-based swept resolver, not by the ball's own raycast.
             IEnumerable<(Vector2 A, Vector2 B)> segments = obstacle switch
             {
-                PinballWall w    => WallSegments(w),
-                PinballFlipper f => FlipperSegment(f),
-                _                => null,
+                PinballWall w => WallSegments(w),
+                _             => null,
             };
             if (segments == null) continue;
 
@@ -373,12 +383,6 @@ public class PinballEngine
         int segCount = wall.IsOpen ? wall.Vertices.Count - 1 : wall.Vertices.Count;
         for (int i = 0; i < segCount; i++)
             yield return (wall.Vertices[i], wall.Vertices[(i + 1) % wall.Vertices.Count]);
-    }
-
-    private static IEnumerable<(Vector2, Vector2)> FlipperSegment(PinballFlipper f)
-    {
-        var tip = f.HingePosition + new Vector2(MathF.Cos(f.CurrentAngle), MathF.Sin(f.CurrentAngle)) * f.Length;
-        yield return (f.HingePosition, tip);
     }
 
     // Swept-circle cast against a line segment.

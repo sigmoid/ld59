@@ -18,11 +18,18 @@ public class PowergridUI : UIPanel
     private string        _levelName;
 
     private Button _editToggle, _saveBtn;
+    private Button _runBtn, _stepBtn, _resetBtn;
     private readonly Dictionary<EditTool, Button> _toolButtons = new();
     private bool _editMode;
 
+    private static readonly EditTool[] Tools =
+    {
+        EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete,
+        EditTool.Lock, EditTool.Key, EditTool.Link,
+    };
+
     private const int ToolbarHeight = 40;
-    private const int InspectorWidth = 220;
+    private const int InspectorWidth = 234;
     private const int ButtonHeight = 30;
 
     public PowergridUI(Rectangle bounds, string levelName = null)
@@ -106,7 +113,15 @@ public class PowergridUI : UIPanel
         _editToggle = Mk("Edit: off", ToggleEditMode);
         _rootWindow.AddChild(_editToggle);
 
-        foreach (var tool in new[] { EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete })
+        // Play-mode simulation controls.
+        _runBtn   = Mk("Run",   () => _sceneView.RunSimulation());
+        _stepBtn  = Mk("Step",  () => _sceneView.StepSimulation());
+        _resetBtn = Mk("Reset", () => _sceneView.ResetSimulation());
+        _rootWindow.AddChild(_runBtn);
+        _rootWindow.AddChild(_stepBtn);
+        _rootWindow.AddChild(_resetBtn);
+
+        foreach (var tool in Tools)
         {
             var captured = tool;
             var btn = Mk(ToolName(tool), () => { _sceneView.Tool = captured; RefreshToolLabels(); });
@@ -124,6 +139,9 @@ public class PowergridUI : UIPanel
         EditTool.AddNode => "Add",
         EditTool.Connect => "Connect",
         EditTool.Delete  => "Delete",
+        EditTool.Lock    => "Lock",
+        EditTool.Key     => "Key",
+        EditTool.Link    => "Link",
         _ => tool.ToString(),
     };
 
@@ -131,8 +149,16 @@ public class PowergridUI : UIPanel
     {
         _editMode = !_editMode;
         _sceneView.EditMode = _editMode;
-        if (_editMode) _sceneView.Tool = EditTool.Select;
-        else _sceneView.ResetPlayState(); // entering play: refill inventory, clear editor test tokens
+        if (_editMode)
+        {
+            _sceneView.Tool = EditTool.Select;
+            _sceneView.ResetSimulation();   // drop any in-progress run
+            _sceneView.ClearPlacedTokens(); // clean authoring slate
+        }
+        else
+        {
+            _sceneView.ResetPlayState(); // entering play: refill inventory, clear editor test tokens
+        }
         ApplyLayout();
         RefreshToolLabels();
     }
@@ -147,7 +173,15 @@ public class PowergridUI : UIPanel
         int x = content.X + pad;
         x += Place(_editToggle, x, btnY, "Edit: off") + gap;
 
-        foreach (var tool in new[] { EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete })
+        // Play-mode run controls sit next to the Edit toggle when not editing.
+        foreach (var (btn, label) in new[] { (_runBtn, "Run"), (_stepBtn, "Step"), (_resetBtn, "Reset") })
+        {
+            btn.SetVisibility(!_editMode);
+            if (!_editMode)
+                x += Place(btn, x, btnY, label) + gap;
+        }
+
+        foreach (var tool in Tools)
         {
             var btn = _toolButtons[tool];
             btn.SetVisibility(_editMode);
