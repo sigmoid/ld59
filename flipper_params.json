@@ -1,0 +1,24 @@
+{
+  "_comment": "Edit and save; the .html auto-refreshes. RestAngleDeg points the bat (screen, +Y down); ActivatedOffsetDeg is how far it swings; LengthPx is bat length; LaunchFanDeg rotates the launch from hinge(0) to tip(full).",
+  "maxBallSpeed": 2600,
+  "flippers": [
+    {
+      "label": "L",
+      "restAngleDeg": 30,
+      "activatedOffsetDeg": -60,
+      "lengthPx": 64,
+      "activationSpeed": 16,
+      "returnSpeed": 10,
+      "launchFanDeg": -35
+    },
+    {
+      "label": "R",
+      "restAngleDeg": 150,
+      "activatedOffsetDeg": 60,
+      "lengthPx": 64,
+      "activationSpeed": 16,
+      "returnSpeed": 10,
+      "launchFanDeg": 35
+    }
+  ]
+}

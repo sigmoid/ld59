@@ -6,61 +6,62 @@ using Quartz.Components;
 namespace ld59.UI.Powergrid;
 
 /// <summary>
-/// Level-wide configuration, authored on a single config entity. Defines the fixed inventory of
-/// power tokens, the number of temporary holding slots, and the witness-style activation links
-/// between sub-puzzles. All of these are collections, so they ride in the component Data blob
-/// (the auto-serializer can't do collections).
+/// Level-wide configuration, authored on a single config entity. Holds the player's <em>starting</em>
+/// rune <see cref="Inventory"/> (a finite multiset — any number of any rune), the active adjacency
+/// <see cref="ColoringRule"/>s, and per-puzzle sequence metadata: each sub-puzzle's authored
+/// <see cref="PuzzleOrder"/> (lower = earlier in the sequence) and the reward runes it grants when
+/// first solved (<see cref="PuzzleRewards"/>). Puzzles are keyed by their id (the smallest node name
+/// in the component). Stored in the component Data blob.
 ///
-/// Data format: ';'-separated entries of "key:value":
-///   inventory:1,1,2          fixed starting token powers
-///   activation:p0&gt;p1,p1&gt;p2   "p0 enables p1", "p1 enables p2"
+/// Data format: ';'-separated "key:value" —
+///   "inventory:Lith,Lith,Axe;rules:DifferentRune,Sidedness;order:n0=0|n3=1;rewards:n0=Lith,Axe".
+/// Within order/rewards, puzzles are '|'-separated "id=value"; a reward value is a ','-separated
+/// flat rune list (repeats = quantity).
 /// </summary>
 public class PowergridLevelComponent : Component
 {
-    public int HoldingSlots { get; set; } = 3;
+    /// <summary>The runes the player starts with, as a flat list (repeats = quantity).</summary>
+    public List<string> Inventory = new();
 
-    /// <summary>Power values of the fixed starting tokens (e.g. 1,1,2).</summary>
-    public List<int> Inventory = new();
+    /// <summary>Active adjacency rules. Defaults to the base "different rune" constraint.</summary>
+    public List<ColoringRule> Rules = new() { ColoringRule.DifferentRune };
 
-    /// <summary>Activation edges (from,to): solving puzzle <c>from</c> enables puzzle <c>to</c>.</summary>
-    public List<(string From, string To)> Activations = new();
+    /// <summary>Authored sequence position per puzzle id (lower solves first). Absent ⇒ 0.</summary>
+    public Dictionary<string, int> PuzzleOrder = new();
 
-    /// <summary>Names of nodes whose puzzle has the discovery/fog mechanic enabled. A puzzle is
-    /// discovery-enabled if it contains any of these nodes. Empty = all nodes visible everywhere.</summary>
-    public List<string> DiscoveryNodes = new();
+    /// <summary>Reward runes granted (once, permanently) when a puzzle is first solved, per puzzle id.</summary>
+    public Dictionary<string, List<string>> PuzzleRewards = new();
 
-    /// <summary>Default pulse-simulation tick cap applied to puzzles with no explicit override.</summary>
-    public int DefaultTickCap { get; set; } = 64;
+    public int OrderOf(string puzzleId)
+        => puzzleId != null && PuzzleOrder.TryGetValue(puzzleId, out var o) ? o : 0;
 
-    /// <summary>Per-puzzle tick-cap overrides, keyed by puzzle id (the smallest node name in the
-    /// connected component). Editable per puzzle; puzzles absent here use <see cref="DefaultTickCap"/>.</summary>
-    public Dictionary<string, int> TickCaps = new();
-
-    /// <summary>Tick cap for a given puzzle id, falling back to the level default.</summary>
-    public int TickCapFor(string puzzleId)
-        => puzzleId != null && TickCaps.TryGetValue(puzzleId, out var cap) ? cap : DefaultTickCap;
+    public IReadOnlyList<string> RewardOf(string puzzleId)
+        => puzzleId != null && PuzzleRewards.TryGetValue(puzzleId, out var r) ? r : Array.Empty<string>();
 
     public override string SerializeData()
     {
         var parts = new List<string>();
-        if (Inventory.Count > 0)
-            parts.Add("inventory:" + string.Join(",", Inventory));
-        if (Activations.Count > 0)
-            parts.Add("activation:" + string.Join(",", Activations.Select(a => $"{a.From}>{a.To}")));
-        if (DiscoveryNodes.Count > 0)
-            parts.Add("discovery:" + string.Join(",", DiscoveryNodes));
-        if (TickCaps.Count > 0)
-            parts.Add("tickcaps:" + string.Join(",", TickCaps.Select(kv => $"{kv.Key}={kv.Value}")));
+        if (Inventory.Count > 0) parts.Add("inventory:" + string.Join(",", Inventory));
+        if (Rules.Count > 0) parts.Add("rules:" + string.Join(",", Rules));
+        if (PuzzleOrder.Count > 0)
+            parts.Add("order:" + string.Join("|", PuzzleOrder.Select(kv => $"{kv.Key}={kv.Value}")));
+        var rewards = PuzzleRewards.Where(kv => kv.Value.Count > 0).ToList();
+        if (rewards.Count > 0)
+            parts.Add("rewards:" + string.Join("|", rewards.Select(kv => $"{kv.Key}={string.Join(",", kv.Value)}")));
         return string.Join(";", parts);
     }
 
     public override void DeserializeData(string data)
     {
-        Inventory.Clear();
-        Activations.Clear();
-        DiscoveryNodes.Clear();
-        TickCaps.Clear();
-        if (string.IsNullOrWhiteSpace(data)) return;
+        Inventory = new List<string>();
+        Rules = new List<ColoringRule>();
+        PuzzleOrder = new Dictionary<string, int>();
+        PuzzleRewards = new Dictionary<string, List<string>>();
+        if (string.IsNullOrWhiteSpace(data))
+        {
+            Rules.Add(ColoringRule.DifferentRune);
+            return;
+        }
 
         foreach (var entry in data.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
@@ -70,34 +71,48 @@ public class PowergridLevelComponent : Component
 
             switch (key)
             {
-                case "activation":
-                    foreach (var edge in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                case "inventory":
+                    foreach (var r in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        if (Runes.ByName(r) != null) Inventory.Add(r);
+                    break;
+
+                case "rules":
+                    foreach (var r in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        if (ColoringRules.TryParse(r, out var rule) && !Rules.Contains(rule))
+                            Rules.Add(rule);
+                    break;
+
+                case "order":
+                    foreach (var pair in value.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     {
-                        var gt = edge.Split('>', 2);
-                        if (gt.Length == 2) Activations.Add((gt[0].Trim(), gt[1].Trim()));
+                        var eq = pair.IndexOf('=');
+                        if (eq <= 0) continue;
+                        var id = pair[..eq].Trim();
+                        if (int.TryParse(pair[(eq + 1)..].Trim(), out var ord)) PuzzleOrder[id] = ord;
                     }
                     break;
 
-                case "discovery":
-                    foreach (var n in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                        DiscoveryNodes.Add(n);
-                    break;
-
-                case "tickcaps":
-                    foreach (var pair in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                case "rewards":
+                    foreach (var pair in value.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     {
-                        var eq = pair.Split('=', 2);
-                        if (eq.Length == 2 && int.TryParse(eq[1].Trim(), out var cap))
-                            TickCaps[eq[0].Trim()] = cap;
+                        var eq = pair.IndexOf('=');
+                        if (eq <= 0) continue;
+                        var id = pair[..eq].Trim();
+                        var list = new List<string>();
+                        foreach (var r in pair[(eq + 1)..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            if (Runes.ByName(r) != null) list.Add(r);
+                        if (list.Count > 0) PuzzleRewards[id] = list;
                     }
-                    break;
-
-                // "inventory" — or a bare comma list with no key (back-compat).
-                default:
-                    foreach (var s in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                        if (int.TryParse(s, out var p)) Inventory.Add(p);
                     break;
             }
         }
+
+        if (Rules.Count == 0) Rules.Add(ColoringRule.DifferentRune);
     }
+
+    /// <summary>Distinct runes in the inventory, ordered by the alphabet (for stable UI).</summary>
+    public IEnumerable<string> DistinctRunes()
+        => SymbolDictionary.All.Select(s => s.Name).Where(Inventory.Contains);
+
+    public int CountOf(string rune) => Inventory.Count(r => r == rune);
 }

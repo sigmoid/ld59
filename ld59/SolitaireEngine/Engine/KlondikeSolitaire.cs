@@ -13,19 +13,28 @@ public class KlondikeSolitaire : SolitaireGameMode
     public override SolitaireStack StockStack => _stock;
     public override bool IsWon => _foundations.All(f => f.Cards.Count == 13);
 
-    public override void Initialize()
+    private const float CardWidth  = 100f;
+    private const float ColumnGap  = 10f;
+    private const float SideMargin = 10f;
+
+    public override void Initialize(float contentWidth)
     {
         _allStacks.Clear();
         _foundations.Clear();
 
         var deck = CreateShuffledDeck();
 
-        float[] tableauX = { 10, 120, 230, 340, 450, 560, 670 };
-        for (int col = 0; col < 7; col++)
+        // Center the 7 tableau columns within the available width; the top row aligns to them.
+        const int columns  = 7;
+        float step         = CardWidth + ColumnGap;
+        float tableauWidth = columns * step - ColumnGap;
+        float startX       = MathF.Max(SideMargin, (contentWidth - tableauWidth) * 0.5f);
+
+        for (int col = 0; col < columns; col++)
         {
             var stack = new SolitaireStack
             {
-                Position             = new Vector2(tableauX[col], 180),
+                Position             = new Vector2(startX + col * step, 180),
                 Layout               = new KlondikeTableauLayout(),
                 Rules                = new KlondikeTableauRules(),
                 ShowEmptyPlaceholder = true,
@@ -41,7 +50,7 @@ public class KlondikeSolitaire : SolitaireGameMode
 
         _stock = new SolitaireStack
         {
-            Position             = new Vector2(10, 15),
+            Position             = new Vector2(startX, 15),
             Layout               = new StackedLayout(),
             Rules                = new KlondikeStockRules(),
             ShowEmptyPlaceholder = true,
@@ -51,18 +60,19 @@ public class KlondikeSolitaire : SolitaireGameMode
 
         _waste = new SolitaireStack
         {
-            Position = new Vector2(120, 15),
+            Position = new Vector2(startX + step, 15),
             Layout   = new StackedLayout(),
             Rules    = new KlondikeWasteRules(),
         };
         _allStacks.Add(_waste);
 
-        float[] foundationX = { 340, 450, 560, 670 };
+        // Foundations sit over the rightmost four columns.
+        float foundationStartX = startX + 3 * step;
         for (int i = 0; i < 4; i++)
         {
             var foundation = new SolitaireStack
             {
-                Position             = new Vector2(foundationX[i], 15),
+                Position             = new Vector2(foundationStartX + i * step, 15),
                 Layout               = new StackedLayout(),
                 Rules                = new KlondikeFoundationRules(),
                 ShowEmptyPlaceholder = true,

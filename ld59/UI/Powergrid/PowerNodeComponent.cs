@@ -1,69 +1,53 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Quartz.Components;
 
 namespace ld59.UI.Powergrid;
 
-public enum NodeKind
-{
-    Normal,
-    And,
-    Xor,
-}
-
 /// <summary>
-/// Data for a single power node in a Powergrid puzzle. Lives on an <see cref="Quartz.Entity"/>;
+/// Data for a single node in a graph-coloring puzzle. Lives on an <see cref="Quartz.Entity"/>;
 /// the entity's LocalPosition is the node's graph position.
 ///
-/// Only the scalar auto-properties below are serialized (the Quartz auto-serializer handles
-/// string/int/bool/enum/Vector2/... properties). Outgoing connections are a collection, so they
-/// ride in the component Data blob via Serialize/DeserializeData. Runtime-only state is kept in
-/// plain fields so it never reaches the file.
+/// The player fills nodes with <b>runes</b> such that no two connected nodes share a rune. A node
+/// may carry a <see cref="FixedRune"/> — a pre-filled rune set by the author that's shown from the
+/// start and can't be changed in play. It renders identically to a player-filled node; it's simply
+/// locked. The player's own placement lives in the runtime <see cref="PlacedRune"/> field, which is
+/// never serialized.
+///
+/// Only scalar auto-properties are serialized by Quartz; <see cref="OutgoingNodeNames"/> is a
+/// collection, so it rides in the component Data blob via Serialize/DeserializeData. References are
+/// by entity Name because entity Guids are regenerated on every load.
 /// </summary>
 public class PowerNodeComponent : Component
 {
     // ── Serialized authoring data ──────────────────────────────────────────
-    public NodeKind NodeKind { get; set; } = NodeKind.Normal;
 
-    /// <summary>Marks a root/seed node: always a valid initial drop target. Supplies no power on its
-    /// own — it becomes a source only once a token is placed on it (like any other node).</summary>
-    public bool IsAnchor { get; set; }
-    public bool IsGoal { get; set; }
+    /// <summary>A pre-filled rune set by the author (a symbol name, e.g. "Lith"). Empty = the player
+    /// fills this node freely. A fixed rune is shown from the start and cannot be changed during play
+    /// (it looks like an ordinary fill, just locked).</summary>
+    public string FixedRune { get; set; } = string.Empty;
 
-    /// <summary>Power of the token this node hides until powered (0 = holds nothing). Discovery model.</summary>
-    public int HeldTokenPower { get; set; }
-
-    /// <summary>
-    /// Names of the entities this node has directed connections to. Stored as a field (not a
-    /// property) so the auto-serializer ignores it; persisted via Serialize/DeserializeData.
-    /// References are by entity Name because entity Guids are regenerated on every load.
-    /// </summary>
+    /// <summary>Names of the entities this node connects to. Connections are undirected for coloring
+    /// (an edge in either direction means the two nodes are adjacent and must differ).</summary>
     public List<string> OutgoingNodeNames = new();
 
     // ── Runtime-only state (fields → never serialized) ─────────────────────
-    /// <summary>Pulse-sim v2: non-zero means an emitter token is placed here (anchors only). A node
-    /// emits one pulse during a run when this is &gt; 0. The magnitude no longer affects range
-    /// (single emitter type); kept as an int for inventory/UI compatibility.</summary>
-    public int PlacedTokenPower;
 
-    /// <summary>Pulse-sim v2 (Lever 1): the tick at which this emitter fires (player-set, default 0).
-    /// Lets the player stagger pulses to line up gates, dodge crossing windows, and open locks in time.</summary>
-    public int PlacedTokenDelay;
+    /// <summary>The rune the player has placed on this node during play (a symbol name; empty = none).
+    /// Ignored for nodes that have a <see cref="FixedRune"/>.</summary>
+    public string PlacedRune = string.Empty;
 
-    /// <summary>True while this node is "lit" on the current simulation tick (a pulse is on/at it).
-    /// Transient: set and cleared by <see cref="PuzzleGraph"/> each tick. Drives node rendering.</summary>
-    public bool IsActive;
+    /// <summary>True while at least one incident edge is in conflict (same rune on both ends).
+    /// Recomputed each frame by <see cref="PuzzleGraph"/>; drives node rendering.</summary>
+    public bool InConflict;
 
-    /// <summary>Pulse-sim v2: set true the first time this node emits during the current run, and held
-    /// for the rest of that run. Used to latch open locks keyed off this node.</summary>
-    public bool FiredThisRun;
+    /// <summary>The effective rune on this node: the fixed clue if present, else the placed rune.</summary>
+    public string Rune => string.IsNullOrEmpty(FixedRune) ? PlacedRune : FixedRune;
 
-    /// <summary>Discovery: whether the player has revealed this node yet (sticky for the session).</summary>
-    public bool Discovered;
+    public bool HasRune => !string.IsNullOrEmpty(Rune);
 
-    /// <summary>Whether this node's held token has already been granted to the inventory.</summary>
-    public bool HeldTokenCollected;
+    /// <summary>A fixed-clue node can't be re-coloured by the player.</summary>
+    public bool IsFixed => !string.IsNullOrEmpty(FixedRune);
 
     public override string SerializeData()
         => OutgoingNodeNames.Count > 0 ? string.Join(",", OutgoingNodeNames) : string.Empty;

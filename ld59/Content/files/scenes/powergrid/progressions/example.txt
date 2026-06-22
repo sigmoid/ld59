@@ -1,0 +1,7 @@
+# Powergrid level progression
+# One level name per line (no .xml). Blank lines and lines starting with '#' are ignored.
+# The player starts on the first level and advances once each is fully solved.
+
+level-001
+level-002
+mirror-assembly

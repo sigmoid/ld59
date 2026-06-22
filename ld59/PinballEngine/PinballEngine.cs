@@ -250,15 +250,26 @@ public class PinballEngine
 
         ball.Center += normal * depth;
 
+        // Two-body angular impulse against the bat (inspired by Visual Pinball): the ball
+        // collides with a rotating rigid body pivoting at the hinge, so the contact point's
+        // moment arm decides how much energy transfers (tip hits launch harder than base
+        // hits) and the reaction is fed back into the bat — a fast ball can stall it.
+        //
+        // The bat's effective mass along an axis is  1/(rArm × axis)² · I, combined with the
+        // ball (mass = 1) as  1/m_eff = 1/m_ball + (rArm × axis)²/I.
+        var contact    = ball.Center - normal * ball.Radius; // ≈ closest point on the bat
+        var arm        = contact - flipper.HingePosition;
+
         // Use velocity relative to the flipper surface so the impulse fires exactly once:
         // when relVDotN >= 0 the ball is already separating in the flipper's frame, so skip.
-        var arm        = ball.Center - flipper.HingePosition;
-        var surfaceVel = flipper.AngularVelocity * new Vector2(-arm.Y, arm.X);
+        var surfaceVel = flipper.AngularVelocity * new Vector2(-arm.Y, arm.X); // ω × r in 2D
         float relVDotN = Vector2.Dot(ball.Velocity - surfaceVel, normal);
 
         if (relVDotN < 0f)
         {
-            var vrel = ball.Velocity - surfaceVel; // pre-impulse relative velocity
+            var   vrel = ball.Velocity - surfaceVel; // pre-impulse relative velocity
+            float I    = flipper.MomentOfInertia;    // about the hinge
+            float invI = I > 1e-6f ? 1f / I : 0f;
 
             // A swinging flipper always launches the ball with full restitution so a
             // catch-and-shoot is consistent. The resting-velocity threshold (which
@@ -266,18 +277,30 @@ public class PinballEngine
             // when the flipper isn't actively moving.
             bool  swinging = MathF.Abs(flipper.AngularVelocity) > 0.5f;
             float e  = (!swinging && -relVDotN < _table.RestingVelocityThreshold) ? 0f : restitution;
-            float jn = -(1f + e) * relVDotN;
-            ball.Velocity += jn * normal;
+
+            float rn       = Cross(arm, normal);          // moment arm of the normal impulse
+            float invMassN = 1f + rn * rn * invI;         // ball mass = 1
+            float jn       = -(1f + e) * relVDotN / invMassN;
+
+            ball.Velocity += jn * normal;                 // ball receives the impulse
+            flipper.ApplyAngularImpulse(jn * rn * invI);  // bat takes the reaction (it gives)
 
             if (swinging)
             {
-                var   tangent = new Vector2(-normal.Y, normal.X);
-                float vrelT   = Vector2.Dot(vrel, tangent);
-                float jt      = Math.Clamp(-vrelT, -FlipperFriction * jn, FlipperFriction * jn);
+                var   tangent  = new Vector2(-normal.Y, normal.X);
+                float rt       = Cross(arm, tangent);
+                float invMassT = 1f + rt * rt * invI;
+                float vrelT    = Vector2.Dot(vrel, tangent);
+                float jt       = Math.Clamp(-vrelT / invMassT, -FlipperFriction * jn, FlipperFriction * jn);
                 ball.Velocity += jt * tangent;
+                flipper.ApplyAngularImpulse(jt * rt * invI);
             }
         }
     }
+
+    // 2D scalar cross product: the z-component of a×b. Used as the moment arm of an
+    // impulse about the hinge (r × axis).
+    private static float Cross(Vector2 a, Vector2 b) => a.X * b.Y - a.Y * b.X;
 
     private static bool SegmentCircleOverlap(Vector2 center, float radius,
                                              Vector2 a, Vector2 b,

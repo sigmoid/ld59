@@ -1,0 +1,88 @@
+using System;
+
+namespace ld59.UI.Powergrid;
+
+/// <summary>
+/// A constraint on which runes two <b>adjacent</b> nodes may simultaneously hold. A level enables a
+/// set of these; an edge is in conflict if its two runes violate any active rule.
+/// </summary>
+public enum ColoringRule
+{
+    /// <summary>Adjacent nodes must hold different runes (the base graph-colouring constraint).</summary>
+    DifferentRune,
+
+    /// <summary>Adjacent nodes must hold runes from different alphabet tiers. (Kept for reference;
+    /// not currently surfaced as a toggle.)</summary>
+    DifferentTier,
+
+    /// <summary>For adjacent nodes of <b>different</b> tiers, the tiers must be exactly one apart.
+    /// Says nothing about same-tier pairs (those are governed by <see cref="Sidedness"/> /
+    /// <see cref="DifferentRune"/>), so it composes cleanly with them.</summary>
+    TierStep,
+
+    /// <summary>Within a tier, adjacent runes must sit on opposite sides of the row (left vs right by
+    /// <see cref="Symbol.RowOrder"/>). A centred rune (odd-length row, e.g. Chi) pairs with either
+    /// side. Runes of different tiers are unconstrained by this rule.</summary>
+    Sidedness,
+}
+
+public static class ColoringRules
+{
+    /// <summary>True if this adjacent pairing breaks the given rule.</summary>
+    public static bool Violates(ColoringRule rule, Symbol a, Symbol b) => rule switch
+    {
+        ColoringRule.DifferentRune => a.Name == b.Name,
+        ColoringRule.DifferentTier => a.Tier == b.Tier,
+        ColoringRule.TierStep      => a.Tier != b.Tier && System.Math.Abs(a.Tier - b.Tier) != 1,
+        ColoringRule.Sidedness     => SameSideOfTier(a, b),
+        _ => false,
+    };
+
+    private enum Side { Left, Center, Right }
+
+    /// <summary>A rune's side within its row: left/right of the row centre, or centre (wildcard).</summary>
+    private static Side SideOf(Symbol s)
+    {
+        int n = 0;
+        foreach (var sym in SymbolDictionary.All)
+            if (sym.Tier == s.Tier) n++;
+
+        float center = (n + 1) / 2f;
+        if (s.RowOrder < center) return Side.Left;
+        if (s.RowOrder > center) return Side.Right;
+        return Side.Center;
+    }
+
+    /// <summary>Same tier and the same definite side (both Left or both Right). A centred rune never
+    /// counts as "same side", so it pairs with either.</summary>
+    private static bool SameSideOfTier(Symbol a, Symbol b)
+    {
+        if (a.Tier != b.Tier) return false;
+        var sa = SideOf(a);
+        var sb = SideOf(b);
+        return sa != Side.Center && sb != Side.Center && sa == sb;
+    }
+
+    /// <summary>Requirement clause for the status line, e.g. "be one tier apart".</summary>
+    public static string Hint(ColoringRule rule) => rule switch
+    {
+        ColoringRule.DifferentRune => "hold different runes",
+        ColoringRule.DifferentTier => "hold different tiers",
+        ColoringRule.TierStep      => "be one tier apart (across tiers)",
+        ColoringRule.Sidedness     => "be opposite sides (within a tier)",
+        _ => "",
+    };
+
+    /// <summary>Short label for the editor toggle.</summary>
+    public static string ShortName(ColoringRule rule) => rule switch
+    {
+        ColoringRule.DifferentRune => "Rune",
+        ColoringRule.DifferentTier => "Tier",
+        ColoringRule.TierStep      => "Step",
+        ColoringRule.Sidedness     => "Side",
+        _ => rule.ToString(),
+    };
+
+    public static bool TryParse(string s, out ColoringRule rule)
+        => Enum.TryParse(s, ignoreCase: true, out rule);
+}

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -6,6 +7,7 @@ using Quartz;
 public class PowergridCommandHandler : ConsoleCommandHandler
 {
     private const string ScenesDir = "Content/files/scenes/powergrid";
+    private const string ProgressionsDir = "Content/files/scenes/powergrid/progressions";
 
     public PowergridCommandHandler()
     {
@@ -20,9 +22,121 @@ public class PowergridCommandHandler : ConsoleCommandHandler
             return;
         }
 
+        if (args.Length > 0 && (args[0] == "--copy" || args[0] == "-c"))
+        {
+            if (args.Length < 3)
+            {
+                Console.PrintLine("Usage: powergrid --copy <source> <newName>");
+                return;
+            }
+            CopyLevel(args[1], args[2]);
+            return;
+        }
+
+        if (args.Length > 0 && (args[0] == "--progs"))
+        {
+            ListProgressions();
+            return;
+        }
+
+        if (args.Length > 0 && (args[0] == "--prog" || args[0] == "-p"))
+        {
+            if (args.Length < 2)
+            {
+                Console.PrintLine("Usage: powergrid --prog <progressionName>");
+                return;
+            }
+            OpenProgression(args[1]);
+            return;
+        }
+
         string levelName = args.Length > 0 ? args[0] : null;
         var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), levelName);
         Core.UISystem.AddElement(ui);
+    }
+
+    /// <summary>Opens a progression file: a text file under <see cref="ProgressionsDir"/> listing one
+    /// level name per line (blank lines and lines starting with '#' are ignored).</summary>
+    private void OpenProgression(string name)
+    {
+        var path = $"{ProgressionsDir}/{name}.txt";
+        if (!File.Exists(path))
+        {
+            Console.PrintLine($"powergrid --prog: progression '{name}' not found ({path})");
+            return;
+        }
+
+        var levels = new List<string>();
+        foreach (var raw in File.ReadAllLines(path))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("#")) continue;
+
+            if (File.Exists($"{ScenesDir}/{line}.xml"))
+                levels.Add(line);
+            else
+                Console.PrintLine($"powergrid --prog: skipping missing level '{line}'");
+        }
+
+        if (levels.Count == 0)
+        {
+            Console.PrintLine($"powergrid --prog: '{name}' lists no valid levels");
+            return;
+        }
+
+        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), name, levels);
+        Core.UISystem.AddElement(ui);
+        Console.PrintLine($"Opened progression '{name}' ({levels.Count} levels)");
+    }
+
+    private void ListProgressions()
+    {
+        if (!Directory.Exists(ProgressionsDir))
+        {
+            Console.PrintLine($"No progressions found (directory missing: {ProgressionsDir})");
+            return;
+        }
+
+        var files = Directory.GetFiles(ProgressionsDir, "*.txt")
+                             .Select(Path.GetFileNameWithoutExtension)
+                             .OrderBy(f => f)
+                             .ToList();
+
+        if (files.Count == 0)
+        {
+            Console.PrintLine("No progressions found.");
+            return;
+        }
+
+        Console.PrintLine($"Powergrid progressions ({files.Count}):");
+        foreach (var f in files)
+            Console.PrintLine($"  {f}");
+    }
+
+    private void CopyLevel(string source, string dest)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(dest))
+        {
+            Console.PrintLine("powergrid --copy: source and new name must be non-empty");
+            return;
+        }
+
+        var sourcePath = $"{ScenesDir}/{source}.xml";
+        var destPath = $"{ScenesDir}/{dest}.xml";
+
+        if (!File.Exists(sourcePath))
+        {
+            Console.PrintLine($"powergrid --copy: source level '{source}' not found");
+            return;
+        }
+        if (File.Exists(destPath))
+        {
+            Console.PrintLine($"powergrid --copy: '{dest}' already exists — choose another name");
+            return;
+        }
+
+        File.Copy(sourcePath, destPath);
+        Console.PrintLine($"Copied '{source}' -> '{dest}'");
     }
 
     private void ListLevels()

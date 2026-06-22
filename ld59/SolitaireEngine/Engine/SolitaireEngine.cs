@@ -21,10 +21,14 @@ public class SolitaireEngine
 
     public bool IsWon => _mode.IsWon;
 
-    public SolitaireEngine(SolitaireGameMode mode)
+    // Increments on every player-initiated move (not on programmatic ApplyMove), so callers can tell
+    // whether the player has touched the board since a cached solution was computed.
+    public int MoveVersion { get; private set; }
+
+    public SolitaireEngine(SolitaireGameMode mode, float contentWidth)
     {
         _mode = mode;
-        _mode.Initialize();
+        _mode.Initialize(contentWidth);
     }
 
     public void Update(GameTime gameTime, Vector2 contentOffset)
@@ -52,10 +56,14 @@ public class SolitaireEngine
     {
         foreach (var stack in _mode.Stacks)
         {
-            if (stack.Cards.Count == 0 && stack.ShowEmptyPlaceholder)
+            if (stack.Cards.Count == 0 && (stack.IsCompleted || stack.ShowEmptyPlaceholder))
             {
                 var emptyPos = stack.Position + contentOffset;
-                _renderer.RenderEmptySlot(new Rectangle((int)emptyPos.X, (int)emptyPos.Y, CardWidth, CardHeight), spriteBatch, order);
+                var slotRect = new Rectangle((int)emptyPos.X, (int)emptyPos.Y, CardWidth, CardHeight);
+                if (stack.IsCompleted)
+                    _renderer.RenderCardBack(slotRect, spriteBatch, order);
+                else
+                    _renderer.RenderEmptySlot(slotRect, spriteBatch, order);
             }
 
             for (int i = 0; i < stack.Cards.Count; i++)
@@ -118,6 +126,7 @@ public class SolitaireEngine
         foreach (var stack in _mode.Stacks)
         {
             if (stack == _heldFromStack) continue;
+            if (stack.IsCompleted) continue;   // a removed stack is inert
 
             int total     = stack.Cards.Count;
             var targetPos = total > 0
@@ -133,10 +142,38 @@ public class SolitaireEngine
             if (_heldFromStack.Cards.Count > 0 && !_heldFromStack.Cards[^1].IsFaceUp)
                 _heldFromStack.Cards[^1].IsFaceUp = true;
             _heldCards = null;
+            MoveVersion++;            // a player-made move
+            ResolveCompletedStacks();
             return;
         }
 
         _heldFromStack.Cards.InsertRange(_heldFromIndex, _heldCards);
         _heldCards = null;
+    }
+
+    // Applies a move programmatically (e.g. from the solver): moves cards from 'from' starting at
+    // fromIndex onto 'to', then resolves any newly completed stacks. No-op if the indices are stale.
+    public void ApplyMove(SolitaireStack from, int fromIndex, SolitaireStack to)
+    {
+        if (from == null || to == null || fromIndex < 0 || fromIndex >= from.Cards.Count) return;
+
+        int count  = from.Cards.Count - fromIndex;
+        var moving = from.Cards.GetRange(fromIndex, count);
+        from.Cards.RemoveRange(fromIndex, count);
+        to.Cards.AddRange(moving);
+        ResolveCompletedStacks();
+    }
+
+    // Removes any stack the mode considers complete, leaving an inert (card-back) slot behind.
+    private void ResolveCompletedStacks()
+    {
+        foreach (var stack in _mode.Stacks)
+        {
+            if (!stack.IsCompleted && stack.Cards.Count > 0 && _mode.IsStackComplete(stack))
+            {
+                stack.Cards.Clear();
+                stack.IsCompleted = true;
+            }
+        }
     }
 }

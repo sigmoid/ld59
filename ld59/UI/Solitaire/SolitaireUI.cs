@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -12,11 +14,25 @@ public class SolitaireUI : UIPanel
     private static readonly (string Name, Func<SolitaireGameMode> Create)[] AvailableModes =
     {
         ("Klondike", () => new KlondikeSolitaire()),
+        ("FreeCell", () => new FreeCellSolitaire(columnCount: 8, freeCellCount: 4)),
+        ("Symbols",  () => new SymbolsSolitaire(columnCount: 7, freeCellCount: 1)),
     };
 
     private Rectangle _bounds;
     private Window    _rootWindow;
     private UIElement _activePanel;
+    private volatile string _pendingTitle;   // set by the background solver, applied on the main thread
+    private volatile Action _pendingAction;  // queued work (e.g. applying a solved move) for the main thread
+    private volatile bool   _solving;        // guards against overlapping solves
+
+    // Cached solution for click-by-click stepping (main-thread only). Valid while the player hasn't
+    // moved (tracked via the engine's MoveVersion).
+    private SymbolsSolitaire _stepMode;
+    private List<SymbolsSolver.Move> _stepMoves;
+    private IReadOnlyList<SolitaireStack> _stepColumns;   // fixed snapshot of active columns at solve time
+    private IReadOnlyList<SolitaireStack> _stepCells;
+    private int _stepIndex;
+    private int _stepVersion;
 
     public SolitaireUI(Rectangle bounds)
     {
@@ -32,6 +48,25 @@ public class SolitaireUI : UIPanel
 
     public override Rectangle GetBoundingBox() => _bounds;
     public override void Update(float deltaTime) => base.Update(deltaTime);
+
+    // Applies work produced by the background solver (title text, queued move). Called on the main
+    // thread from the content panel's Update (this manager itself is never added to the update loop).
+    private void ApplyPendingWork()
+    {
+        var pending = _pendingTitle;
+        if (pending != null)
+        {
+            _rootWindow.SetTitle(pending);
+            _pendingTitle = null;
+        }
+
+        var action = _pendingAction;
+        if (action != null)
+        {
+            _pendingAction = null;
+            action();
+        }
+    }
 
     private void CreateUI()
     {
@@ -58,9 +93,130 @@ public class SolitaireUI : UIPanel
         if (_activePanel != null)
             _rootWindow.RemoveChild(_activePanel);
 
-        var engine = new SolitaireEngine(modeFactory());
-        _activePanel = new SolitaireContentPanel(_rootWindow.GetContentBounds(), engine);
+        var contentBounds = _rootWindow.GetContentBounds();
+        var mode = modeFactory();
+        var engine = new SolitaireEngine(mode, contentBounds.Width);
+
+        // For the Symbols experiment, offer solver-driven buttons and run an initial check.
+        var symbols = mode as SymbolsSolitaire;
+        var buttons = new List<(string Label, Action OnClick)>();
+        if (symbols != null)
+        {
+            buttons.Add(("Check solvable", () => CheckSolvable(symbols)));
+            buttons.Add(("Play next move", () => StepOrSolve(symbols, engine)));
+        }
+
+        // The panel is updated every frame (this manager is not), so let it apply pending solver work.
+        _activePanel = new SolitaireContentPanel(contentBounds, engine, ApplyPendingWork, buttons);
         _rootWindow.AddChild(_activePanel);
+
+        ClearStepCache();
+        if (symbols != null)
+            CheckSolvable(symbols);
+    }
+
+    // Solves the current Symbols board in the background and reports the verdict in the title. Does
+    // not touch the step cache (checking solvability doesn't change the board).
+    private void CheckSolvable(SymbolsSolitaire symbols)
+    {
+        if (_solving) return;
+        _solving = true;
+
+        var problem = symbols.BuildSolverProblem();
+        _rootWindow.SetTitle("Solitaire - solving...");
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var result = SymbolsSolver.Solve(problem);
+            _pendingTitle = $"Solitaire - {result}";
+            _solving = false;
+        });
+    }
+
+    // Plays the next move. If a cached solution from a previous solve is still valid (the player
+    // hasn't moved since), step it instantly; otherwise solve once, cache the solution, and play its
+    // first move. Subsequent presses then just walk the cache until the player makes their own move.
+    private void StepOrSolve(SymbolsSolitaire symbols, SolitaireEngine engine)
+    {
+        bool cacheValid = _stepMode == symbols && _stepMoves != null
+                       && _stepIndex < _stepMoves.Count && _stepVersion == engine.MoveVersion;
+
+        if (cacheValid && TryApplyCachedMove(engine, _stepMoves[_stepIndex]))
+        {
+            _stepIndex++;
+            _stepVersion = engine.MoveVersion;   // ApplyMove doesn't bump it; keep them equal
+            _rootWindow.SetTitle($"Solitaire - move {_stepIndex} of {_stepMoves.Count}");
+            return;
+        }
+
+        // No usable cache: solve, cache, and play the first move.
+        if (_solving) return;
+        _solving = true;
+        ClearStepCache();
+
+        int requestVersion = engine.MoveVersion;
+        var problem = symbols.BuildSolverProblem();
+        _rootWindow.SetTitle("Solitaire - finding solution...");
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var result = SymbolsSolver.Solve(problem);
+            _pendingAction = () => BeginStepping(symbols, engine, result, requestVersion);
+            _solving = false;
+        });
+    }
+
+    // Main-thread: caches a freshly solved solution and plays its first move (unless the player moved
+    // while we were solving, in which case the result is stale and discarded).
+    private void BeginStepping(SymbolsSolitaire symbols, SolitaireEngine engine, SymbolsSolver.Result result, int requestVersion)
+    {
+        if (result.Outcome != SymbolsSolver.Outcome.Winnable || result.Moves.Count == 0)
+        {
+            _rootWindow.SetTitle($"Solitaire - {result}");
+            return;
+        }
+        if (engine.MoveVersion != requestVersion)
+        {
+            _rootWindow.SetTitle("Solitaire - board changed, press again");
+            return;
+        }
+
+        _stepMode    = symbols;
+        _stepMoves   = result.Moves;
+        _stepColumns = symbols.ActiveColumns;   // fixed snapshot so indices stay valid as columns complete
+        _stepCells   = symbols.FreeCells;
+        _stepIndex   = 0;
+
+        if (TryApplyCachedMove(engine, _stepMoves[0]))
+            _stepIndex = 1;
+        _stepVersion = engine.MoveVersion;
+        _rootWindow.SetTitle($"Solitaire - move {_stepIndex} of {_stepMoves.Count}");
+    }
+
+    private void ClearStepCache()
+    {
+        _stepMode    = null;
+        _stepMoves   = null;
+        _stepColumns = null;
+        _stepCells   = null;
+        _stepIndex   = 0;
+    }
+
+    // Applies one cached solver move against the fixed column snapshot, validating it still matches
+    // the live board. Returns false (so the caller re-solves) if anything has drifted.
+    private bool TryApplyCachedMove(SolitaireEngine engine, SymbolsSolver.Move move)
+    {
+        SolitaireStack from = move.FromColumn >= 0
+            ? (move.FromColumn < _stepColumns.Count ? _stepColumns[move.FromColumn] : null)
+            : _stepCells.FirstOrDefault(c => c.Cards.Count > 0 && SymbolsSolitaire.Encode(c.Cards[^1]) == move.Card);
+
+        SolitaireStack to = move.ToColumn >= 0
+            ? (move.ToColumn < _stepColumns.Count ? _stepColumns[move.ToColumn] : null)
+            : _stepCells.FirstOrDefault(c => c.Cards.Count == 0 && !c.IsCompleted);
+
+        if (from == null || from.Cards.Count == 0 || SymbolsSolitaire.Encode(from.Cards[^1]) != move.Card) return false;
+        if (to == null || to.IsCompleted) return false;
+
+        engine.ApplyMove(from, from.Cards.Count - 1, to);
+        return true;
     }
 
     // ── Mode selection ────────────────────────────────────────────────────────
@@ -190,27 +346,74 @@ public class SolitaireUI : UIPanel
 
     private sealed class SolitaireContentPanel : UIElement
     {
+        private const int ButtonWidth  = 210;
+        private const int ButtonHeight = 34;
+        private const int ButtonMargin = 12;
+
+        private const int ButtonGap    = 8;
+
         private Rectangle            _bounds;
         private readonly SolitaireEngine _engine;
         private readonly SpriteFont  _font;
+        private readonly SpriteFont  _uiFont;
         private readonly Texture2D   _bg;
+        private readonly Texture2D   _white;
+        private readonly Action      _onUpdate;
+        private readonly List<(string Label, Action OnClick)> _buttons;
 
-        public SolitaireContentPanel(Rectangle bounds, SolitaireEngine engine)
+        private readonly Rectangle[] _buttonBounds;
+        private int         _hoveredButton = -1;
+        private ButtonState _prevLeft;
+
+        public SolitaireContentPanel(Rectangle bounds, SolitaireEngine engine, Action onUpdate = null,
+            List<(string Label, Action OnClick)> buttons = null)
         {
-            _bounds = bounds;
-            _engine = engine;
-            _font   = Core.Content.Load<SpriteFont>("fonts/PlayingCard");
-            _bg     = new Texture2D(Core.GraphicsDevice, 1, 1);
+            _bounds      = bounds;
+            _engine      = engine;
+            _onUpdate    = onUpdate;
+            _buttons     = buttons ?? new List<(string, Action)>();
+            _buttonBounds = new Rectangle[_buttons.Count];
+            _font        = Core.Content.Load<SpriteFont>("fonts/PlayingCard");
+            _uiFont      = Core.DefaultFont;
+            _bg          = new Texture2D(Core.GraphicsDevice, 1, 1);
             _bg.SetData(new[] { new Color(35, 120, 35) });
+            _white       = new Texture2D(Core.GraphicsDevice, 1, 1);
+            _white.SetData(new[] { Color.White });
+            LayoutButtons();
         }
 
         public override Rectangle GetBoundingBox() => _bounds;
-        public override void SetBounds(Rectangle bounds) => _bounds = bounds;
+        public override void SetBounds(Rectangle bounds) { _bounds = bounds; LayoutButtons(); }
+
+        // Stacked at the top-right of the content area — empty space in the Symbols layout, so clicks
+        // there won't be confused with card picks.
+        private void LayoutButtons()
+        {
+            for (int i = 0; i < _buttonBounds.Length; i++)
+                _buttonBounds[i] = new Rectangle(
+                    _bounds.Right - ButtonWidth - ButtonMargin,
+                    _bounds.Y + ButtonMargin + i * (ButtonHeight + ButtonGap),
+                    ButtonWidth, ButtonHeight);
+        }
 
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
-            _engine.Update(new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(deltaTime)), new Vector2(_bounds.X, _bounds.Y));
+            _onUpdate?.Invoke();
+
+            var mouse = Mouse.GetState();
+            var pt    = Core.GetTransformedMousePoint();
+            _hoveredButton = -1;
+            for (int i = 0; i < _buttonBounds.Length; i++)
+                if (_buttonBounds[i].Contains(pt)) { _hoveredButton = i; break; }
+
+            if (_hoveredButton >= 0 && mouse.LeftButton == ButtonState.Pressed && _prevLeft == ButtonState.Released)
+                _buttons[_hoveredButton].OnClick();
+            _prevLeft = mouse.LeftButton;
+
+            // Suppress card interaction this frame when the cursor is over a button.
+            if (_hoveredButton < 0)
+                _engine.Update(new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(deltaTime)), new Vector2(_bounds.X, _bounds.Y));
         }
 
         public override void Draw(SpriteBatch spriteBatch)
@@ -230,6 +433,24 @@ public class SolitaireUI : UIPanel
 
             Core.GraphicsDevice.ScissorRectangle = origScissor;
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone);
+
+            DrawButtons(spriteBatch);
+        }
+
+        private void DrawButtons(SpriteBatch spriteBatch)
+        {
+            for (int i = 0; i < _buttonBounds.Length; i++)
+            {
+                var bgColor = i == _hoveredButton ? new Color(210, 235, 210) : Color.White;
+                spriteBatch.Draw(_white, _buttonBounds[i], null, bgColor, 0f, Vector2.Zero, SpriteEffects.None, 0.9f);
+
+                var label     = _buttons[i].Label;
+                var labelSize = _uiFont.MeasureString(label);
+                var labelPos  = new Vector2(
+                    _buttonBounds[i].X + (_buttonBounds[i].Width  - labelSize.X) * 0.5f,
+                    _buttonBounds[i].Y + (_buttonBounds[i].Height - labelSize.Y) * 0.5f);
+                spriteBatch.DrawString(_uiFont, label, labelPos, Color.Black, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.91f);
+            }
         }
     }
 }

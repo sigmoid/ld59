@@ -95,7 +95,7 @@ public class StartMenuUI : UIPanel
 
         var solitaireIcon = Core.Content.Load<Texture2D>("images/file_icon");
         var solitaireButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 900, _layoutGroup.GetBoundingBox().Width, 80), solitaireIcon, "Solitaire", () => {
-            _ = new SolitaireUI(new Rectangle(150, 150, 800, 700));
+            _ = new SolitaireUI(new Rectangle(150, 120, 960, 720));
             HideMenu();
         });
         _layoutGroup.AddChild(solitaireButton);

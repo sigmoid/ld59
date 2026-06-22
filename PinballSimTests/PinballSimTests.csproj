@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless visualizer for the pinball flipper launch cone.
+    Compile-includes the real PinballEngine sources from ../ld59 and supplies lightweight
+    stubs (Stubs.cs) for the MonoGame/Quartz surface the engine touches, so the physics can
+    be exercised with no MonoGame dependency and no content pipeline. It loads the live
+    pinball_table.json, simulates a ball launched from many points along each flipper, and
+    writes an SVG showing where each contact point sends the ball.
+    Run with:  dotnet run  (project PinballSimTests)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>PinballSimTests</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Stubs.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="..\quartz\Util\Math.cs"                       Link="Engine\Math.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballObstacle.cs"     Link="Engine\PinballObstacle.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballCircleCollider.cs" Link="Engine\PinballCircleCollider.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballBall.cs"         Link="Engine\PinballBall.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballWall.cs"         Link="Engine\PinballWall.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballRamp.cs"         Link="Engine\PinballRamp.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballFlipper.cs"      Link="Engine\PinballFlipper.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballTable.cs"        Link="Engine\PinballTable.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballTableLoader.cs"  Link="Engine\PinballTableLoader.cs" />
+    <Compile Include="..\ld59\PinballEngine\PinballEngine.cs"       Link="Engine\PinballEngine.cs" />
+  </ItemGroup>
+
+</Project>

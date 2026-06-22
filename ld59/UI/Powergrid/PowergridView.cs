@@ -9,17 +9,18 @@ using Quartz.UI;
 
 namespace ld59.UI.Powergrid;
 
-public enum EditTool { Select, AddNode, Connect, Delete, Lock, Key, Link }
+public enum EditTool { Select, AddNode, Connect, Delete }
 
 /// <summary>
-/// 2D top-down viewport for a Powergrid level. Owns a pan/zoom camera and renders the puzzle graph
-/// read from a <see cref="PowergridLevelController"/>. Drawing is scissor-clipped to the viewport
-/// bounds (SolitaireContentPanel pattern).
+/// 2D viewport for a graph-colouring level. Owns a pan/zoom camera and renders the puzzle graph
+/// read from a <see cref="PowergridLevelController"/>. Drawing is scissor-clipped to the viewport.
 ///
-/// Hosts both modes:
-///  - Play: an inventory bar (holding slots + available tokens) + drag/drop of power tokens onto
-///    nodes, validated by the graph; pan is left-drag on empty space.
-///  - Edit: create/move/connect/delete nodes + inspector mutations; pan is right-drag.
+/// Two modes:
+///  - Play: a rune palette along the bottom; drag a rune onto a node to colour it (or drag a node's
+///    rune off to clear it). Edges joining two same-rune nodes turn red. Fill every node with no
+///    conflicts to solve. Pan is right-drag.
+///  - Edit: create/move/connect/delete nodes + author fixed-rune clues via the inspector. Pan is
+///    right-drag; the left button drives the active tool.
 /// </summary>
 public class PowergridView : UIElement
 {
@@ -31,9 +32,6 @@ public class PowergridView : UIElement
     private readonly Texture2D _pixel;
     private readonly Texture2D _circleFilled;
     private readonly Texture2D _circleOutlined;
-    private readonly Texture2D _anchorMarker;
-    private readonly Texture2D _andGate;
-    private readonly Texture2D _xorGate;
 
     private Vector2 _pan = Vector2.Zero;
     private float _zoom = 64f;
@@ -41,11 +39,15 @@ public class PowergridView : UIElement
     private const float MaxZoom = 256f;
 
     private const float NodeWorldRadius = 0.4f;
-    private const float SnapThreshold = 3.0f; // world units within which the camera eases to a puzzle
+    private const float SnapThreshold = 3.0f;
     private const float SnapSpeed = 6f;
-    private const int InventoryBarHeight = 74;
-    private const int SlotSize = 48;
-    private const int SlotGap = 8;
+
+    /// <summary>Width of the right-hand alphabet-pyramid panel shown during play.</summary>
+    private const int PyramidPanelWidth = 300;
+    private const int PyramidPad = 16;
+    private const int PyramidGap = 8;
+    /// <summary>On-screen size of the rune icon that follows the cursor while dragging.</summary>
+    private const int HandIconSize = 48;
 
     // Camera input
     private bool _panning;
@@ -63,33 +65,33 @@ public class PowergridView : UIElement
     private Point _moveLast;
     private PowerNodeComponent _connectSource;
 
-    // 2b authoring state
-    public EdgeLockComponent SelectedLock { get; private set; }
-    private bool _lockDragging;
-    private Vector2 _lockStart;
-    private EdgeLockComponent _keyLock;     // lock awaiting a key node (Key tool)
-    private PowerNodeComponent _linkSource; // first node picked (Link tool)
-    private const float LockHitDistance = 8f;
-
     // Play state (runtime; resets each session)
-    private readonly List<int> _inventory = new();
-    private int?[] _holding = new int?[3];
-    private enum HandKind { None, FromInventory, FromHolding, FromNode }
+    private enum HandKind { None, FromInventory, FromNode }
     private HandKind _handKind = HandKind.None;
-    private int _handPower;
-    private int _handIndex;
+    private string _handRune;
     private PowerNodeComponent _handNode;
     private Point _handPos;
     private float _rejectTimer;
     private Vector2 _rejectPos;
     private bool Dragging => _handKind != HandKind.None;
 
-    // Pulse-simulation run state (play mode). A run is started/stepped/reset via the toolbar; auto-play
-    // advances one tick every TickDuration seconds and animates pulses travelling along energised edges.
-    private bool _runStarted;     // a run has begun (vs. the placement phase)
-    private bool _autoPlay;       // auto-advance on the timer (Run) vs. manual (Step)
-    private float _tickProgress;  // [0,1] elapsed fraction of the current tick (drives pulse-dot position)
-    private const float TickDuration = 0.35f;
+    /// <summary>Remaining runes the player can still place this session (flat; repeats = quantity).</summary>
+    private readonly List<string> _inventory = new();
+    /// <summary>Puzzle ids whose reward has already been granted this session (rewards are permanent
+    /// once earned — never revoked even if the puzzle is later unsolved).</summary>
+    private readonly HashSet<string> _rewarded = new();
+
+    // Solver state (runtime). When viewing a solution the board is overwritten; the player's own board
+    // is snapshotted so "Clear" can restore it.
+    private readonly List<Dictionary<PowerNodeComponent, string>> _solutions = new();
+    private int _solutionIndex = -1;
+    private bool _solverRun;
+    private bool _solverTruncated;
+    private bool _viewingSolution;
+    private Dictionary<PowerNodeComponent, string> _snapBoard;
+    private List<string> _snapInventory;
+    private HashSet<string> _snapRewarded;
+    private const int SolverAreaHeight = 150;
 
     public Scene Scene => _scene;
     public PowergridLevelController Controller => _controller;
@@ -101,7 +103,6 @@ public class PowergridView : UIElement
         _scene.InitializeEntities();
         _controller = new PowergridLevelController(_scene);
 
-        // Frame the first puzzle on open.
         if (_controller.Graphs.Count > 0) _pan = _controller.Graphs[0].Centroid;
 
         _font = Core.DefaultFont;
@@ -111,93 +112,163 @@ public class PowergridView : UIElement
 
         _circleFilled   = Core.Content.Load<Texture2D>("images/powergrid/circle-filled");
         _circleOutlined = Core.Content.Load<Texture2D>("images/powergrid/circle-outlined");
-        _anchorMarker   = TryLoad("images/powergrid/anchor");
-        _andGate        = TryLoad("images/powergrid/and");
-        _xorGate        = TryLoad("images/powergrid/xor");
 
         _prevScroll = Mouse.GetState().ScrollWheelValue;
         ResetPlayState();
     }
 
-    private static Texture2D TryLoad(string asset)
-    {
-        try { return Core.Content.Load<Texture2D>(asset); }
-        catch { return null; }
-    }
-
     public override Rectangle GetBoundingBox() => _bounds;
     public override void SetBounds(Rectangle bounds) => _bounds = bounds;
 
-    /// <summary>Reloads inventory/holding from the level config and clears any in-progress run. Drops
-    /// anything in hand.</summary>
+    /// <summary>Refills the inventory from the level config, clears placed runes (clues kept), and
+    /// drops anything in hand.</summary>
     public void ResetPlayState()
     {
-        ReturnHandToOrigin();
+        ClearHand();
+        _controller.ClearPlaced();
+        _rewarded.Clear();
+
         _inventory.Clear();
         _inventory.AddRange(_controller.InitialInventory);
-        _holding = new int?[Math.Max(1, _controller.HoldingSlots)];
+
+        _solutions.Clear();
+        _solutionIndex = -1;
+        _solverRun = false;
+        _viewingSolution = false;
+        _snapBoard = null;
+    }
+
+    /// <summary>Grants each newly-solved puzzle's reward runes into the shared inventory, once. The
+    /// grant is permanent: a puzzle re-entering an unsolved state never reclaims runes it gave.</summary>
+    private void GrantRewards()
+    {
         foreach (var graph in _controller.Graphs)
-            foreach (var n in graph.Nodes)
+        {
+            if (!graph.IsSolved || !_rewarded.Add(graph.Id)) continue;
+            foreach (var rune in graph.RewardRunes)
+                _inventory.Add(rune);
+        }
+    }
+
+    #region Solver
+
+    /// <summary>The full rune budget the solver may use: the starting inventory plus every puzzle's
+    /// reward (sequencing/gating is ignored — it answers "with all the runes, how many colourings?").</summary>
+    private List<string> SolverBudget()
+    {
+        var budget = new List<string>(_controller.InitialInventory);
+        foreach (var g in _controller.Graphs) budget.AddRange(g.RewardRunes);
+        return budget;
+    }
+
+    /// <summary>Enumerates all valid colourings of the current graph and shows the first. Snapshots the
+    /// player's board first so <see cref="ClearSolver"/> can restore it.</summary>
+    public void RunSolver()
+    {
+        if (!_viewingSolution) CaptureBoard();
+
+        var res = PowergridSolver.Solve(_controller.Graphs, _controller.ActiveRules, SolverBudget());
+        _solutions.Clear();
+        _solutions.AddRange(res.Solutions);
+        _solverTruncated = res.Truncated;
+        _solverRun = true;
+        _solutionIndex = _solutions.Count > 0 ? 0 : -1;
+        if (_solutionIndex >= 0) DisplaySolution(_solutionIndex);
+    }
+
+    /// <summary>Steps to the next/previous solution (wraps) and shows it.</summary>
+    public void StepSolution(int delta)
+    {
+        if (_solutions.Count == 0) return;
+        _solutionIndex = ((_solutionIndex + delta) % _solutions.Count + _solutions.Count) % _solutions.Count;
+        DisplaySolution(_solutionIndex);
+    }
+
+    private void CaptureBoard()
+    {
+        _snapBoard = new Dictionary<PowerNodeComponent, string>();
+        foreach (var g in _controller.Graphs)
+            foreach (var n in g.Nodes)
+                if (!n.IsFixed) _snapBoard[n] = n.PlacedRune;
+        _snapInventory = new List<string>(_inventory);
+        _snapRewarded = new HashSet<string>(_rewarded);
+    }
+
+    private void DisplaySolution(int k)
+    {
+        var sol = _solutions[k];
+        var remaining = SolverBudget();
+        foreach (var g in _controller.Graphs)
+            foreach (var n in g.Nodes)
             {
-                n.PlacedTokenPower = 0;
-                n.PlacedTokenDelay = 0;
-                n.HeldTokenCollected = false;
+                if (n.IsFixed) continue;
+                n.PlacedRune = sol.TryGetValue(n, out var r) ? r : string.Empty;
+                if (!string.IsNullOrEmpty(n.PlacedRune)) remaining.Remove(n.PlacedRune);
             }
-        ResetSimulation();   // clears lit/energised state and re-applies the discovery baseline
+        _inventory.Clear();
+        _inventory.AddRange(remaining);
+        _viewingSolution = true;
+        ClearHand();
     }
 
-    // ── Pulse-simulation controls (wired to the Run/Step/Reset toolbar buttons) ──
-
-    /// <summary>True while a run is in progress or halted (vs. the placement phase).</summary>
-    public bool RunStarted => _runStarted;
-
-    private bool AnyRunning() => _controller.Graphs.Any(g => g.IsRunning);
-
-    /// <summary>Run (auto-play): start a fresh run if none is live, then auto-advance on the timer.</summary>
-    public void RunSimulation()
+    /// <summary>Drops the solver view and restores the player's snapshotted board/inventory.</summary>
+    public void ClearSolver()
     {
-        if (!_runStarted || !AnyRunning())
+        if (_snapBoard != null)
         {
-            _controller.StartAll();
-            _runStarted = true;
+            foreach (var (node, rune) in _snapBoard) node.PlacedRune = rune;
+            _inventory.Clear();
+            _inventory.AddRange(_snapInventory);
+            _rewarded.Clear();
+            foreach (var id in _snapRewarded) _rewarded.Add(id);
         }
-        _autoPlay = true;
-        _tickProgress = 0f;
+        _solutions.Clear();
+        _solutionIndex = -1;
+        _solverRun = false;
+        _viewingSolution = false;
+        _snapBoard = null;
     }
 
-    /// <summary>Step: advance exactly one tick (starting the run on the first press), no auto-play.</summary>
-    public void StepSimulation()
+    /// <summary>The four solver control rects in the panel's bottom band.</summary>
+    private (Rectangle solve, Rectangle prev, Rectangle next, Rectangle clear) SolverLayout()
     {
-        _autoPlay = false;
-        if (!_runStarted || !AnyRunning())
-        {
-            _controller.StartAll();   // first press shows t=0 (just-emitted anchors)
-            _runStarted = true;
-        }
-        else
-        {
-            _controller.StepAll();
-        }
-        _tickProgress = 0f;
+        var panel = PyramidPanel;
+        const int h = 28, gap = 6;
+        int x = panel.X + PyramidPad;
+        int w = panel.Width - 2 * PyramidPad;
+        int y = panel.Bottom - SolverAreaHeight + 8;
+
+        var solve = new Rectangle(x, y, w, h);
+        int navY = solve.Bottom + 6 + _font.LineSpacing + 4;
+        const int bw = 46;
+        var prev = new Rectangle(x, navY, bw, h);
+        var next = new Rectangle(x + w - bw, navY, bw, h);
+        var clear = new Rectangle(x, navY + h + gap, w, h);
+        return (solve, prev, next, clear);
     }
 
-    /// <summary>Reset back to the placement phase: nothing lit, locks closed, unsolved.</summary>
-    public void ResetSimulation()
+    /// <summary>Handles a click on a solver control. Returns true if one was hit (so it doesn't also
+    /// start a rune drag).</summary>
+    private bool HandleSolverClick(Point mp)
     {
-        _controller.ResetAllRuns();
-        _runStarted = false;
-        _autoPlay = false;
-        _tickProgress = 0f;
+        var (solve, prev, next, clear) = SolverLayout();
+        if (solve.Contains(mp)) { RunSolver(); return true; }
+        if (_solverRun && clear.Contains(mp)) { ClearSolver(); return true; }
+        if (_solverRun && _solutions.Count > 0 && prev.Contains(mp)) { StepSolution(-1); return true; }
+        if (_solverRun && _solutions.Count > 0 && next.Contains(mp)) { StepSolution(1); return true; }
+        return false;
     }
+
+    #endregion
 
     #region Camera transforms
 
-    // Play mode reserves a bottom strip for the inventory bar; the graph fills the rest.
     private Rectangle GraphRegion => EditMode
         ? _bounds
-        : new Rectangle(_bounds.X, _bounds.Y, _bounds.Width, _bounds.Height - InventoryBarHeight);
+        : new Rectangle(_bounds.X, _bounds.Y, _bounds.Width - PyramidPanelWidth, _bounds.Height);
 
-    private Rectangle BarRect => new(_bounds.X, _bounds.Bottom - InventoryBarHeight, _bounds.Width, InventoryBarHeight);
+    /// <summary>The right-hand panel that shows the alphabet pyramid (and is the rune source) in play.</summary>
+    private Rectangle PyramidPanel => new(_bounds.Right - PyramidPanelWidth, _bounds.Y, PyramidPanelWidth, _bounds.Height);
 
     private Vector2 WorldToScreen(Vector2 world)
     {
@@ -219,15 +290,9 @@ public class PowergridView : UIElement
     {
         float r = NodeWorldRadius * _zoom;
         foreach (var graph in _controller.Graphs)
-        {
-            if (!EditMode && !graph.IsActive) continue; // inactive (locked) puzzles aren't interactable
             foreach (var node in graph.Nodes)
-            {
-                if (!EditMode && !node.Discovered) continue; // can't interact with what isn't revealed
                 if (Vector2.Distance(WorldToScreen(node.Entity.Position), new Vector2(screen.X, screen.Y)) <= r)
                     return node;
-            }
-        }
         return null;
     }
 
@@ -248,23 +313,15 @@ public class PowergridView : UIElement
         int scrollDelta = scroll - _prevScroll;
         _prevScroll = scroll;
         if (scrollDelta != 0 && inside && GraphRegion.Contains(mp))
-        {
-            // Scrolling over a placed emitter adjusts its firing delay; otherwise it zooms.
-            var emitter = !EditMode ? HitTestNode(mp) : null;
-            if (emitter != null && emitter.IsAnchor && emitter.PlacedTokenPower > 0)
-                AdjustEmitterDelay(emitter, scrollDelta > 0 ? 1 : -1);
-            else
-                _zoom = MathHelper.Clamp(_zoom * MathF.Pow(1.1f, scrollDelta / 120f), MinZoom, MaxZoom);
-        }
+            _zoom = MathHelper.Clamp(_zoom * MathF.Pow(1.1f, scrollDelta / 120f), MinZoom, MaxZoom);
 
         if (_rejectTimer > 0) _rejectTimer -= deltaTime;
 
         if (EditMode)
             HandleEditInput(mp, inside, left, leftClick, leftRelease);
         else
-            HandlePlayInput(mp, inside, left, leftClick, leftRelease);
+            HandlePlayInput(mp, inside, leftClick, leftRelease);
 
-        // Pan is right-drag in both modes (left is reserved for tools / token drag).
         HandlePan(mp, right, right && !_prevRightPressed, inside, GraphRegion.Contains(mp));
 
         _prevLeftPressed = left;
@@ -281,32 +338,11 @@ public class PowergridView : UIElement
         }
 
         _controller.Update(deltaTime);
-
-        if (!EditMode)
-        {
-            AdvanceAutoPlay(deltaTime);
-            CollectHeldTokens();
-        }
+        if (!EditMode && !_viewingSolution) GrantRewards();
         UpdateCameraSnap(deltaTime);
     }
 
-    /// <summary>While auto-playing, accumulate time and step the simulation one tick per TickDuration,
-    /// stopping when every run has halted. <see cref="_tickProgress"/> drives the pulse-dot animation.</summary>
-    private void AdvanceAutoPlay(float deltaTime)
-    {
-        if (!_runStarted || !_autoPlay) return;
-
-        if (!AnyRunning()) { _autoPlay = false; _tickProgress = 0f; return; }
-
-        _tickProgress += deltaTime / TickDuration;
-        while (_tickProgress >= 1f)
-        {
-            _tickProgress -= 1f;
-            if (!_controller.StepAll()) { _autoPlay = false; _tickProgress = 0f; break; }
-        }
-    }
-
-    /// <summary>When idle (not panning/dragging) and near an active puzzle, ease the camera to centre it.</summary>
+    /// <summary>When idle (not panning/dragging) and near a puzzle, ease the camera to centre it.</summary>
     private void UpdateCameraSnap(float deltaTime)
     {
         if (EditMode || _panning || Dragging || _controller.Graphs.Count <= 1) return;
@@ -315,25 +351,12 @@ public class PowergridView : UIElement
         float best = float.MaxValue;
         foreach (var g in _controller.Graphs)
         {
-            if (!g.IsActive) continue;
             float d = Vector2.Distance(g.Centroid, _pan);
             if (d < best) { best = d; nearest = g; }
         }
 
         if (nearest != null && best > 0.01f && best < SnapThreshold)
             _pan = Vector2.Lerp(_pan, nearest.Centroid, Math.Min(1f, SnapSpeed * deltaTime));
-    }
-
-    /// <summary>Discovery: a node that powers up grants the token it holds into the inventory (once).</summary>
-    private void CollectHeldTokens()
-    {
-        foreach (var graph in _controller.Graphs)
-            foreach (var n in graph.Nodes)
-                if (n.IsActive && n.HeldTokenPower > 0 && !n.HeldTokenCollected)
-                {
-                    _inventory.Add(n.HeldTokenPower);
-                    n.HeldTokenCollected = true;
-                }
     }
 
     private void HandlePan(Point mp, bool button, bool buttonClick, bool inside, bool overGraph)
@@ -354,10 +377,13 @@ public class PowergridView : UIElement
         }
     }
 
-    #region Play interaction (token drag/drop)
+    #region Play interaction (rune drag/drop)
 
-    private void HandlePlayInput(Point mp, bool inside, bool left, bool leftClick, bool leftRelease)
+    private void HandlePlayInput(Point mp, bool inside, bool leftClick, bool leftRelease)
     {
+        if (leftClick && inside && HandleSolverClick(mp))
+            return;
+
         if (leftClick && inside)
             TryStartDrag(mp);
 
@@ -368,44 +394,49 @@ public class PowergridView : UIElement
         }
     }
 
-    private bool TryStartDrag(Point mp)
+    private void TryStartDrag(Point mp)
     {
-        if (BarRect.Contains(mp))
+        // Take a rune out of the inventory by grabbing its pyramid slot (only if any remain).
+        if (PyramidPanel.Contains(mp))
         {
-            for (int i = 0; i < _holding.Length; i++)
-            {
-                if (_holding[i].HasValue && HoldingSlotRect(i).Contains(mp))
+            foreach (var (name, rect) in PyramidSlots())
+                if (rect.Contains(mp))
                 {
-                    _handKind = HandKind.FromHolding; _handPower = _holding[i].Value; _handIndex = i;
-                    _holding[i] = null; _handPos = mp; return true;
+                    if (_inventory.Remove(name))
+                    {
+                        _viewingSolution = false; // player is taking over from the solver view
+                        _handKind = HandKind.FromInventory;
+                        _handRune = name;
+                        _handPos = mp;
+                    }
+                    return;
                 }
-            }
-            for (int i = 0; i < _inventory.Count; i++)
-            {
-                if (InventorySlotRect(i).Contains(mp))
-                {
-                    _handKind = HandKind.FromInventory; _handPower = _inventory[i]; _handIndex = i;
-                    _inventory.RemoveAt(i); _handPos = mp; return true;
-                }
-            }
-            return false;
+            return;
         }
 
+        // Or lift a placed rune off a (non-fixed) node — it stays "in hand", out of the inventory.
         if (GraphRegion.Contains(mp))
         {
             var node = HitTestNode(mp);
-            if (node != null && node.PlacedTokenPower > 0)
+            if (node != null && IsNodeLocked(node))
             {
-                var graph = _controller.GraphOf(node);
-                if (graph != null && graph.CanRemovePower(node))
-                {
-                    _handKind = HandKind.FromNode; _handPower = node.PlacedTokenPower; _handNode = node;
-                    node.PlacedTokenPower = 0; node.PlacedTokenDelay = 0; _handPos = mp; return true;
-                }
+                Reject(WorldToScreen(node.Entity.Position));
+                return;
+            }
+            if (node != null && !node.IsFixed && !string.IsNullOrEmpty(node.PlacedRune))
+            {
+                _viewingSolution = false; // player is taking over from the solver view
+                _handKind = HandKind.FromNode;
+                _handRune = node.PlacedRune;
+                _handNode = node;
+                node.PlacedRune = string.Empty;
+                _handPos = mp;
+            }
+            else if (node != null && node.IsFixed)
+            {
                 Reject(WorldToScreen(node.Entity.Position));
             }
         }
-        return false;
     }
 
     private void FinishDrag(Point mp)
@@ -415,76 +446,79 @@ public class PowergridView : UIElement
             var node = HitTestNode(mp);
             if (node != null)
             {
-                var graph = _controller.GraphOf(node);
-                if (node.PlacedTokenPower == 0 && graph != null && graph.CanAddPower(node, _handPower))
+                // Can't place on a clue, or on a node in a still-locked puzzle: free the rune back.
+                if (node.IsFixed || IsNodeLocked(node))
                 {
-                    node.PlacedTokenPower = _handPower;
+                    Reject(WorldToScreen(node.Entity.Position));
+                    _inventory.Add(_handRune);
                     ClearHand();
                     return;
                 }
-                Reject(WorldToScreen(node.Entity.Position));
-                ReturnHandToOrigin();
+
+                // Any rune already here is displaced back into the inventory.
+                if (!string.IsNullOrEmpty(node.PlacedRune)) _inventory.Add(node.PlacedRune);
+                node.PlacedRune = _handRune;
+                ClearHand();
                 return;
             }
         }
-        else if (BarRect.Contains(mp))
-        {
-            for (int i = 0; i < _holding.Length; i++)
-            {
-                if (!_holding[i].HasValue && HoldingSlotRect(i).Contains(mp))
-                {
-                    _holding[i] = _handPower; ClearHand(); return;
-                }
-            }
-            // Dropped anywhere else on the bar → back to inventory.
-            _inventory.Add(_handPower); ClearHand(); return;
-        }
 
-        ReturnHandToOrigin();
-    }
-
-    private void ReturnHandToOrigin()
-    {
-        switch (_handKind)
-        {
-            case HandKind.FromInventory:
-                int idx = _handIndex < 0 ? 0 : (_handIndex > _inventory.Count ? _inventory.Count : _handIndex);
-                _inventory.Insert(idx, _handPower); break;
-            case HandKind.FromHolding:
-                _holding[_handIndex] = _handPower; break;
-            case HandKind.FromNode:
-                if (_handNode != null) _handNode.PlacedTokenPower = _handPower; break;
-        }
+        // Dropped on empty space or the pyramid panel: the held rune returns to the inventory.
+        _inventory.Add(_handRune);
         ClearHand();
     }
 
-    private void ClearHand() { _handKind = HandKind.None; _handNode = null; }
+    /// <summary>True when the node belongs to a puzzle that isn't yet unlocked (an earlier puzzle in
+    /// the sequence is still unsolved), so the player can't place or lift runes on it.</summary>
+    private bool IsNodeLocked(PowerNodeComponent node)
+    {
+        var graph = _controller.GraphOf(node);
+        return graph != null && !graph.Unlocked;
+    }
+
+    private void ClearHand() { _handKind = HandKind.None; _handNode = null; _handRune = null; }
 
     private void Reject(Vector2 screenPos) { _rejectTimer = 0.4f; _rejectPos = screenPos; }
 
-    /// <summary>Changes a placed emitter's firing delay, clamped to [0, tickCap-1]. Resets any
-    /// in-progress run so the new timing takes effect on the next Run.</summary>
-    private void AdjustEmitterDelay(PowerNodeComponent emitter, int delta)
+    /// <summary>Lays the whole alphabet out as a pyramid inside <see cref="PyramidPanel"/> — one row
+    /// per tier, ordered by <see cref="Symbol.RowOrder"/>, each row centred — and returns every rune's
+    /// on-screen slot. Cheap; recomputed on demand for both drawing and hit-testing.</summary>
+    private List<(string name, Rectangle rect)> PyramidSlots()
     {
-        int cap = _controller.GraphOf(emitter)?.TickCap ?? 64;
-        emitter.PlacedTokenDelay = MathHelper.Clamp(emitter.PlacedTokenDelay + delta, 0, Math.Max(0, cap - 1));
-        if (_runStarted) ResetSimulation();
-    }
+        var slots = new List<(string, Rectangle)>();
+        var panel = PyramidPanel;
 
-    private Rectangle HoldingSlotRect(int i)
-    {
-        int y = BarRect.Y + (BarRect.Height - SlotSize) / 2;
-        int x = BarRect.X + SlotGap + i * (SlotSize + SlotGap);
-        return new Rectangle(x, y, SlotSize, SlotSize);
-    }
+        var tiers = SymbolDictionary.All
+            .GroupBy(s => s.Tier)
+            .OrderBy(g => g.Key)
+            .Select(g => g.OrderBy(s => s.RowOrder).ToList())
+            .ToList();
+        if (tiers.Count == 0) return slots;
 
-    private int InventoryStartX => HoldingSlotRect(_holding.Length - 1).Right + 28;
+        // The pyramid lives between the header (top) and the solver controls (bottom band).
+        int bandTop = panel.Y + PyramidPad + 30;
+        int bandBottom = panel.Bottom - SolverAreaHeight;
+        int cols = tiers.Max(t => t.Count);
+        int inner = panel.Width - 2 * PyramidPad;
+        int chipW = (inner - (cols - 1) * PyramidGap) / cols;
+        int chipH = (bandBottom - bandTop - (tiers.Count - 1) * PyramidGap) / tiers.Count;
+        int chip = Math.Max(8, Math.Min(Math.Min(chipW, chipH), 56));
 
-    private Rectangle InventorySlotRect(int i)
-    {
-        int y = BarRect.Y + (BarRect.Height - SlotSize) / 2;
-        int x = InventoryStartX + i * (SlotSize + SlotGap);
-        return new Rectangle(x, y, SlotSize, SlotSize);
+        int totalH = tiers.Count * chip + (tiers.Count - 1) * PyramidGap;
+        int y = bandTop + Math.Max(0, (bandBottom - bandTop - totalH) / 2);
+
+        foreach (var row in tiers)
+        {
+            int rowW = row.Count * chip + (row.Count - 1) * PyramidGap;
+            int x = panel.X + (panel.Width - rowW) / 2;
+            foreach (var s in row)
+            {
+                slots.Add((s.Name, new Rectangle(x, y, chip, chip)));
+                x += chip + PyramidGap;
+            }
+            y += chip + PyramidGap;
+        }
+        return slots;
     }
 
     #endregion
@@ -505,7 +539,6 @@ public class PowergridView : UIElement
                 {
                     var hit = HitTestNode(mp);
                     Selected = hit;
-                    SelectedLock = hit == null ? LockHitTest(mp) : null;
                     _movingNode = hit;
                     _moveLast = mp;
                 }
@@ -541,51 +574,7 @@ public class PowergridView : UIElement
                     if (node != null) { DeleteNode(node); break; }
 
                     var conn = ConnectionHitTest(mp);
-                    if (conn != null) { RemoveConnection(conn); break; }
-
-                    if (DeleteActivationAt(mp)) break;
-
-                    var lck = LockHitTest(mp);
-                    if (lck != null) DeleteLock(lck);
-                }
-                break;
-
-            case EditTool.Lock:
-                if (leftClick && inside) { _lockDragging = true; _lockStart = ScreenToWorld(mp); }
-                if (leftRelease && _lockDragging)
-                {
-                    _lockDragging = false;
-                    var end = ScreenToWorld(mp);
-                    if (Vector2.Distance(_lockStart, end) > 0.2f) AddLock(_lockStart, end);
-                }
-                break;
-
-            case EditTool.Key:
-                if (leftClick && inside)
-                {
-                    var node = HitTestNode(mp);
-                    if (node != null && _keyLock != null)
-                    {
-                        _keyLock.KeyNode = node.Entity.Name;
-                        _keyLock = null;
-                        MarkDirty();
-                    }
-                    else
-                    {
-                        _keyLock = LockHitTest(mp); // pick the lock first, then a node
-                    }
-                }
-                break;
-
-            case EditTool.Link:
-                if (leftClick && inside)
-                {
-                    var node = HitTestNode(mp);
-                    if (node != null)
-                    {
-                        if (_linkSource == null) _linkSource = node;
-                        else { ToggleActivation(_linkSource, node); _linkSource = null; }
-                    }
+                    if (conn != null) RemoveConnection(conn);
                 }
                 break;
         }
@@ -614,118 +603,43 @@ public class PowergridView : UIElement
         MarkDirty();
     }
 
+    /// <summary>Adds an (undirected) adjacency. Stored one-way but de-duplicated against the reverse.</summary>
     private void AddConnection(PowerNodeComponent source, PowerNodeComponent target)
     {
+        var sourceName = source.Entity.Name;
         var targetName = target.Entity.Name;
-        if (!source.OutgoingNodeNames.Contains(targetName))
-        {
-            source.OutgoingNodeNames.Add(targetName);
-            MarkDirty();
-        }
+        if (source.OutgoingNodeNames.Contains(targetName) || target.OutgoingNodeNames.Contains(sourceName))
+            return;
+        source.OutgoingNodeNames.Add(targetName);
+        MarkDirty();
     }
 
     private void DeleteNode(PowerNodeComponent node)
     {
         var name = node.Entity.Name;
         foreach (var e in _scene.GetEntities())
-        {
             e.GetComponent<PowerNodeComponent>()?.OutgoingNodeNames.Remove(name);
-            var lck = e.GetComponent<EdgeLockComponent>();
-            if (lck != null && lck.KeyNode == name) lck.KeyNode = string.Empty;
-        }
         _scene.RemoveEntity(node.Entity);
         if (Selected == node) Selected = null;
-        if (_linkSource == node) _linkSource = null;
         MarkDirty();
     }
 
-    // ── Locks / keys ──────────────────────────────────────────────────────
-    private EdgeLockComponent LockHitTest(Point screen)
-    {
-        var p = new Vector2(screen.X, screen.Y);
-        foreach (var graph in _controller.Graphs)
-            foreach (var lck in graph.Locks)
-                if (DistPointSeg(p, WorldToScreen(lck.PointA), WorldToScreen(lck.PointB)) <= LockHitDistance)
-                    return lck;
-        return null;
-    }
-
-    private void AddLock(Vector2 a, Vector2 b)
-    {
-        var entity = new Entity { Name = UniqueName("lock") };
-        var lck = new EdgeLockComponent { PointA = a, PointB = b };
-        entity.AddComponent(lck);
-        _scene.AddEntity(entity);
-        SelectedLock = lck; Selected = null;
-        MarkDirty();
-    }
-
-    private void DeleteLock(EdgeLockComponent lck)
-    {
-        _scene.RemoveEntity(lck.Entity);
-        if (SelectedLock == lck) SelectedLock = null;
-        if (_keyLock == lck) _keyLock = null;
-        MarkDirty();
-    }
-
-    // ── Connections ───────────────────────────────────────────────────────
     private Connection ConnectionHitTest(Point screen)
     {
         var p = new Vector2(screen.X, screen.Y);
         foreach (var graph in _controller.Graphs)
             foreach (var conn in graph.Connections)
-                if (DistPointSeg(p, WorldToScreen(conn.StartPos), WorldToScreen(conn.EndPos)) <= LockHitDistance)
+                if (DistPointSeg(p, WorldToScreen(conn.StartPos), WorldToScreen(conn.EndPos)) <= 8f)
                     return conn;
         return null;
     }
 
     private void RemoveConnection(Connection conn)
     {
+        // The edge may be stored on either endpoint (it's undirected).
         conn.From.OutgoingNodeNames.Remove(conn.To.Entity.Name);
+        conn.To.OutgoingNodeNames.Remove(conn.From.Entity.Name);
         MarkDirty();
-    }
-
-    // ── Activation links (stored by node name; puzzles are auto-detected) ──
-    private void ToggleActivation(PowerNodeComponent a, PowerNodeComponent b)
-    {
-        if (_controller.GraphOf(a) == _controller.GraphOf(b)) return; // same puzzle — no self-link
-
-        var lvl = EnsureLevelComponent();
-        var edge = (a.Entity.Name, b.Entity.Name);
-        if (!lvl.Activations.Remove(edge)) lvl.Activations.Add(edge);
-        MarkDirty();
-    }
-
-    private bool DeleteActivationAt(Point screen)
-    {
-        var p = new Vector2(screen.X, screen.Y);
-        foreach (var (from, to) in _controller.ActivationEdges)
-        {
-            var ga = _controller.GraphContainingNode(from);
-            var gb = _controller.GraphContainingNode(to);
-            if (ga == null || gb == null) continue;
-            if (DistPointSeg(p, WorldToScreen(ga.Centroid), WorldToScreen(gb.Centroid)) <= LockHitDistance)
-            {
-                EnsureLevelComponent().Activations.Remove((from, to));
-                MarkDirty();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private PowergridLevelComponent EnsureLevelComponent()
-    {
-        foreach (var e in _scene.GetEntities())
-        {
-            var lvl = e.GetComponent<PowergridLevelComponent>();
-            if (lvl != null) return lvl;
-        }
-        var entity = new Entity { Name = UniqueName("level") };
-        var comp = new PowergridLevelComponent();
-        entity.AddComponent(comp);
-        _scene.AddEntity(entity);
-        return comp;
     }
 
     private static float DistPointSeg(Vector2 p, Vector2 a, Vector2 b)
@@ -737,91 +651,104 @@ public class PowergridView : UIElement
     }
 
     // ── Inspector ops ─────────────────────────────────────────────────────
-    public void ToggleAnchor() { if (Selected != null) { Selected.IsAnchor = !Selected.IsAnchor; MarkDirty(); } }
-    public void ToggleGoal()   { if (Selected != null) { Selected.IsGoal   = !Selected.IsGoal;   MarkDirty(); } }
 
-    public void CycleKind()
+    /// <summary>Cycles the selected node's fixed-clue rune: none → palette runes → none.</summary>
+    public void CycleFixedRune()
     {
         if (Selected == null) return;
-        Selected.NodeKind = Selected.NodeKind switch
-        {
-            NodeKind.Normal => NodeKind.And,
-            NodeKind.And => NodeKind.Xor,
-            _ => NodeKind.Normal,
-        };
-        MarkDirty();
-    }
-
-    /// <summary>Editor stand-in for dragging a token onto the node (sets placed-token power).</summary>
-    public void AdjustPlacedToken(int delta)
-    {
-        if (Selected == null) return;
-        Selected.PlacedTokenPower = Math.Max(0, Selected.PlacedTokenPower + delta);
-        MarkDirty();
-    }
-
-    public void AdjustHeldToken(int delta)
-    {
-        if (Selected == null) return;
-        Selected.HeldTokenPower = Math.Max(0, Selected.HeldTokenPower + delta);
+        var all = SymbolDictionary.All;
+        int current = string.IsNullOrEmpty(Selected.FixedRune)
+            ? -1
+            : all.FindIndex(s => s.Name == Selected.FixedRune);
+        int next = current + 1;
+        Selected.FixedRune = next >= all.Count ? string.Empty : all[next].Name;
         MarkDirty();
     }
 
     public void DeleteSelected() { if (Selected != null) DeleteNode(Selected); }
 
-    /// <summary>Clears all placed tokens (called when entering edit mode for a clean authoring slate).</summary>
-    public void ClearPlacedTokens()
-    {
-        foreach (var graph in _controller.Graphs)
-            foreach (var n in graph.Nodes)
-                n.PlacedTokenPower = 0;
-        MarkDirty();
-    }
+    public string SelectedFixedRune => Selected?.FixedRune ?? string.Empty;
 
-    /// <summary>Toggles the discovery/fog mechanic for the selected node's whole puzzle.</summary>
-    public void ToggleDiscovery()
+    /// <summary>Adds (delta &gt; 0) or removes (delta &lt; 0) copies of a rune in the level's inventory.</summary>
+    public void AdjustInventoryRune(string rune, int delta)
     {
-        if (Selected == null) return;
-        var graph = _controller.GraphOf(Selected);
-        if (graph == null) return;
-
+        if (string.IsNullOrEmpty(rune)) return;
         var lvl = EnsureLevelComponent();
-        if (graph.DiscoveryEnabled)
-        {
-            var names = graph.Nodes.Select(n => n.Entity.Name).ToHashSet();
-            lvl.DiscoveryNodes.RemoveAll(names.Contains);
-        }
+        if (delta > 0)
+            for (int i = 0; i < delta; i++) lvl.Inventory.Add(rune);
         else
-        {
-            lvl.DiscoveryNodes.Add(Selected.Entity.Name);
-        }
+            for (int i = 0; i < -delta && lvl.Inventory.Remove(rune); i++) { }
         MarkDirty();
     }
 
-    public bool SelectedPuzzleDiscovery
-        => Selected != null && _controller.GraphOf(Selected) is { DiscoveryEnabled: true };
+    // ── Per-puzzle sequence authoring (acts on the puzzle containing the selected node) ──────
 
-    /// <summary>Effective pulse-simulation tick cap for the selected node's puzzle (0 if no selection).</summary>
-    public int SelectedPuzzleTickCap
-        => Selected != null && _controller.GraphOf(Selected) is { } g ? g.TickCap : 0;
+    /// <summary>Id of the puzzle the selected node belongs to, or null if nothing is selected.</summary>
+    public string SelectedPuzzleId => Selected == null ? null : _controller.GraphOf(Selected)?.Id;
 
-    /// <summary>Adjusts (and persists) the per-puzzle tick cap for the selected node's puzzle.</summary>
-    public void AdjustTickCap(int delta)
+    public int SelectedPuzzleOrder
     {
-        if (Selected == null) return;
-        var graph = _controller.GraphOf(Selected);
-        if (graph == null) return;
+        get { var id = SelectedPuzzleId; return id == null ? 0 : FindLevelComponent()?.OrderOf(id) ?? 0; }
+    }
 
-        int cap = Math.Max(1, graph.TickCap + delta);
-        graph.TickCap = cap;                          // immediate feedback this session
-        EnsureLevelComponent().TickCaps[graph.Id] = cap; // persist override keyed by puzzle id
+    /// <summary>How many copies of a rune the selected puzzle's reward grants (0 if none/no selection).</summary>
+    public int SelectedPuzzleRewardCount(string rune)
+    {
+        var id = SelectedPuzzleId;
+        if (id == null) return 0;
+        var list = FindLevelComponent()?.RewardOf(id);
+        return list == null ? 0 : list.Count(r => r == rune);
+    }
+
+    /// <summary>Compact reward summary for the selected puzzle, e.g. "Lith x2 Axe".</summary>
+    public string SelectedPuzzleRewardText
+    {
+        get
+        {
+            var id = SelectedPuzzleId;
+            if (id == null) return "-";
+            var list = FindLevelComponent()?.RewardOf(id);
+            return list == null || list.Count == 0 ? "none" : RewardSummary(list);
+        }
+    }
+
+    /// <summary>Shifts the selected puzzle's authored sequence position (clamped at 0).</summary>
+    public void AdjustPuzzleOrder(int delta)
+    {
+        var id = SelectedPuzzleId;
+        if (id == null) return;
+        var lvl = EnsureLevelComponent();
+        lvl.PuzzleOrder[id] = Math.Max(0, lvl.OrderOf(id) + delta);
         MarkDirty();
     }
 
-    // ── Level config editing (inventory) ──────────────────────────────────
-    public void AddInventoryToken(int power) { EnsureLevelComponent().Inventory.Add(power); MarkDirty(); }
-    public void ClearInventory() { EnsureLevelComponent().Inventory.Clear(); MarkDirty(); }
+    /// <summary>Adds (delta &gt; 0) or removes (delta &lt; 0) copies of a reward rune on the selected puzzle.</summary>
+    public void AdjustPuzzleReward(string rune, int delta)
+    {
+        var id = SelectedPuzzleId;
+        if (id == null || string.IsNullOrEmpty(rune)) return;
+        var lvl = EnsureLevelComponent();
+        if (!lvl.PuzzleRewards.TryGetValue(id, out var list))
+            list = lvl.PuzzleRewards[id] = new List<string>();
+        if (delta > 0)
+            for (int i = 0; i < delta; i++) list.Add(rune);
+        else
+            for (int i = 0; i < -delta && list.Remove(rune); i++) { }
+        if (list.Count == 0) lvl.PuzzleRewards.Remove(id);
+        MarkDirty();
+    }
 
+    public int EditorInventoryCount(string rune)
+    {
+        foreach (var e in _scene.GetEntities())
+        {
+            var lvl = e.GetComponent<PowergridLevelComponent>();
+            if (lvl != null) return lvl.CountOf(rune);
+        }
+        return 0;
+    }
+
+    /// <summary>Compact summary of the authored inventory, e.g. "Lith x2  Axe x3".</summary>
     public string EditorInventoryText
     {
         get
@@ -829,10 +756,52 @@ public class PowergridView : UIElement
             foreach (var e in _scene.GetEntities())
             {
                 var lvl = e.GetComponent<PowergridLevelComponent>();
-                if (lvl != null) return lvl.Inventory.Count > 0 ? string.Join(",", lvl.Inventory) : "(empty)";
+                if (lvl == null) continue;
+                if (lvl.Inventory.Count == 0) return "(empty)";
+                return string.Join("  ", lvl.DistinctRunes().Select(r => $"{r} x{lvl.CountOf(r)}"));
             }
             return "(empty)";
         }
+    }
+
+    /// <summary>Enables/disables an adjacency rule for the level.</summary>
+    public void ToggleRule(ColoringRule rule)
+    {
+        var lvl = EnsureLevelComponent();
+        if (!lvl.Rules.Remove(rule)) lvl.Rules.Add(rule);
+        MarkDirty();
+    }
+
+    public bool EditorHasRule(ColoringRule rule)
+    {
+        foreach (var e in _scene.GetEntities())
+        {
+            var lvl = e.GetComponent<PowergridLevelComponent>();
+            if (lvl != null) return lvl.Rules.Contains(rule);
+        }
+        return _controller.ActiveRules.Contains(rule);
+    }
+
+    /// <summary>The level config component if one exists, else null (does not create one).</summary>
+    private PowergridLevelComponent FindLevelComponent()
+    {
+        foreach (var e in _scene.GetEntities())
+        {
+            var lvl = e.GetComponent<PowergridLevelComponent>();
+            if (lvl != null) return lvl;
+        }
+        return null;
+    }
+
+    private PowergridLevelComponent EnsureLevelComponent()
+    {
+        var existing = FindLevelComponent();
+        if (existing != null) return existing;
+        var entity = new Entity { Name = UniqueName("level") };
+        var comp = new PowergridLevelComponent();
+        entity.AddComponent(comp);
+        _scene.AddEntity(entity);
+        return comp;
     }
 
     #endregion
@@ -849,7 +818,6 @@ public class PowergridView : UIElement
 
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, rasterizer);
 
-        // Gray viewport; each puzzle gets a white background sized to its nodes.
         spriteBatch.Draw(_pixel, _bounds, null, Color.Gray, 0f, Vector2.Zero, SpriteEffects.None, 0f);
         foreach (var graph in _controller.Graphs)
             if (TryGetPuzzleScreenRect(graph, out var rect))
@@ -857,19 +825,9 @@ public class PowergridView : UIElement
 
         foreach (var graph in _controller.Graphs)
         {
-            foreach (var conn in graph.Connections)
-                if (EditMode || (conn.From.Discovered && conn.To.Discovered))
-                    DrawConnection(spriteBatch, conn);
-            foreach (var lck in graph.Locks) DrawLock(spriteBatch, lck);
-            foreach (var node in graph.Nodes)
-                if (EditMode || node.Discovered)
-                    DrawNode(spriteBatch, node);
-
-            if (!EditMode && !graph.IsActive)
-                DrawInactiveMask(spriteBatch, graph);
+            foreach (var conn in graph.Connections) DrawConnection(spriteBatch, conn);
+            foreach (var node in graph.Nodes) DrawNode(spriteBatch, node);
         }
-
-        DrawActivationLinks(spriteBatch); // both modes
 
         if (EditMode) DrawEditOverlay(spriteBatch);
         else DrawPlayOverlay(spriteBatch);
@@ -887,42 +845,9 @@ public class PowergridView : UIElement
     {
         var a = WorldToScreen(conn.StartPos);
         var b = WorldToScreen(conn.EndPos);
-        var color = conn.IsActive ? ColorPalette.Black : Color.Gray;
-        float thickness = conn.IsActive ? 3f : 1.5f;
+        var color = conn.Conflict ? ColorPalette.DarkRed : ColorPalette.Black;
+        float thickness = conn.Conflict ? 3.5f : 2f;
         DrawLine(sb, a, b, thickness, color);
-        DrawArrowHead(sb, a, b, color, thickness);
-
-        // A pulse travelling this edge this tick: a bright dot eased from start to end across the tick.
-        if (conn.IsActive && _runStarted && !EditMode)
-        {
-            var p = Vector2.Lerp(a, b, MathHelper.Clamp(_tickProgress, 0f, 1f));
-            float r = MathF.Max(4f, _zoom * 0.10f);
-            sb.Draw(_circleFilled, new Rectangle((int)(p.X - r), (int)(p.Y - r), (int)(r * 2), (int)(r * 2)),
-                null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.46f);
-        }
-    }
-
-    private void DrawArrowHead(SpriteBatch sb, Vector2 from, Vector2 to, Color color, float thickness)
-    {
-        var dir = to - from;
-        if (dir == Vector2.Zero) return;
-        dir.Normalize();
-        var tip = to;
-        float size = MathF.Max(8f, _zoom * 0.16f);
-        float spread = MathHelper.ToRadians(150f);
-        float baseAngle = MathF.Atan2(dir.Y, dir.X);
-        var left  = tip + size * new Vector2(MathF.Cos(baseAngle + spread), MathF.Sin(baseAngle + spread));
-        var right = tip + size * new Vector2(MathF.Cos(baseAngle - spread), MathF.Sin(baseAngle - spread));
-        DrawLine(sb, tip, left, thickness, color);
-        DrawLine(sb, tip, right, thickness, color);
-    }
-
-    private void DrawLock(SpriteBatch sb, EdgeLockComponent lck)
-    {
-        var a = WorldToScreen(lck.PointA);
-        var b = WorldToScreen(lck.PointB);
-        var color = lck.IsLocked ? ColorPalette.Black : Color.Gray;
-        DrawLine(sb, a, b, lck.IsLocked ? 3f : 1.5f, color);
     }
 
     private void DrawNode(SpriteBatch sb, PowerNodeComponent node)
@@ -934,69 +859,62 @@ public class PowergridView : UIElement
             (int)(center.Y - diameter * 0.5f),
             (int)diameter, (int)diameter);
 
-        var tex = node.IsActive ? _circleFilled : _circleOutlined;
-        sb.Draw(tex, dst, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
-
-        if (node.NodeKind == NodeKind.And) DrawCenterMark(sb, center, _andGate, "&", dst.Width);
-        else if (node.NodeKind == NodeKind.Xor) DrawCenterMark(sb, center, _xorGate, "^", dst.Width);
-        // A placed emitter shows its firing delay (the meaningful, player-set value), e.g. "+0", "+2".
-        else if (node.PlacedTokenPower > 0) DrawCenterText(sb, center, "+" + node.PlacedTokenDelay, ColorPalette.ActualWhite);
-
-        if (node.IsAnchor) DrawRoleMarker(sb, center, diameter, _anchorMarker, "A");
-        if (node.IsGoal)   DrawRoleMarker(sb, center, diameter, null, "G");
-
-        // Held token waiting to be discovered (shown in edit always; in play until collected).
-        if (node.HeldTokenPower > 0 && (EditMode || !node.HeldTokenCollected))
-            DrawHeldBadge(sb, center, diameter, node.HeldTokenPower);
-    }
-
-    private void DrawHeldBadge(SpriteBatch sb, Vector2 nodeCenter, float diameter, int power)
-    {
-        float s = diameter * 0.46f;
-        var c = new Vector2(nodeCenter.X + diameter * 0.42f, nodeCenter.Y - diameter * 0.42f);
-        sb.Draw(_circleOutlined, new Rectangle((int)(c.X - s / 2), (int)(c.Y - s / 2), (int)s, (int)s),
-            null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.45f);
-        DrawCenterText(sb, c, power.ToString(), ColorPalette.Black);
-    }
-
-    private void DrawCenterMark(SpriteBatch sb, Vector2 center, Texture2D tex, string fallback, int boxSize)
-    {
-        if (tex != null)
+        if (node.HasRune)
         {
-            int s = (int)(boxSize * 0.6f);
-            sb.Draw(tex, new Rectangle((int)(center.X - s / 2f), (int)(center.Y - s / 2f), s, s), null, ColorPalette.Black);
-            return;
+            // Dark disc with the (white) rune on top. A pre-filled (locked) node is drawn like a
+            // player-filled one, but gets a small padlock badge so the player knows it can't be moved.
+            sb.Draw(_circleFilled, dst, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
+
+            var tex = Runes.Texture(node.Rune);
+            if (tex != null)
+            {
+                float s = diameter * 0.66f;
+                var rdst = new Rectangle((int)(center.X - s / 2), (int)(center.Y - s / 2), (int)s, (int)s);
+                sb.Draw(tex, rdst, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.45f);
+            }
         }
-        DrawCenterText(sb, center, fallback, ColorPalette.ActualWhite);
-    }
-
-    private void DrawCenterText(SpriteBatch sb, Vector2 center, string text, Color color)
-    {
-        var size = _font.MeasureString(text);
-        sb.DrawString(_font, text, center - size * 0.5f, color);
-    }
-
-    private void DrawRoleMarker(SpriteBatch sb, Vector2 center, float diameter, Texture2D tex, string fallback)
-    {
-        float markerSize = diameter * 0.55f;
-        var pos = new Vector2(center.X, center.Y - diameter * 0.5f - markerSize * 0.5f - 2f);
-        if (tex != null)
+        else
         {
-            sb.Draw(tex, new Rectangle((int)(pos.X - markerSize / 2f), (int)(pos.Y - markerSize / 2f), (int)markerSize, (int)markerSize),
-                null, ColorPalette.Black);
-            return;
+            // Empty node: a hollow ring.
+            sb.Draw(_circleOutlined, dst, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
         }
-        DrawCenterText(sb, pos, fallback, ColorPalette.Black);
+
+        if (node.InConflict)
+            DrawRing(sb, center, NodeWorldRadius * _zoom + 3f, ColorPalette.DarkRed, 2.5f);
+
+        if (node.IsFixed)
+            DrawLockBadge(sb, new Vector2(center.X + diameter * 0.26f, center.Y + diameter * 0.26f), diameter * 0.42f);
     }
 
-    /// <summary>Screen-space bounding box of a puzzle's (drawn) nodes plus padding. False if nothing is drawn.</summary>
+    /// <summary>A tiny 1-bit padlock (white badge, black body + shackle) marking a node that can't be
+    /// moved. The white badge keeps it legible over both the black disc and the white background.</summary>
+    private void DrawLockBadge(SpriteBatch sb, Vector2 center, float size)
+    {
+        float half = size / 2f;
+        var box = new Rectangle((int)(center.X - half), (int)(center.Y - half), (int)size, (int)size);
+
+        // Black-bordered white badge.
+        sb.Draw(_pixel, new Rectangle(box.X - 1, box.Y - 1, box.Width + 2, box.Height + 2), null,
+            ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.13f);
+        sb.Draw(_pixel, box, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.12f);
+
+        // Lock body (lower portion).
+        float bodyW = size * 0.58f, bodyH = size * 0.42f;
+        var body = new Rectangle((int)(center.X - bodyW / 2), (int)(box.Bottom - bodyH - size * 0.10f),
+            (int)bodyW, (int)bodyH);
+        sb.Draw(_pixel, body, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.11f);
+
+        // Shackle arch above the body (its lower half is hidden behind the body).
+        DrawRing(sb, new Vector2(center.X, body.Top), size * 0.18f, ColorPalette.Black, MathF.Max(1.5f, size * 0.1f));
+    }
+
+    /// <summary>Screen-space bounding box of a puzzle's nodes plus padding. False if it has no nodes.</summary>
     private bool TryGetPuzzleScreenRect(PuzzleGraph graph, out Rectangle rect)
     {
         float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
         int count = 0;
         foreach (var n in graph.Nodes)
         {
-            if (!EditMode && !n.Discovered) continue;
             var s = WorldToScreen(n.Entity.Position);
             minX = MathF.Min(minX, s.X); minY = MathF.Min(minY, s.Y);
             maxX = MathF.Max(maxX, s.X); maxY = MathF.Max(maxY, s.Y);
@@ -1011,49 +929,6 @@ public class PowergridView : UIElement
         return true;
     }
 
-    private void DrawInactiveMask(SpriteBatch sb, PuzzleGraph graph)
-    {
-        if (!TryGetPuzzleScreenRect(graph, out var rect)) return;
-
-        sb.Draw(_pixel, rect, null, new Color(0, 0, 0, 120), 0f, Vector2.Zero, SpriteEffects.None, 0.18f);
-
-        const string label = "LOCKED";
-        var size = _font.MeasureString(label);
-        var center = new Vector2(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
-        sb.DrawString(_font, label, center - size * 0.5f, ColorPalette.ActualWhite, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.17f);
-    }
-
-    /// <summary>Point where the ray from a rectangle's centre toward <paramref name="target"/> exits the rect.</summary>
-    private static Vector2 RectEdgeToward(Rectangle r, Vector2 target)
-    {
-        var center = new Vector2(r.X + r.Width / 2f, r.Y + r.Height / 2f);
-        var dir = target - center;
-        if (dir == Vector2.Zero) return center;
-        float tx = dir.X > 0 ? (r.Right - center.X) / dir.X : dir.X < 0 ? (r.Left - center.X) / dir.X : float.MaxValue;
-        float ty = dir.Y > 0 ? (r.Bottom - center.Y) / dir.Y : dir.Y < 0 ? (r.Top - center.Y) / dir.Y : float.MaxValue;
-        return center + dir * MathF.Min(tx, ty);
-    }
-
-    /// <summary>White arrows from the boundary of one puzzle's background to the next (drawn in both modes).
-    /// Many-to-many: each stored edge is drawn independently, so one puzzle may point to several.</summary>
-    private void DrawActivationLinks(SpriteBatch sb)
-    {
-        foreach (var (from, to) in _controller.ActivationEdges)
-        {
-            var ga = _controller.GraphContainingNode(from);
-            var gb = _controller.GraphContainingNode(to);
-            if (ga == null || gb == null || ga == gb) continue;
-            if (!TryGetPuzzleScreenRect(ga, out var ra) || !TryGetPuzzleScreenRect(gb, out var rb)) continue;
-
-            var bc = new Vector2(rb.X + rb.Width / 2f, rb.Y + rb.Height / 2f);
-            var ac = new Vector2(ra.X + ra.Width / 2f, ra.Y + ra.Height / 2f);
-            var a = RectEdgeToward(ra, bc);
-            var b = RectEdgeToward(rb, ac);
-            DrawLine(sb, a, b, 2f, ColorPalette.ActualWhite);
-            DrawArrowHead(sb, a, b, ColorPalette.ActualWhite, 2f);
-        }
-    }
-
     private void DrawEditOverlay(SpriteBatch sb)
     {
         var mp = Core.GetTransformedMousePoint();
@@ -1061,30 +936,15 @@ public class PowergridView : UIElement
         if (Selected != null)
             DrawRing(sb, WorldToScreen(Selected.Entity.Position), NodeWorldRadius * _zoom + 4f, ColorPalette.Black, 2f);
 
-        if (_linkSource != null)
-            DrawRing(sb, WorldToScreen(_linkSource.Entity.Position), NodeWorldRadius * _zoom + 4f, ColorPalette.Orange, 2f);
-
-        // Lock highlights.
-        if (SelectedLock != null)
-            DrawLine(sb, WorldToScreen(SelectedLock.PointA), WorldToScreen(SelectedLock.PointB), 5f, ColorPalette.Black);
-        if (_keyLock != null)
-            DrawLine(sb, WorldToScreen(_keyLock.PointA), WorldToScreen(_keyLock.PointB), 5f, ColorPalette.Orange);
-
         if (_connectSource != null)
             DrawLine(sb, WorldToScreen(_connectSource.Entity.Position), new Vector2(mp.X, mp.Y), 2f, Color.Gray);
-
-        if (_lockDragging)
-            DrawLine(sb, WorldToScreen(_lockStart), new Vector2(mp.X, mp.Y), 3f, Color.Gray);
     }
 
     private void DrawPlayOverlay(SpriteBatch sb)
     {
-        DrawInventoryBar(sb);
+        DrawSequenceMarkers(sb);
 
-        var withGoals = _controller.Graphs.Where(g => g.Nodes.Any(n => n.IsGoal)).ToList();
-        bool solved = withGoals.Count > 0 && withGoals.All(g => g.IsSolved);
-
-        // Solved banner when every puzzle that has a goal is solved.
+        bool solved = _controller.IsLevelSolved;
         if (solved)
         {
             const string msg = "SOLVED";
@@ -1093,56 +953,209 @@ public class PowergridView : UIElement
             sb.DrawString(_font, msg, pos, ColorPalette.DarkGreen, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 0.2f);
         }
 
-        DrawRunStatus(sb, solved);
-
-        if (Dragging) DrawToken(sb, new Vector2(_handPos.X, _handPos.Y), SlotSize * 0.5f, _handPower);
-    }
-
-    /// <summary>Top-left status: placement prompt, running tick counter, or halted/solved.</summary>
-    private void DrawRunStatus(SpriteBatch sb, bool solved)
-    {
-        int tick = _controller.Graphs.Count > 0 ? _controller.Graphs.Max(g => g.CurrentTick) : 0;
         string status;
-        if (!_runStarted) status = "Place tokens on anchors  -  scroll an emitter to set its delay  -  then Run";
-        else if (AnyRunning()) status = $"Running...  t={tick}";
-        else status = solved ? $"Solved at t={tick}" : $"Halted  t={tick}";
+        if (solved)
+        {
+            status = "Solved!";
+        }
+        else
+        {
+            var hints = string.Join(" and ",
+                _controller.ActiveRules.Select(ColoringRules.Hint).Where(h => h.Length > 0));
+            status = $"Drag runes onto nodes  -  connected nodes must {hints}";
+        }
+        sb.DrawString(_font, status, new Vector2(GraphRegion.X + 10, GraphRegion.Y + 8), ColorPalette.Black,
+            0f, Vector2.Zero, 1f, SpriteEffects.None, 0.2f);
 
-        var pos = new Vector2(GraphRegion.X + 10, GraphRegion.Y + 8);
-        sb.DrawString(_font, status, pos, ColorPalette.Black, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.2f);
+        // Panel last (over any overflow from the status line); the held rune stays on top of all.
+        DrawPyramidPanel(sb);
+        if (Dragging) DrawRuneIcon(sb, new Vector2(_handPos.X, _handPos.Y), HandIconSize, _handRune);
     }
 
-    private void DrawInventoryBar(SpriteBatch sb)
+    /// <summary>Per-puzzle sequence cues: a reward caption above each puzzle and a dim "LOCKED" veil
+    /// over puzzles whose predecessors aren't solved yet.</summary>
+    private void DrawSequenceMarkers(SpriteBatch sb)
     {
-        var bar = BarRect;
-        sb.Draw(_pixel, bar, null, ColorPalette.White, 0f, Vector2.Zero, SpriteEffects.None, 0.3f);
-        sb.Draw(_pixel, new Rectangle(bar.X, bar.Y, bar.Width, 2), null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.31f);
-
-        for (int i = 0; i < _holding.Length; i++)
+        foreach (var graph in _controller.Graphs)
         {
-            var r = HoldingSlotRect(i);
-            DrawSlot(sb, r);
-            if (_holding[i].HasValue)
-                DrawToken(sb, r.Center.ToVector2(), SlotSize * 0.5f, _holding[i].Value);
+            if (!TryGetPuzzleScreenRect(graph, out var rect)) continue;
+
+            if (graph.RewardRunes.Count > 0)
+            {
+                bool earned = _rewarded.Contains(graph.Id);
+                var text = earned ? "Reward earned" : "Reward: " + RewardSummary(graph.RewardRunes);
+                var color = earned ? ColorPalette.DarkGreen : ColorPalette.Black;
+                var size = _font.MeasureString(text);
+                var pos = new Vector2(rect.X + (rect.Width - size.X) / 2f, rect.Y - 2);
+                sb.DrawString(_font, text, pos, color, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.19f);
+            }
+
+            if (!graph.Unlocked)
+            {
+                var veil = Rectangle.Intersect(rect, GraphRegion);
+                sb.Draw(_pixel, veil, null, ColorPalette.Black * 0.45f, 0f, Vector2.Zero, SpriteEffects.None, 0.18f);
+                const string locked = "LOCKED";
+                var size = _font.MeasureString(locked);
+                var pos = new Vector2(rect.X + (rect.Width - size.X) / 2f, rect.Y + (rect.Height - size.Y) / 2f);
+                sb.DrawString(_font, locked, pos, ColorPalette.ActualWhite, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.17f);
+            }
+        }
+    }
+
+    /// <summary>Compact reward list, e.g. "Lith x2 Axe".</summary>
+    private static string RewardSummary(IReadOnlyList<string> runes)
+        => string.Join(" ", runes.GroupBy(r => r).Select(g => g.Count() > 1 ? $"{g.Key} x{g.Count()}" : g.Key));
+
+    /// <summary>The right-hand alphabet panel: the whole rune set laid out as a pyramid (so the tier /
+    /// side relationships the rules depend on are visible). Owned runes render as a black disc with a
+    /// white glyph and a small count badge; runes the player has none of render inverted (a white
+    /// outlined ring with a black glyph) and can't be picked up. This panel is the rune source — drag a
+    /// chip onto a node to place it.</summary>
+    private void DrawPyramidPanel(SpriteBatch sb)
+    {
+        var panel = PyramidPanel;
+        sb.Draw(_pixel, panel, null, ColorPalette.White, 0f, Vector2.Zero, SpriteEffects.None, 0.3f);
+        sb.Draw(_pixel, new Rectangle(panel.X, panel.Y, 2, panel.Height), null, ColorPalette.Black,
+            0f, Vector2.Zero, SpriteEffects.None, 0.31f);
+
+        sb.DrawString(_font, "Alphabet", new Vector2(panel.X + PyramidPad, panel.Y + 10), ColorPalette.Black,
+            0f, Vector2.Zero, 1f, SpriteEffects.None, 0.3f);
+
+        var slots = PyramidSlots();
+        DrawPyramidGuides(sb, slots);
+        foreach (var (name, rect) in slots)
+            DrawRuneChip(sb, rect, name, _inventory.Count(r => r == name));
+
+        DrawSolverControls(sb);
+    }
+
+    /// <summary>Solver controls in the panel's bottom band: a Solve button, the solution count, and
+    /// prev/next/clear for stepping through solutions on the graph.</summary>
+    private void DrawSolverControls(SpriteBatch sb)
+    {
+        var (solve, prev, next, clear) = SolverLayout();
+        bool hasSolutions = _solverRun && _solutions.Count > 0;
+
+        DrawTextButton(sb, solve, _viewingSolution ? "Re-solve" : "Solve", true);
+
+        string count;
+        if (!_solverRun) count = "Solver: (not run)";
+        else if (_solutions.Count == 0) count = "No solutions";
+        else count = $"{_solutions.Count}{(_solverTruncated ? "+" : "")} solution{(_solutions.Count == 1 ? "" : "s")}";
+        sb.DrawString(_font, count, new Vector2(solve.X, solve.Bottom + 5), ColorPalette.Black,
+            0f, Vector2.Zero, 0.9f, SpriteEffects.None, 0.2f);
+
+        DrawTextButton(sb, prev, "<", hasSolutions);
+        DrawTextButton(sb, next, ">", hasSolutions);
+        if (hasSolutions)
+        {
+            var idx = $"{_solutionIndex + 1} / {_solutions.Count}{(_solverTruncated ? "+" : "")}";
+            var size = _font.MeasureString(idx) * 0.9f;
+            var pos = new Vector2((prev.Right + next.Left) / 2f - size.X / 2f, prev.Y + (prev.Height - size.Y) / 2f);
+            sb.DrawString(_font, idx, pos, ColorPalette.Black, 0f, Vector2.Zero, 0.9f, SpriteEffects.None, 0.2f);
         }
 
-        for (int i = 0; i < _inventory.Count; i++)
-            DrawToken(sb, InventorySlotRect(i).Center.ToVector2(), SlotSize * 0.5f, _inventory[i]);
+        DrawTextButton(sb, clear, "Clear", _solverRun);
     }
 
-    private void DrawSlot(SpriteBatch sb, Rectangle r)
+    /// <summary>A filled push-button: black (enabled) or gray (disabled) with white centred text.</summary>
+    private void DrawTextButton(SpriteBatch sb, Rectangle r, string label, bool enabled)
     {
-        // Hollow square slot.
-        sb.Draw(_pixel, new Rectangle(r.X, r.Y, r.Width, 2), null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.32f);
-        sb.Draw(_pixel, new Rectangle(r.X, r.Bottom - 2, r.Width, 2), null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.32f);
-        sb.Draw(_pixel, new Rectangle(r.X, r.Y, 2, r.Height), null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.32f);
-        sb.Draw(_pixel, new Rectangle(r.Right - 2, r.Y, 2, r.Height), null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.32f);
+        sb.Draw(_pixel, r, null, enabled ? ColorPalette.Black : Color.Gray, 0f, Vector2.Zero, SpriteEffects.None, 0.2f);
+        var size = _font.MeasureString(label);
+        sb.DrawString(_font, label, new Vector2(r.Center.X - size.X / 2f, r.Center.Y - size.Y / 2f),
+            ColorPalette.ActualWhite, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.19f);
     }
 
-    private void DrawToken(SpriteBatch sb, Vector2 center, float radius, int power)
+    /// <summary>Faint guides behind the pyramid: a vertical centre line (the left/right "sidedness"
+    /// divide) and a horizontal line between each tier row.</summary>
+    private void DrawPyramidGuides(SpriteBatch sb, List<(string name, Rectangle rect)> slots)
     {
-        var dst = new Rectangle((int)(center.X - radius), (int)(center.Y - radius), (int)(radius * 2), (int)(radius * 2));
-        sb.Draw(_circleFilled, dst, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.25f);
-        DrawCenterText(sb, center, power.ToString(), ColorPalette.ActualWhite);
+        if (slots.Count == 0) return;
+        var gray = Color.DimGray;
+
+        // Group slots into rows (they arrive in tier order, one Y per row).
+        var rows = new List<List<Rectangle>>();
+        int curY = int.MinValue;
+        foreach (var (_, r) in slots)
+        {
+            if (r.Y != curY) { rows.Add(new List<Rectangle>()); curY = r.Y; }
+            rows[^1].Add(r);
+        }
+
+        int top = rows[0][0].Top;
+        int bottom = rows[^1][0].Bottom;
+        int centerX = (rows[^1][0].Left + rows[^1][^1].Right) / 2;
+
+        sb.Draw(_pixel, new Rectangle(centerX - 1, top, 3, bottom - top), null, gray,
+            0f, Vector2.Zero, SpriteEffects.None, 0.28f);
+
+        for (int i = 0; i < rows.Count - 1; i++)
+        {
+            var lower = rows[i + 1];
+            int y = (rows[i][0].Bottom + lower[0].Top) / 2;
+            sb.Draw(_pixel, new Rectangle(lower[0].Left, y - 1, lower[^1].Right - lower[0].Left, 3), null, gray,
+                0f, Vector2.Zero, SpriteEffects.None, 0.28f);
+        }
+    }
+
+    /// <summary>Draws one pyramid chip. Owned (count &gt; 0): filled black disc + white glyph + badge.
+    /// Unavailable (count 0): foreground/background swapped — a white outlined ring + black glyph.</summary>
+    private void DrawRuneChip(SpriteBatch sb, Rectangle rect, string rune, int count)
+    {
+        bool owned = count > 0;
+        var center = rect.Center.ToVector2();
+
+        float discSize = rect.Width * 0.95f;
+        var discDst = new Rectangle((int)(center.X - discSize / 2), (int)(center.Y - discSize / 2), (int)discSize, (int)discSize);
+        sb.Draw(owned ? _circleFilled : _circleOutlined, discDst, null,
+            owned ? ColorPalette.Black : ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.26f);
+
+        var glyphColor = owned ? ColorPalette.ActualWhite : ColorPalette.Black;
+        var tex = Runes.Texture(rune);
+        float s = rect.Width * 0.7f;
+        var dst = new Rectangle((int)(center.X - s / 2), (int)(center.Y - s / 2), (int)s, (int)s);
+        if (tex != null)
+            sb.Draw(tex, dst, null, glyphColor, 0f, Vector2.Zero, SpriteEffects.None, 0.25f);
+        else
+            DrawCenterText(sb, center, rune ?? "?", glyphColor);
+
+        if (owned) DrawCountBadge(sb, rect, count);
+    }
+
+    /// <summary>Small remaining-count badge tucked into a chip's lower-right corner (white on a dark
+    /// pill, scaled down so it never covers the glyph).</summary>
+    private void DrawCountBadge(SpriteBatch sb, Rectangle slot, int count)
+    {
+        const float scale = 0.6f;
+        var text = "x" + count;
+        var size = _font.MeasureString(text) * scale;
+        var pos = new Vector2(slot.Right - size.X - 3, slot.Bottom - size.Y - 2);
+        sb.Draw(_pixel, new Rectangle((int)pos.X - 2, (int)pos.Y - 1, (int)size.X + 4, (int)size.Y + 1),
+            null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.21f);
+        sb.DrawString(_font, text, pos, ColorPalette.ActualWhite, 0f, Vector2.Zero, scale, SpriteEffects.None, 0.2f);
+    }
+
+    private void DrawRuneIcon(SpriteBatch sb, Vector2 center, float boxSize, string runeName, float alpha = 1f)
+    {
+        // Dark disc behind the (white) rune so it stays legible against any background.
+        float disc = boxSize * 0.95f;
+        var discDst = new Rectangle((int)(center.X - disc / 2), (int)(center.Y - disc / 2), (int)disc, (int)disc);
+        sb.Draw(_circleFilled, discDst, null, ColorPalette.Black * alpha, 0f, Vector2.Zero, SpriteEffects.None, 0.26f);
+
+        var tex = Runes.Texture(runeName);
+        float s = boxSize * 0.8f;
+        var dst = new Rectangle((int)(center.X - s / 2), (int)(center.Y - s / 2), (int)s, (int)s);
+        if (tex != null)
+            sb.Draw(tex, dst, null, ColorPalette.ActualWhite * alpha, 0f, Vector2.Zero, SpriteEffects.None, 0.25f);
+        else
+            DrawCenterText(sb, center, runeName ?? "?", ColorPalette.ActualWhite * alpha);
+    }
+
+    private void DrawCenterText(SpriteBatch sb, Vector2 center, string text, Color color)
+    {
+        var size = _font.MeasureString(text);
+        sb.DrawString(_font, text, center - size * 0.5f, color);
     }
 
     private void DrawRing(SpriteBatch sb, Vector2 center, float radius, Color color, float thickness)
