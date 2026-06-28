@@ -29,7 +29,7 @@ public class PowergridUI : UIPanel
 
     private static readonly EditTool[] Tools =
     {
-        EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete,
+        EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete, EditTool.Region,
     };
 
     private const int ToolbarHeight = 40;
@@ -193,6 +193,7 @@ public class PowergridUI : UIPanel
         EditTool.AddNode => "Add",
         EditTool.Connect => "Connect",
         EditTool.Delete  => "Delete",
+        EditTool.Region  => "Region",
         _ => tool.ToString(),
     };
 

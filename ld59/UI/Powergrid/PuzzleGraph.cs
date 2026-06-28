@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace ld59.UI.Powergrid;
@@ -65,6 +66,7 @@ public class PuzzleGraph
     {
         _nodes = nodes;
         BuildConnections(resolve);
+        BuildVirtualConnections();
         Recompute();
     }
 
@@ -83,14 +85,107 @@ public class PuzzleGraph
                 var dir = b - a;
                 if (dir != Vector2.Zero) dir.Normalize();
 
+                // Prefer override stored on the "from" side; fall back to the "to" side.
+                List<ColoringRule> ruleOverride = null;
+                if (node.ConnectionRuleOverrides.TryGetValue(targetName, out var ro1))
+                    ruleOverride = ro1;
+                else if (target.ConnectionRuleOverrides.TryGetValue(node.Entity.Name, out var ro2))
+                    ruleOverride = ro2;
+
                 _connections.Add(new Connection
                 {
                     From = node,
                     To = target,
                     StartPos = a + dir * LinePadding,
                     EndPos = b - dir * LinePadding,
+                    RuleOverride = ruleOverride,
                 });
             }
+    }
+
+    /// <summary>
+    /// For every node whose <see cref="PowerNodeComponent.Influence"/> is greater than 1, does a BFS
+    /// over real edges up to that depth and adds a virtual <see cref="Connection"/> to each newly
+    /// reached node. Virtual connections are treated identically to real ones during validation and by
+    /// the solver, but are drawn differently and cannot be selected or deleted in the editor.
+    ///
+    /// BFS uses real edges only (influence does not chain through other nodes' influence). Because BFS
+    /// always finds the shortest path first, each reachable node is visited exactly once at its minimum
+    /// depth, so cycles are handled naturally: a node already reached at depth 1 (a direct neighbor)
+    /// is never added again at depth 2.
+    /// </summary>
+    private void BuildVirtualConnections()
+    {
+        // Only nodes with Influence > 1 need processing.
+        if (_nodes.All(n => n.Influence <= 1)) return;
+
+        // Real adjacency map (used for BFS traversal, built from the real connections).
+        var realAdj = new Dictionary<PowerNodeComponent, List<PowerNodeComponent>>();
+        foreach (var n in _nodes) realAdj[n] = new List<PowerNodeComponent>();
+        foreach (var c in _connections) // only real connections exist at this point
+        {
+            realAdj[c.From].Add(c.To);
+            realAdj[c.To].Add(c.From);
+        }
+
+        // Track every pair that already has a connection (real or virtual, either direction).
+        var existing = new HashSet<(PowerNodeComponent, PowerNodeComponent)>();
+        foreach (var c in _connections)
+        {
+            existing.Add((c.From, c.To));
+            existing.Add((c.To, c.From));
+        }
+
+        foreach (var source in _nodes)
+        {
+            if (source.Influence <= 1) continue;
+
+            // BFS from source; record each reached node's shortest-path depth.
+            var depth = new Dictionary<PowerNodeComponent, int> { [source] = 0 };
+            var queue = new Queue<PowerNodeComponent>();
+            queue.Enqueue(source);
+
+            while (queue.Count > 0)
+            {
+                var cur = queue.Dequeue();
+                int d = depth[cur];
+                if (d >= source.Influence) continue;
+
+                foreach (var nb in realAdj[cur])
+                {
+                    if (!depth.ContainsKey(nb))
+                    {
+                        depth[nb] = d + 1;
+                        queue.Enqueue(nb);
+                    }
+                }
+            }
+
+            // Add a virtual connection to every node reached beyond depth 1 that isn't already
+            // connected by a real or virtual edge from this source.
+            foreach (var (reached, d) in depth)
+            {
+                if (d <= 1 || reached == source) continue; // depth 1 = real edge already handles it
+                if (existing.Contains((source, reached))) continue;
+
+                var a = Pos(source);
+                var b = Pos(reached);
+                var dir = b - a;
+                if (dir != Vector2.Zero) dir.Normalize();
+
+                _connections.Add(new Connection
+                {
+                    From = source,
+                    To = reached,
+                    StartPos = a + dir * LinePadding,
+                    EndPos = b - dir * LinePadding,
+                    IsVirtual = true,
+                    RuleOverride = null, // virtual edges always use level-wide rules
+                });
+                existing.Add((source, reached));
+                existing.Add((reached, source)); // prevents a symmetric duplicate if reached also has influence
+            }
+        }
     }
 
     /// <summary>Re-evaluates conflicts and the solved state from the nodes' current runes. Cheap;
@@ -108,14 +203,17 @@ public class PuzzleGraph
                 var a = Runes.ByName(c.From.Rune);
                 var b = Runes.ByName(c.To.Rune);
                 if (a != null && b != null)
-                    foreach (var rule in Rules)
+                {
+                    var effectiveRules = c.RuleOverride ?? Rules;
+                    foreach (var rule in effectiveRules)
                         if (ColoringRules.Violates(rule, a, b)) { clash = true; break; }
+                }
             }
             c.Conflict = clash;
             if (clash)
             {
                 c.From.InConflict = true;
-                c.To.InConflict = true;
+                c.To.InConflict   = true;
                 anyConflict = true;
             }
         }

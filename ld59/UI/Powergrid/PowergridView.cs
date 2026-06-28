@@ -9,7 +9,7 @@ using Quartz.UI;
 
 namespace ld59.UI.Powergrid;
 
-public enum EditTool { Select, AddNode, Connect, Delete }
+public enum EditTool { Select, AddNode, Connect, Delete, Region }
 
 /// <summary>
 /// 2D viewport for a graph-colouring level. Owns a pan/zoom camera and renders the puzzle graph
@@ -60,10 +60,13 @@ public class PowergridView : UIElement
     public bool EditMode { get; set; }
     public EditTool Tool { get; set; } = EditTool.Select;
     public PowerNodeComponent Selected { get; private set; }
+    public Connection SelectedConnection { get; private set; }
+    public PowergridRegionComponent SelectedRegion { get; private set; }
     private bool _needsRebuild;
     private PowerNodeComponent _movingNode;
     private Point _moveLast;
     private PowerNodeComponent _connectSource;
+    private Vector2? _regionStart;
 
     // Play state (runtime; resets each session)
     private enum HandKind { None, FromInventory, FromNode }
@@ -167,7 +170,7 @@ public class PowergridView : UIElement
     {
         if (!_viewingSolution) CaptureBoard();
 
-        var res = PowergridSolver.Solve(_controller.Graphs, _controller.ActiveRules, SolverBudget());
+        var res = PowergridSolver.Solve(_controller.Graphs, _controller.ActiveRules, SolverBudget(), _controller.Regions);
         _solutions.Clear();
         _solutions.AddRange(res.Solutions);
         _solverTruncated = res.Truncated;
@@ -537,10 +540,33 @@ public class PowergridView : UIElement
             case EditTool.Select:
                 if (leftClick && inside)
                 {
-                    var hit = HitTestNode(mp);
-                    Selected = hit;
-                    _movingNode = hit;
-                    _moveLast = mp;
+                    var hitNode = HitTestNode(mp);
+                    if (hitNode != null)
+                    {
+                        Selected = hitNode;
+                        SelectedConnection = null;
+                        SelectedRegion = null;
+                        _movingNode = hitNode;
+                        _moveLast = mp;
+                    }
+                    else
+                    {
+                        var hitConn = ConnectionHitTest(mp);
+                        if (hitConn != null)
+                        {
+                            SelectedConnection = hitConn;
+                            Selected = null;
+                            SelectedRegion = null;
+                        }
+                        else
+                        {
+                            var hitRegion = RegionHitTest(mp);
+                            SelectedRegion = hitRegion;
+                            Selected = null;
+                            SelectedConnection = null;
+                        }
+                        _movingNode = null;
+                    }
                 }
                 if (left && _movingNode != null)
                 {
@@ -574,7 +600,20 @@ public class PowergridView : UIElement
                     if (node != null) { DeleteNode(node); break; }
 
                     var conn = ConnectionHitTest(mp);
-                    if (conn != null) RemoveConnection(conn);
+                    if (conn != null) { RemoveConnection(conn); break; }
+
+                    var region = RegionHitTest(mp);
+                    if (region != null) DeleteRegion(region);
+                }
+                break;
+
+            case EditTool.Region:
+                if (leftClick && inside && GraphRegion.Contains(mp))
+                    _regionStart = ScreenToWorld(mp);
+                if (leftRelease && _regionStart.HasValue)
+                {
+                    CreateRegion(_regionStart.Value, ScreenToWorld(mp));
+                    _regionStart = null;
                 }
                 break;
         }
@@ -618,9 +657,15 @@ public class PowergridView : UIElement
     {
         var name = node.Entity.Name;
         foreach (var e in _scene.GetEntities())
-            e.GetComponent<PowerNodeComponent>()?.OutgoingNodeNames.Remove(name);
+        {
+            var n = e.GetComponent<PowerNodeComponent>();
+            if (n == null) continue;
+            n.OutgoingNodeNames.Remove(name);
+            n.ConnectionRuleOverrides.Remove(name);
+        }
         _scene.RemoveEntity(node.Entity);
         if (Selected == node) Selected = null;
+        if (SelectedConnection?.From == node || SelectedConnection?.To == node) SelectedConnection = null;
         MarkDirty();
     }
 
@@ -629,7 +674,7 @@ public class PowergridView : UIElement
         var p = new Vector2(screen.X, screen.Y);
         foreach (var graph in _controller.Graphs)
             foreach (var conn in graph.Connections)
-                if (DistPointSeg(p, WorldToScreen(conn.StartPos), WorldToScreen(conn.EndPos)) <= 8f)
+                if (!conn.IsVirtual && DistPointSeg(p, WorldToScreen(conn.StartPos), WorldToScreen(conn.EndPos)) <= 8f)
                     return conn;
         return null;
     }
@@ -639,7 +684,40 @@ public class PowergridView : UIElement
         // The edge may be stored on either endpoint (it's undirected).
         conn.From.OutgoingNodeNames.Remove(conn.To.Entity.Name);
         conn.To.OutgoingNodeNames.Remove(conn.From.Entity.Name);
+        conn.From.ConnectionRuleOverrides.Remove(conn.To.Entity.Name);
+        conn.To.ConnectionRuleOverrides.Remove(conn.From.Entity.Name);
+        if (SelectedConnection == conn) SelectedConnection = null;
         MarkDirty();
+    }
+
+    private void CreateRegion(Vector2 start, Vector2 end)
+    {
+        float halfW = MathF.Abs(end.X - start.X) * 0.5f;
+        float halfH = MathF.Abs(end.Y - start.Y) * 0.5f;
+        if (halfW < 0.2f || halfH < 0.2f) return;
+        var center = (start + end) * 0.5f;
+        var entity = new Entity { Name = UniqueName("region") };
+        entity.LocalPosition = center;
+        var region = new PowergridRegionComponent { HalfWidth = halfW, HalfHeight = halfH };
+        entity.AddComponent(region);
+        _scene.AddEntity(entity);
+        SelectedRegion = region;
+        MarkDirty();
+    }
+
+    private void DeleteRegion(PowergridRegionComponent region)
+    {
+        _scene.RemoveEntity(region.Entity);
+        if (SelectedRegion == region) SelectedRegion = null;
+        MarkDirty();
+    }
+
+    private PowergridRegionComponent RegionHitTest(Point screen)
+    {
+        var worldPos = ScreenToWorld(screen);
+        foreach (var region in _controller.Regions)
+            if (region.Contains(worldPos)) return region;
+        return null;
     }
 
     private static float DistPointSeg(Vector2 p, Vector2 a, Vector2 b)
@@ -668,6 +746,15 @@ public class PowergridView : UIElement
     public void DeleteSelected() { if (Selected != null) DeleteNode(Selected); }
 
     public string SelectedFixedRune => Selected?.FixedRune ?? string.Empty;
+
+    public int SelectedInfluence => Selected?.Influence ?? 1;
+
+    public void AdjustInfluence(int delta)
+    {
+        if (Selected == null) return;
+        Selected.Influence = Math.Max(1, Selected.Influence + delta);
+        MarkDirty();
+    }
 
     /// <summary>Adds (delta &gt; 0) or removes (delta &lt; 0) copies of a rune in the level's inventory.</summary>
     public void AdjustInventoryRune(string rune, int delta)
@@ -782,6 +869,92 @@ public class PowergridView : UIElement
         return _controller.ActiveRules.Contains(rule);
     }
 
+    // ── Per-connection rule override authoring ─────────────────────────────
+
+    /// <summary>True when the selected connection has a rule override (not using level defaults).</summary>
+    public bool ConnectionHasOverride => SelectedConnection?.RuleOverride != null;
+
+    /// <summary>Whether the given rule is active in the selected connection's override. Returns false
+    /// if no connection is selected or the connection has no override.</summary>
+    public bool ConnectionOverrideHasRule(ColoringRule rule)
+        => SelectedConnection?.RuleOverride?.Contains(rule) ?? false;
+
+    /// <summary>Toggles a rule in the selected connection's per-connection override. If there is no
+    /// override yet, creates one with just this rule. If removing the last rule, clears the override.</summary>
+    public void ToggleConnectionRule(ColoringRule rule)
+    {
+        if (SelectedConnection == null) return;
+        var owner = GetConnectionOwner(SelectedConnection);
+        if (owner == null) return;
+        var targetName = owner == SelectedConnection.From
+            ? SelectedConnection.To.Entity.Name
+            : SelectedConnection.From.Entity.Name;
+
+        if (!owner.ConnectionRuleOverrides.TryGetValue(targetName, out var rules))
+        {
+            rules = new List<ColoringRule> { rule };
+            owner.ConnectionRuleOverrides[targetName] = rules;
+        }
+        else if (!rules.Remove(rule))
+        {
+            rules.Add(rule);
+        }
+
+        if (rules.Count == 0)
+        {
+            owner.ConnectionRuleOverrides.Remove(targetName);
+            SelectedConnection.RuleOverride = null;
+        }
+        else
+        {
+            SelectedConnection.RuleOverride = rules;
+        }
+        MarkDirty();
+    }
+
+    /// <summary>Removes the selected connection's rule override entirely (reverts to level defaults).</summary>
+    public void ClearConnectionOverride()
+    {
+        if (SelectedConnection == null) return;
+        var owner = GetConnectionOwner(SelectedConnection);
+        if (owner == null) return;
+        var targetName = owner == SelectedConnection.From
+            ? SelectedConnection.To.Entity.Name
+            : SelectedConnection.From.Entity.Name;
+        owner.ConnectionRuleOverrides.Remove(targetName);
+        SelectedConnection.RuleOverride = null;
+        MarkDirty();
+    }
+
+    /// <summary>Returns the node that "owns" the connection (the one with the outgoing edge stored).</summary>
+    private PowerNodeComponent GetConnectionOwner(Connection conn)
+    {
+        if (conn.From.OutgoingNodeNames.Contains(conn.To.Entity.Name)) return conn.From;
+        if (conn.To.OutgoingNodeNames.Contains(conn.From.Entity.Name)) return conn.To;
+        return conn.From;
+    }
+
+    // ── Region authoring ──────────────────────────────────────────────────
+
+    public void AdjustRegionTier(int delta)
+    {
+        if (SelectedRegion == null) return;
+        SelectedRegion.Tier = Math.Max(1, Math.Min(SymbolDictionary.All.Max(s => s.Tier), SelectedRegion.Tier + delta));
+        MarkDirty();
+    }
+
+    public void AdjustRegionMax(int delta)
+    {
+        if (SelectedRegion == null) return;
+        SelectedRegion.MaxCount = Math.Max(0, SelectedRegion.MaxCount + delta);
+        MarkDirty();
+    }
+
+    public void DeleteSelectedRegion()
+    {
+        if (SelectedRegion != null) DeleteRegion(SelectedRegion);
+    }
+
     /// <summary>The level config component if one exists, else null (does not create one).</summary>
     private PowergridLevelComponent FindLevelComponent()
     {
@@ -823,6 +996,8 @@ public class PowergridView : UIElement
             if (TryGetPuzzleScreenRect(graph, out var rect))
                 spriteBatch.Draw(_pixel, rect, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.05f);
 
+        DrawRegions(spriteBatch);
+
         foreach (var graph in _controller.Graphs)
         {
             foreach (var conn in graph.Connections) DrawConnection(spriteBatch, conn);
@@ -846,8 +1021,30 @@ public class PowergridView : UIElement
         var a = WorldToScreen(conn.StartPos);
         var b = WorldToScreen(conn.EndPos);
         var color = conn.Conflict ? ColorPalette.DarkRed : ColorPalette.Black;
-        float thickness = conn.Conflict ? 3.5f : 2f;
-        DrawLine(sb, a, b, thickness, color);
+        bool isSelected = EditMode && conn == SelectedConnection;
+
+        if (conn.IsVirtual)
+        {
+            // Virtual (influence) connections: dashed, thinner, slightly lighter.
+            if (isSelected) color = Color.DimGray;
+            DrawDashedLine(sb, a, b, conn.Conflict ? 2f : 1.5f, color);
+        }
+        else
+        {
+            float thickness = isSelected ? 4f : conn.Conflict ? 3.5f : 2f;
+            if (isSelected) color = Color.DimGray;
+            DrawLine(sb, a, b, thickness, color);
+        }
+
+        // Small square marker at midpoint for connections with rule overrides.
+        if (conn.RuleOverride != null)
+        {
+            var mid = (a + b) * 0.5f;
+            const float s = 6f;
+            sb.Draw(_pixel, new Rectangle((int)(mid.X - s / 2), (int)(mid.Y - s / 2), (int)s, (int)s),
+                null, conn.Conflict ? ColorPalette.DarkRed : ColorPalette.Black,
+                0f, Vector2.Zero, SpriteEffects.None, 0.48f);
+        }
     }
 
     private void DrawNode(SpriteBatch sb, PowerNodeComponent node)
@@ -878,6 +1075,10 @@ public class PowergridView : UIElement
             // Empty node: a hollow ring.
             sb.Draw(_circleOutlined, dst, null, ColorPalette.Black, 0f, Vector2.Zero, SpriteEffects.None, 0.5f);
         }
+
+        // Faint influence aura for nodes with extended reach.
+        if (node.Influence > 1)
+            DrawRing(sb, center, NodeWorldRadius * node.Influence * _zoom, Color.DimGray * 0.5f, 1f);
 
         if (node.InConflict)
             DrawRing(sb, center, NodeWorldRadius * _zoom + 3f, ColorPalette.DarkRed, 2.5f);
@@ -938,6 +1139,35 @@ public class PowergridView : UIElement
 
         if (_connectSource != null)
             DrawLine(sb, WorldToScreen(_connectSource.Entity.Position), new Vector2(mp.X, mp.Y), 2f, Color.Gray);
+
+        // Connection rule override labels.
+        foreach (var graph in _controller.Graphs)
+            foreach (var conn in graph.Connections)
+                if (conn.RuleOverride != null)
+                {
+                    var a = WorldToScreen(conn.StartPos);
+                    var b = WorldToScreen(conn.EndPos);
+                    var mid = (a + b) * 0.5f;
+                    var label = string.Join("+", conn.RuleOverride.Select(ColoringRules.ShortName));
+                    var size = _font.MeasureString(label) * 0.7f;
+                    sb.Draw(_pixel, new Rectangle((int)(mid.X - size.X / 2 - 2), (int)(mid.Y - size.Y / 2 - 1), (int)size.X + 4, (int)size.Y + 2),
+                        null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.17f);
+                    sb.DrawString(_font, label, mid - size / 2f, ColorPalette.Black,
+                        0f, Vector2.Zero, 0.7f, SpriteEffects.None, 0.16f);
+                }
+
+        // Region creation preview while dragging.
+        if (Tool == EditTool.Region && _regionStart.HasValue)
+            DrawWorldRect(sb, _regionStart.Value, ScreenToWorld(mp), Color.DimGray, 1.5f);
+
+        // Selected region highlight.
+        if (SelectedRegion != null)
+        {
+            var c = SelectedRegion.Entity.Position;
+            var tl = new Vector2(c.X - SelectedRegion.HalfWidth, c.Y + SelectedRegion.HalfHeight);
+            var br = new Vector2(c.X + SelectedRegion.HalfWidth, c.Y - SelectedRegion.HalfHeight);
+            DrawWorldRect(sb, tl, br, ColorPalette.Black, 2.5f);
+        }
     }
 
     private void DrawPlayOverlay(SpriteBatch sb)
@@ -1158,6 +1388,40 @@ public class PowergridView : UIElement
         sb.DrawString(_font, text, center - size * 0.5f, color);
     }
 
+    private void DrawRegions(SpriteBatch sb)
+    {
+        foreach (var region in _controller.Regions)
+        {
+            var c = region.Entity.Position;
+            var tl = new Vector2(c.X - region.HalfWidth, c.Y + region.HalfHeight);
+            var br = new Vector2(c.X + region.HalfWidth, c.Y - region.HalfHeight);
+
+            var color = region.IsViolated ? ColorPalette.DarkRed : Color.DimGray;
+            float thickness = region.IsViolated ? 2.5f : 1.5f;
+            DrawWorldRect(sb, tl, br, color, thickness);
+
+            // Counter label at top-left corner: "T3: 1/2"
+            var tlScreen = WorldToScreen(tl);
+            var label = $"T{region.Tier}: {region.CurrentCount}/{region.MaxCount}";
+            sb.DrawString(_font, label, tlScreen + new Vector2(4, 4),
+                region.IsViolated ? ColorPalette.DarkRed : ColorPalette.Black,
+                0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0.15f);
+        }
+    }
+
+    /// <summary>Draws an axis-aligned rectangle outline in world space.</summary>
+    private void DrawWorldRect(SpriteBatch sb, Vector2 worldTL, Vector2 worldBR, Color color, float thickness)
+    {
+        var tl = WorldToScreen(worldTL);
+        var tr = WorldToScreen(new Vector2(worldBR.X, worldTL.Y));
+        var bl = WorldToScreen(new Vector2(worldTL.X, worldBR.Y));
+        var br = WorldToScreen(worldBR);
+        DrawLine(sb, tl, tr, thickness, color);
+        DrawLine(sb, tr, br, thickness, color);
+        DrawLine(sb, br, bl, thickness, color);
+        DrawLine(sb, bl, tl, thickness, color);
+    }
+
     private void DrawRing(SpriteBatch sb, Vector2 center, float radius, Color color, float thickness)
     {
         const int segments = 24;
@@ -1168,6 +1432,24 @@ public class PowergridView : UIElement
             var next = center + new Vector2(MathF.Cos(a) * radius, MathF.Sin(a) * radius);
             DrawLine(sb, prev, next, thickness, color);
             prev = next;
+        }
+    }
+
+    private void DrawDashedLine(SpriteBatch sb, Vector2 start, Vector2 end, float thickness, Color color,
+        float dashPx = 8f, float gapPx = 6f)
+    {
+        var diff = end - start;
+        float total = diff.Length();
+        if (total <= 0.0001f) return;
+        var dir = diff / total;
+        float t = 0f;
+        bool drawing = true;
+        while (t < total)
+        {
+            float segLen = MathF.Min(drawing ? dashPx : gapPx, total - t);
+            if (drawing) DrawLine(sb, start + dir * t, start + dir * (t + segLen), thickness, color);
+            t += segLen;
+            drawing = !drawing;
         }
     }
 

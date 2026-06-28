@@ -83,6 +83,20 @@ public static class ColoringRules
         _ => rule.ToString(),
     };
 
+    /// <summary>Parses a rule from either its full enum name ("DifferentRune") or the compact short
+    /// name used in serialized blobs ("Rune"). Both are accepted so connection-override round-trips
+    /// (which write <see cref="ShortName"/>) survive a save/load cycle.</summary>
     public static bool TryParse(string s, out ColoringRule rule)
-        => Enum.TryParse(s, ignoreCase: true, out rule);
+    {
+        if (Enum.TryParse(s, ignoreCase: true, out rule)) return true;
+        switch (s?.Trim().ToLowerInvariant())
+        {
+            case "rune": rule = ColoringRule.DifferentRune; return true;
+            case "tier": rule = ColoringRule.DifferentTier; return true;
+            case "step": rule = ColoringRule.TierStep;      return true;
+            case "side": rule = ColoringRule.Sidedness;     return true;
+        }
+        rule = default;
+        return false;
+    }
 }

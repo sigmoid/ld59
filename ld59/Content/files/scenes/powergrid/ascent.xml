@@ -1,0 +1,110 @@
+<Scene>
+  <Entities>
+
+    <!-- ============================================================
+         ASCENT
+         A 3x3 "king" lattice: every cell is connected to its 8
+         neighbours (orthogonal AND diagonal). Dense coupling means you
+         cannot fill it greedily — a rune constrains up to eight cells at
+         once, and the whole tier gradient has to stay consistent.
+
+         Active rules: DifferentRune, TierStep, Sidedness.
+
+         The two corners are fixed:
+           n00 = Axe  (tier 2)      bottom-left
+           n22 = Kite (tier 4)      top-right
+         The center n11 touches BOTH corners, so it is squeezed to tier 3.
+         From there the climb 2 -> 3 -> 4 must reconcile across every
+         diagonal — a global constraint, not a local one.
+
+         Region (left column n00,n01,n02): at most TWO tier-2 runes. The
+         Axe clue plus the forced Axe at n02 already spend that budget, so
+         the column's third cell cannot be tier-2 — the lone Phi is pushed
+         to the right. This cuts the puzzle to two solutions.
+
+         Inventory (exactly 7 runes for 7 open cells):
+           Axe, Axe, Phi, Omam, Squid, Squid, Medal
+         ============================================================ -->
+
+    <Entity Name="level">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowergridLevelComponent">
+        <Data>inventory:Axe,Axe,Phi,Omam,Squid,Squid,Medal;rules:DifferentRune,TierStep,Sidedness</Data>
+      </Component>
+    </Entity>
+
+    <!-- Left-column quota: <= 2 tier-2 runes among n00, n01, n02. -->
+    <Entity Name="quotaLeft">
+      <Position><X>0</X><Y>2</Y></Position>
+      <Component Type="PowergridRegionComponent">
+        <Property Name="HalfWidth"  Value="1.2" Type="float" />
+        <Property Name="HalfHeight" Value="3.2" Type="float" />
+        <Property Name="Tier"       Value="2"   Type="int" />
+        <Property Name="MaxCount"   Value="2"   Type="int" />
+      </Component>
+    </Entity>
+
+    <!-- Row y=0 -->
+    <Entity Name="n00">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="Axe" Type="string" />
+        <Data>n10,n01,n11</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n10">
+      <Position><X>2</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n20,n11,n21</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n20">
+      <Position><X>4</X><Y>0</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n21</Data>
+      </Component>
+    </Entity>
+
+    <!-- Row y=1 -->
+    <Entity Name="n01">
+      <Position><X>0</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n11,n02,n12,n10</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n11">
+      <Position><X>2</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n21,n12,n22,n20</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n21">
+      <Position><X>4</X><Y>2</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n22</Data>
+      </Component>
+    </Entity>
+
+    <!-- Row y=2 -->
+    <Entity Name="n02">
+      <Position><X>0</X><Y>4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n12,n11</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n12">
+      <Position><X>2</X><Y>4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>n22,n21</Data>
+      </Component>
+    </Entity>
+    <Entity Name="n22">
+      <Position><X>4</X><Y>4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="Kite" Type="string" />
+        <Data></Data>
+      </Component>
+    </Entity>
+
+  </Entities>
+</Scene>

@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Scene>
+  <Entities>
+    <Entity Name="node1">
+      <Position>
+        <X>-2.984375</X>
+        <Y>0.734375</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node2">
+      <Position>
+        <X>1.125</X>
+        <Y>0.984375</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="false" Type="bool" />
+        <Property Name="IsGoal" Value="true" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

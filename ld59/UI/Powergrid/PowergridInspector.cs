@@ -10,11 +10,12 @@ using Quartz.UI;
 namespace ld59.UI.Powergrid;
 
 /// <summary>
-/// Right-hand editor inspector. Top section edits the selected node (its fixed-rune clue and
-/// deletion); the middle section authors the selected node's puzzle (sequence order and the runes it
-/// rewards); the bottom section edits level-wide config — the player's starting rune inventory and
-/// the active adjacency rules. Owns its buttons as children and lays them out in SetBounds, so it
-/// follows the window when dragged.
+/// Right-hand editor inspector. Shows a different top section depending on what is selected:
+///   • Node selected   → Node + Puzzle sections
+///   • Connection selected → Connection rules section
+///   • Region selected → Region (tier / max-count) section
+///   • Nothing selected → (no top section)
+/// The Level section (inventory, adjacency rules) is always shown at the bottom.
 ///
 /// The inventory/reward editor reuses the play-mode <b>alphabet pyramid</b>: every rune is a chip
 /// laid out by tier/side, showing its current count. Left-click a chip to add one, right-click to
@@ -23,14 +24,18 @@ namespace ld59.UI.Powergrid;
 /// </summary>
 public sealed class PowergridInspector : UIPanel
 {
-    /// <summary>Rules surfaced as editor toggles, in display order. (DifferentTier is intentionally
-    /// omitted — kept in code but not used.)</summary>
+    /// <summary>Rules surfaced as editor toggles, in display order.</summary>
     private static readonly ColoringRule[] ExposedRules =
     {
         ColoringRule.DifferentRune, ColoringRule.TierStep, ColoringRule.Sidedness,
     };
 
-    /// <summary>What the rune-chip pyramid is editing.</summary>
+    /// <summary>All four rules are available as per-connection overrides (including DifferentTier).</summary>
+    private static readonly ColoringRule[] OverrideRules =
+    {
+        ColoringRule.DifferentRune, ColoringRule.DifferentTier, ColoringRule.TierStep, ColoringRule.Sidedness,
+    };
+
     private enum ChipTarget { Inventory, Reward }
 
     private const int ChipGap = 6;
@@ -42,21 +47,42 @@ public sealed class PowergridInspector : UIPanel
     private readonly Texture2D _circleFilled;
     private readonly Texture2D _circleOutlined;
 
-    private readonly Button _fixedRune, _delete;
+    // ── Node section ──────────────────────────────────────────────────────
+    private readonly Button _fixedRune, _deleteNode;
+    private readonly Button _influenceMinus, _influencePlus;
+
+    // ── Puzzle section ────────────────────────────────────────────────────
     private readonly Button _puzOrderMinus, _puzOrderPlus;
+
+    // ── Connection section ────────────────────────────────────────────────
+    private readonly Dictionary<ColoringRule, Button> _connRuleButtons = new();
+    private readonly Button _clearOverride;
+
+    // ── Region section ────────────────────────────────────────────────────
+    private readonly Button _regionTierMinus, _regionTierPlus;
+    private readonly Button _regionMaxMinus, _regionMaxPlus;
+    private readonly Button _deleteRegion;
+
+    // ── Level section ─────────────────────────────────────────────────────
     private readonly Button _targetToggle;
     private readonly Dictionary<ColoringRule, Button> _ruleButtons = new();
 
     private ChipTarget _target = ChipTarget.Inventory;
 
-    // Pyramid layout area (recomputed in SetBounds).
     private Rectangle _gridArea;
-
-    // Mouse edge-detection for chip clicks.
     private bool _prevLeft, _prevRight;
 
-    private Vector2 _headerPos, _puzHeaderPos, _puzOrderPos;
+    // Section header / label positions, recomputed in SetBounds.
+    private Vector2 _topSectionHeaderPos;
+    private Vector2 _influencePos;
+    private Vector2 _puzHeaderPos, _puzOrderPos;
+    private Vector2 _regionTierPos, _regionMaxPos;
+    private Vector2 _connHeaderPos;
     private Vector2 _levelHeaderPos, _gridHintPos, _rulesLabelPos;
+
+    // Track selection type to re-layout when it changes.
+    private enum SelectionKind { None, Node, Connection, Region }
+    private SelectionKind _lastKind = SelectionKind.None;
 
     public PowergridInspector(Rectangle bounds, PowergridView view)
     {
@@ -71,17 +97,48 @@ public sealed class PowergridInspector : UIPanel
             new Rectangle(0, 0, 10, 10), text, _font,
             ColorPalette.Black, ColorPalette.DarkCream, ColorPalette.ActualWhite, onClick);
 
-        _fixedRune = Mk("Fill", _view.CycleFixedRune);
-        _delete    = Mk("Delete Node", _view.DeleteSelected);
+        // Node section
+        _fixedRune     = Mk("Fill", _view.CycleFixedRune);
+        _deleteNode    = Mk("Delete Node", _view.DeleteSelected);
+        _influenceMinus = Mk("-", () => _view.AdjustInfluence(-1));
+        _influencePlus  = Mk("+", () => _view.AdjustInfluence(1));
+        AddChild(_fixedRune);
+        AddChild(_deleteNode);
+        AddChild(_influenceMinus);
+        AddChild(_influencePlus);
+
+        // Puzzle section
         _puzOrderMinus = Mk("-", () => _view.AdjustPuzzleOrder(-1));
         _puzOrderPlus  = Mk("+", () => _view.AdjustPuzzleOrder(1));
-        _targetToggle  = Mk("Target: Inventory",
-            () => _target = _target == ChipTarget.Inventory ? ChipTarget.Reward : ChipTarget.Inventory);
-
-        AddChild(_fixedRune);
-        AddChild(_delete);
         AddChild(_puzOrderMinus);
         AddChild(_puzOrderPlus);
+
+        // Connection section
+        foreach (var rule in OverrideRules)
+        {
+            var captured = rule;
+            var btn = Mk(ColoringRules.ShortName(rule), () => _view.ToggleConnectionRule(captured));
+            _connRuleButtons[rule] = btn;
+            AddChild(btn);
+        }
+        _clearOverride = Mk("Clear Override", _view.ClearConnectionOverride);
+        AddChild(_clearOverride);
+
+        // Region section
+        _regionTierMinus = Mk("-", () => _view.AdjustRegionTier(-1));
+        _regionTierPlus  = Mk("+", () => _view.AdjustRegionTier(1));
+        _regionMaxMinus  = Mk("-", () => _view.AdjustRegionMax(-1));
+        _regionMaxPlus   = Mk("+", () => _view.AdjustRegionMax(1));
+        _deleteRegion    = Mk("Delete Region", _view.DeleteSelectedRegion);
+        AddChild(_regionTierMinus);
+        AddChild(_regionTierPlus);
+        AddChild(_regionMaxMinus);
+        AddChild(_regionMaxPlus);
+        AddChild(_deleteRegion);
+
+        // Level section
+        _targetToggle = Mk("Target: Inventory",
+            () => _target = _target == ChipTarget.Inventory ? ChipTarget.Reward : ChipTarget.Inventory);
         AddChild(_targetToggle);
 
         foreach (var rule in ExposedRules)
@@ -97,6 +154,14 @@ public sealed class PowergridInspector : UIPanel
 
     public override Rectangle GetBoundingBox() => _bounds;
 
+    private SelectionKind CurrentKind()
+    {
+        if (_view.SelectedConnection != null) return SelectionKind.Connection;
+        if (_view.SelectedRegion    != null) return SelectionKind.Region;
+        if (_view.Selected          != null) return SelectionKind.Node;
+        return SelectionKind.None;
+    }
+
     public override void SetBounds(Rectangle bounds)
     {
         _bounds = bounds;
@@ -105,23 +170,61 @@ public sealed class PowergridInspector : UIPanel
         int w = _bounds.Width - 2 * pad;
         int y = _bounds.Y + pad;
 
-        _headerPos = new Vector2(x, y); y += 26;
-        _fixedRune.SetBounds(new Rectangle(x, y, w, h)); y += h + gap;
-        _delete.SetBounds(new Rectangle(x, y, w, h));    y += h + gap + 18;
+        var kind = CurrentKind();
 
-        // Per-puzzle sequence authoring (acts on the selected node's puzzle).
-        _puzHeaderPos = new Vector2(x, y); y += 26;
-        _puzOrderPos = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
-        _puzOrderPlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
-        _puzOrderMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
-        y += h + gap + 18;
+        // ── Top section (selection-dependent) ────────────────────────────
+        _topSectionHeaderPos = new Vector2(x, y);
 
-        // Level config: target toggle + the rune-chip pyramid + rules.
+        if (kind == SelectionKind.Node)
+        {
+            y += 26;
+            _fixedRune.SetBounds(new Rectangle(x, y, w, h)); y += h + gap;
+            // Influence row
+            _influencePos = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
+            _influencePlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
+            _influenceMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
+            y += h + gap;
+            _deleteNode.SetBounds(new Rectangle(x, y, w, h)); y += h + gap + 14;
+
+            _puzHeaderPos = new Vector2(x, y); y += 26;
+            _puzOrderPos  = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
+            _puzOrderPlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
+            _puzOrderMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
+            y += h + gap + 14;
+        }
+        else if (kind == SelectionKind.Connection)
+        {
+            _connHeaderPos = new Vector2(x, y); y += 26;
+            foreach (var rule in OverrideRules)
+            {
+                _connRuleButtons[rule].SetBounds(new Rectangle(x, y, w, h));
+                y += h + gap;
+            }
+            _clearOverride.SetBounds(new Rectangle(x, y, w, h));
+            y += h + gap + 14;
+        }
+        else if (kind == SelectionKind.Region)
+        {
+            y += 26;
+            // Tier row
+            _regionTierPos = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
+            _regionTierPlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
+            _regionTierMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
+            y += h + gap;
+            // Max row
+            _regionMaxPos = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
+            _regionMaxPlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
+            _regionMaxMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
+            y += h + gap;
+            _deleteRegion.SetBounds(new Rectangle(x, y, w, h));
+            y += h + gap + 14;
+        }
+
+        // ── Level section (always at bottom) ─────────────────────────────
         _levelHeaderPos = new Vector2(x, y); y += 26;
         _targetToggle.SetBounds(new Rectangle(x, y, w, h)); y += h + gap;
         _gridHintPos = new Vector2(x, y); y += 20;
 
-        // The pyramid takes the space between the hint and the (bottom-anchored) rules block.
         int rulesHeight = 26 + ExposedRules.Length * (h + gap);
         int gridBottom = _bounds.Bottom - pad - rulesHeight;
         _gridArea = new Rectangle(x, y, w, Math.Max(80, gridBottom - y));
@@ -135,9 +238,6 @@ public sealed class PowergridInspector : UIPanel
         }
     }
 
-    /// <summary>Lays the whole alphabet out as a pyramid (tier = row, RowOrder = position, each row
-    /// centred) within <see cref="_gridArea"/>, returning each rune's chip rect — mirroring the play
-    /// view so the editor reads the same. Used for both drawing and click hit-testing.</summary>
     private List<(string name, Rectangle rect)> PyramidSlots()
     {
         var slots = new List<(string, Rectangle)>();
@@ -169,7 +269,6 @@ public sealed class PowergridInspector : UIPanel
         return slots;
     }
 
-    /// <summary>Current count shown on a chip, per the active target.</summary>
     private int ChipCount(string rune)
         => _target == ChipTarget.Inventory
             ? _view.EditorInventoryCount(rune)
@@ -185,15 +284,61 @@ public sealed class PowergridInspector : UIPanel
     {
         base.Update(deltaTime);
 
-        var s = _view.Selected;
-        bool en = s != null;
-        _fixedRune.SetEnabled(en);
-        _delete.SetEnabled(en);
-        _puzOrderMinus.SetEnabled(en);
-        _puzOrderPlus.SetEnabled(en);
+        // Re-layout when selection type changes.
+        var kind = CurrentKind();
+        if (kind != _lastKind) { _lastKind = kind; SetBounds(_bounds); }
 
-        var fill = _view.SelectedFixedRune;
-        _fixedRune.SetText(s == null ? "Fill: -" : $"Fill: {(string.IsNullOrEmpty(fill) ? "none" : fill)}");
+        // ── Show/hide buttons by section ──────────────────────────────────
+        bool nodeSelected = kind == SelectionKind.Node;
+        bool connSelected = kind == SelectionKind.Connection;
+        bool regionSelected = kind == SelectionKind.Region;
+
+        _fixedRune.SetEnabled(nodeSelected);
+        _deleteNode.SetEnabled(nodeSelected);
+        _influenceMinus.SetEnabled(nodeSelected);
+        _influencePlus.SetEnabled(nodeSelected);
+        _puzOrderMinus.SetEnabled(nodeSelected);
+        _puzOrderPlus.SetEnabled(nodeSelected);
+        _fixedRune.SetVisibility(nodeSelected);
+        _deleteNode.SetVisibility(nodeSelected);
+        _influenceMinus.SetVisibility(nodeSelected);
+        _influencePlus.SetVisibility(nodeSelected);
+        _puzOrderMinus.SetVisibility(nodeSelected);
+        _puzOrderPlus.SetVisibility(nodeSelected);
+
+        foreach (var (_, btn) in _connRuleButtons) btn.SetVisibility(connSelected);
+        _clearOverride.SetVisibility(connSelected);
+        _clearOverride.SetEnabled(connSelected && _view.ConnectionHasOverride);
+
+        _regionTierMinus.SetVisibility(regionSelected);
+        _regionTierPlus.SetVisibility(regionSelected);
+        _regionMaxMinus.SetVisibility(regionSelected);
+        _regionMaxPlus.SetVisibility(regionSelected);
+        _deleteRegion.SetVisibility(regionSelected);
+        _regionTierMinus.SetEnabled(regionSelected);
+        _regionTierPlus.SetEnabled(regionSelected);
+        _regionMaxMinus.SetEnabled(regionSelected);
+        _regionMaxPlus.SetEnabled(regionSelected);
+        _deleteRegion.SetEnabled(regionSelected);
+
+        // Update dynamic labels
+        if (nodeSelected)
+        {
+            var s = _view.Selected;
+            var fill = _view.SelectedFixedRune;
+            _fixedRune.SetText(s == null ? "Fill: -" : $"Fill: {(string.IsNullOrEmpty(fill) ? "none" : fill)}");
+        }
+
+        if (connSelected)
+        {
+            foreach (var rule in OverrideRules)
+            {
+                bool active = _view.ConnectionOverrideHasRule(rule);
+                bool hasOverride = _view.ConnectionHasOverride;
+                string status = !hasOverride ? "level default" : active ? "ON" : "off";
+                _connRuleButtons[rule].SetText($"{ColoringRules.ShortName(rule)}: {status}");
+            }
+        }
 
         _targetToggle.SetText(_target == ChipTarget.Inventory ? "Target: Inventory" : "Target: Reward");
 
@@ -204,7 +349,6 @@ public sealed class PowergridInspector : UIPanel
         HandleChipClicks();
     }
 
-    /// <summary>Left-click a chip to add one of that rune, right-click to remove one.</summary>
     private void HandleChipClicks()
     {
         var mouse = Mouse.GetState();
@@ -215,7 +359,6 @@ public sealed class PowergridInspector : UIPanel
         _prevLeft = left;
         _prevRight = right;
 
-        // Only the active editor (edit mode) drives the grid.
         if (!_view.EditMode || (!leftClick && !rightClick)) return;
 
         var mp = Core.GetTransformedMousePoint();
@@ -233,17 +376,41 @@ public sealed class PowergridInspector : UIPanel
         sb.Draw(_pixel, new Rectangle(_bounds.X, _bounds.Y, 2, _bounds.Height), null, ColorPalette.Black,
             0f, Vector2.Zero, SpriteEffects.None, 0.51f);
 
-        sb.DrawString(_font, "Node", _headerPos, ColorPalette.Black);
+        var kind = CurrentKind();
 
-        var puzId = _view.SelectedPuzzleId;
-        sb.DrawString(_font, puzId == null ? "Puzzle" : $"Puzzle: {puzId}", _puzHeaderPos, ColorPalette.Black);
-        sb.DrawString(_font, $"Order: {_view.SelectedPuzzleOrder}", _puzOrderPos, ColorPalette.Black);
+        if (kind == SelectionKind.Node)
+        {
+            sb.DrawString(_font, "Node", _topSectionHeaderPos, ColorPalette.Black);
+            sb.DrawString(_font, $"Influence: {_view.SelectedInfluence}", _influencePos, ColorPalette.Black);
+
+            var puzId = _view.SelectedPuzzleId;
+            sb.DrawString(_font, puzId == null ? "Puzzle" : $"Puzzle: {puzId}", _puzHeaderPos, ColorPalette.Black);
+            sb.DrawString(_font, $"Order: {_view.SelectedPuzzleOrder}", _puzOrderPos, ColorPalette.Black);
+        }
+        else if (kind == SelectionKind.Connection)
+        {
+            sb.DrawString(_font, "Connection", _connHeaderPos, ColorPalette.Black);
+            var overrideStatus = _view.ConnectionHasOverride ? "override active" : "using level rules";
+            sb.DrawString(_font, overrideStatus, _connHeaderPos + new Vector2(0, _font.LineSpacing),
+                Color.DimGray, 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0.49f);
+        }
+        else if (kind == SelectionKind.Region)
+        {
+            sb.DrawString(_font, "Region", _topSectionHeaderPos, ColorPalette.Black);
+            var r = _view.SelectedRegion;
+            if (r != null)
+            {
+                sb.DrawString(_font, $"Tier: {r.Tier}", _regionTierPos, ColorPalette.Black);
+                sb.DrawString(_font, $"Max: {r.MaxCount}", _regionMaxPos, ColorPalette.Black);
+            }
+        }
 
         sb.DrawString(_font, "Level", _levelHeaderPos, ColorPalette.Black);
 
+        var puzIdForHint = _view.SelectedPuzzleId;
         string hint = _target == ChipTarget.Inventory
             ? "Inventory: L-click +1, R-click -1"
-            : puzId == null ? "Reward: select a node first" : $"Reward for {puzId}: L +1, R -1";
+            : puzIdForHint == null ? "Reward: select a node first" : $"Reward for {puzIdForHint}: L +1, R -1";
         sb.DrawString(_font, hint, _gridHintPos, Color.Gray, 0f, Vector2.Zero, 0.85f, SpriteEffects.None, 0.49f);
 
         DrawPyramid(sb);
@@ -261,8 +428,6 @@ public sealed class PowergridInspector : UIPanel
             DrawChip(sb, rect, name, ChipCount(name));
     }
 
-    /// <summary>Faint guides behind the pyramid: a vertical centre line (the left/right "sidedness"
-    /// divide) and a horizontal line between each tier row. Mirrors the play view.</summary>
     private void DrawPyramidGuides(SpriteBatch sb, List<(string name, Rectangle rect)> slots)
     {
         if (slots.Count == 0) return;
@@ -292,8 +457,6 @@ public sealed class PowergridInspector : UIPanel
         }
     }
 
-    /// <summary>Draws one pyramid chip, matching the play view: owned (count &gt; 0) is a filled black
-    /// disc + white glyph + a small badge; count 0 is inverted — a white outlined ring + black glyph.</summary>
     private void DrawChip(SpriteBatch sb, Rectangle rect, string rune, int count)
     {
         bool owned = count > 0;

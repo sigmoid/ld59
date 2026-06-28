@@ -1,0 +1,187 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Scene>
+  <Entities>
+    <Entity Name="node1">
+      <Position>
+        <X>-3.171875</X>
+        <Y>2.828125</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node1"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;-3.171875&lt;/X&gt;
+    &lt;Y&gt;2.828125&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="Mouth" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="true" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="false" Type="bool" /&gt;
+    &lt;Data&gt;node2&lt;/Data&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="" Type="string" />
+        <Property Name="Rune" Value="Mouth" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="false" Type="bool" />
+        <Data>node2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node2">
+      <Position>
+        <X>0.5</X>
+        <Y>2.78125</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node2"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;0.5&lt;/X&gt;
+    &lt;Y&gt;2.78125&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="Target" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="true" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="false" Type="bool" /&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="" Type="string" />
+        <Property Name="Rune" Value="Eye" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="level1">
+      <Position>
+        <X>0</X>
+        <Y>0</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="level1"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;0&lt;/X&gt;
+    &lt;Y&gt;0&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowergridLevelComponent"&gt;
+    &lt;Data&gt;inventory:Eye,Target,Mouth;rules:DifferentRune,TierStep,Sidedness;rewards:node1=Chi|node3=D&lt;/Data&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowergridLevelComponent">
+        <Data>inventory:Eye,Mouth,Eye;rules:DifferentRune,TierStep,Sidedness;rewards:node1=Chi|node3=D</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node3">
+      <Position>
+        <X>-3.1875</X>
+        <Y>-1.078125</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node3"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;-3.1875&lt;/X&gt;
+    &lt;Y&gt;-1.078125&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="false" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="false" Type="bool" /&gt;
+    &lt;Data&gt;node4&lt;/Data&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="" Type="string" />
+        <Property Name="Rune" Value="Chi" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="false" Type="bool" />
+        <Data>node4</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node4">
+      <Position>
+        <X>0.515625</X>
+        <Y>-0.875</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node4"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;0.515625&lt;/X&gt;
+    &lt;Y&gt;-0.875&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="false" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="false" Type="bool" /&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="" Type="string" />
+        <Property Name="Rune" Value="D" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="node5">
+      <Position>
+        <X>-3.356509</X>
+        <Y>-5.0094814</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node5"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;-3.356509&lt;/X&gt;
+    &lt;Y&gt;-5.0094814&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="Mouth" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="Mouth" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="true" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="true" Type="bool" /&gt;
+    &lt;Data&gt;node6&lt;/Data&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="Mouth" Type="string" />
+        <Property Name="Rune" Value="Mouth" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="true" Type="bool" />
+        <Data>node6</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node6">
+      <Position>
+        <X>0.5622415</X>
+        <Y>-4.95792</Y>
+      </Position>
+      <Tag></Tag>
+      <AuthoredData>&lt;Entity Name="node6"&gt;
+  &lt;Position&gt;
+    &lt;X&gt;0.5622415&lt;/X&gt;
+    &lt;Y&gt;-4.95792&lt;/Y&gt;
+  &lt;/Position&gt;
+  &lt;Tag /&gt;
+  &lt;Component Type="PowerNodeComponent"&gt;
+    &lt;Property Name="FixedRune" Value="" Type="string" /&gt;
+    &lt;Property Name="Rune" Value="Chi" Type="string" /&gt;
+    &lt;Property Name="HasRune" Value="true" Type="bool" /&gt;
+    &lt;Property Name="IsFixed" Value="false" Type="bool" /&gt;
+  &lt;/Component&gt;
+&lt;/Entity&gt;</AuthoredData>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="" Type="string" />
+        <Property Name="Rune" Value="Eye" Type="string" />
+        <Property Name="HasRune" Value="true" Type="bool" />
+        <Property Name="IsFixed" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

@@ -1,0 +1,94 @@
+<Scene>
+  <Entities>
+
+    <!-- ============================================================
+         TWIN FORGES
+         Two triangles joined by one special bridge.
+
+         Active rules (whole level): DifferentRune, TierStep, Sidedness.
+           - Different rune on every edge.
+           - Across tiers, neighbours must be exactly one tier apart.
+           - Within a tier, neighbours must be opposite sides.
+
+         The hooks:
+           1. Each triangle is an odd cycle, so it cannot be filled with
+              a single tier under Sidedness — one node must "escape" to a
+              neighbouring tier.
+           2. The LEFT triangle sits inside a region capped at ONE Tier-3
+              rune. The natural solve flanks the fixed Kite (Tier 4) with
+              two Tier-3 runes — that trips the region. You must push one
+              of them up to a Tier-4 Left rune instead.
+           3. The top BRIDGE joins Kite (Tier 4) and Axe (Tier 2): two
+              tiers apart, which TierStep forbids. That single edge is
+              overridden to care only about DifferentRune, so it is legal.
+              Without the override the level is unsolvable.
+
+         One intended solution:
+           L0=Moon  L1=Kite(fixed)  L2=Medal
+           R0=Phi   R1=Axe(fixed)   R2=Omam
+         ============================================================ -->
+
+    <Entity Name="level">
+      <Position><X>0</X><Y>0</Y></Position>
+      <Component Type="PowergridLevelComponent">
+        <Data>inventory:Moon,Horns,Medal,Omam,Omam,Squid,Phi;rules:DifferentRune,TierStep,Sidedness</Data>
+      </Component>
+    </Entity>
+
+    <!-- Region over the LEFT triangle: at most one Tier-3 rune inside. -->
+    <Entity Name="regionLeft">
+      <Position><X>-4.0</X><Y>0.35</Y></Position>
+      <Component Type="PowergridRegionComponent">
+        <Property Name="HalfWidth"  Value="2.0" Type="float" />
+        <Property Name="HalfHeight" Value="1.6" Type="float" />
+        <Property Name="Tier"       Value="3"   Type="int" />
+        <Property Name="MaxCount"   Value="1"   Type="int" />
+      </Component>
+    </Entity>
+
+    <!-- ── LEFT triangle ───────────────────────────────────────── -->
+    <!-- L1 is the fixed Tier-4 anchor (Kite) and owns the bridge edge. -->
+    <Entity Name="L1">
+      <Position><X>-4.0</X><Y>1.4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="Kite" Type="string" />
+        <Data>L2,R1:Rune</Data>
+      </Component>
+    </Entity>
+    <Entity Name="L0">
+      <Position><X>-5.2</X><Y>-0.7</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>L1,L2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="L2">
+      <Position><X>-2.8</X><Y>-0.7</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data></Data>
+      </Component>
+    </Entity>
+
+    <!-- ── RIGHT triangle ──────────────────────────────────────── -->
+    <!-- R1 is the fixed Tier-2 anchor (Axe). -->
+    <Entity Name="R1">
+      <Position><X>4.0</X><Y>1.4</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Property Name="FixedRune" Value="Axe" Type="string" />
+        <Data>R2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="R0">
+      <Position><X>2.8</X><Y>-0.7</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data>R1,R2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="R2">
+      <Position><X>5.2</X><Y>-0.7</Y></Position>
+      <Component Type="PowerNodeComponent">
+        <Data></Data>
+      </Component>
+    </Entity>
+
+  </Entities>
+</Scene>

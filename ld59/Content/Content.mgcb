@@ -211,6 +211,9 @@
 #begin files/scenes/pinball.xml
 /copy:files/scenes/pinball.xml
 
+#begin files/scenes/powergrid/combine-001.xml
+/copy:files/scenes/powergrid/combine-001.xml
+
 #begin files/scenes/powergrid/delay-intro.xml
 /copy:files/scenes/powergrid/delay-intro.xml
 
@@ -223,11 +226,53 @@
 #begin files/scenes/powergrid/locked-mirror.xml
 /copy:files/scenes/powergrid/locked-mirror.xml
 
+#begin files/scenes/powergrid/medium-001.xml
+/copy:files/scenes/powergrid/medium-001.xml
+
+#begin files/scenes/powergrid/medium-002.xml
+/copy:files/scenes/powergrid/medium-002.xml
+
+#begin files/scenes/powergrid/medium-003.xml
+/copy:files/scenes/powergrid/medium-003.xml
+
+#begin files/scenes/powergrid/medium-004.xml
+/copy:files/scenes/powergrid/medium-004.xml
+
 #begin files/scenes/powergrid/mirror-assembly.xml
 /copy:files/scenes/powergrid/mirror-assembly.xml
 
+#begin files/scenes/powergrid/order-001.xml
+/copy:files/scenes/powergrid/order-001.xml
+
+#begin files/scenes/powergrid/order-sidedness-001.xml
+/copy:files/scenes/powergrid/order-sidedness-001.xml
+
+#begin files/scenes/powergrid/order-sidedness-002.xml
+/copy:files/scenes/powergrid/order-sidedness-002.xml
+
 #begin files/scenes/powergrid/progressions/basic-prog.txt
 /copy:files/scenes/powergrid/progressions/basic-prog.txt
+
+#begin files/scenes/powergrid/runes-001.xml
+/copy:files/scenes/powergrid/runes-001.xml
+
+#begin files/scenes/powergrid/sidedness-001.xml
+/copy:files/scenes/powergrid/sidedness-001.xml
+
+#begin files/scenes/powergrid/test.xml
+/copy:files/scenes/powergrid/test.xml
+
+#begin files/scenes/powergrid/testbed.xml
+/copy:files/scenes/powergrid/testbed.xml
+
+#begin files/scenes/powergrid/testboy.xml
+/copy:files/scenes/powergrid/testboy.xml
+
+#begin files/scenes/powergrid/ascent.xml
+/copy:files/scenes/powergrid/ascent.xml
+
+#begin files/scenes/powergrid/twin-forges.xml
+/copy:files/scenes/powergrid/twin-forges.xml
 
 #begin files/scenes/test_3d_asset.xml
 /copy:files/scenes/test_3d_asset.xml

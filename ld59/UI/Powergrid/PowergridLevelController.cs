@@ -16,9 +16,14 @@ public class PowergridLevelController
 {
     private readonly Scene _scene;
     private readonly List<PuzzleGraph> _graphs = new();
+    private readonly List<PowergridRegionComponent> _regions = new();
 
     public Scene Scene => _scene;
     public IReadOnlyList<PuzzleGraph> Graphs => _graphs;
+
+    /// <summary>All tier-count regions authored in this level. Each region limits how many runes of a
+    /// specific tier may be placed within its bounding box.</summary>
+    public IReadOnlyList<PowergridRegionComponent> Regions => _regions;
 
     /// <summary>The player's starting rune inventory (a flat list; repeats = quantity), from the
     /// level config. Empty if the level authors none.</summary>
@@ -43,6 +48,14 @@ public class PowergridLevelController
         var entities = _scene.GetEntities();
         var nodeEntities = entities.Where(e => e.GetComponent<PowerNodeComponent>() != null).ToList();
         var nodesByName = nodeEntities.ToDictionary(e => e.Name, e => e.GetComponent<PowerNodeComponent>());
+
+        // Collect all region components.
+        _regions.Clear();
+        foreach (var e in entities)
+        {
+            var region = e.GetComponent<PowergridRegionComponent>();
+            if (region != null) _regions.Add(region);
+        }
 
         PowerNodeComponent Resolve(string name)
             => name != null && nodesByName.TryGetValue(name, out var n) ? n : null;
@@ -112,6 +125,29 @@ public class PowergridLevelController
             graph.Unlocked = prevAllSolved;
             prevAllSolved = prevAllSolved && graph.IsSolved;
         }
+
+        EvaluateRegions();
+    }
+
+    /// <summary>Recomputes each region's current rune count and violation flag from the live node
+    /// states. A region is violated when its tier-rune count exceeds <see cref="PowergridRegionComponent.MaxCount"/>.</summary>
+    public void EvaluateRegions()
+    {
+        if (_regions.Count == 0) return;
+
+        foreach (var region in _regions)
+        {
+            int count = 0;
+            foreach (var graph in _graphs)
+                foreach (var node in graph.Nodes)
+                    if (node.HasRune && region.Contains(node.Entity.Position))
+                    {
+                        var sym = Runes.ByName(node.Rune);
+                        if (sym != null && sym.Tier == region.Tier) count++;
+                    }
+            region.CurrentCount = count;
+            region.IsViolated = count > region.MaxCount;
+        }
     }
 
     /// <summary>Clear all player-placed runes (fixed clues kept) across every puzzle.</summary>
@@ -120,6 +156,6 @@ public class PowergridLevelController
         foreach (var graph in _graphs) graph.ClearPlaced();
     }
 
-    /// <summary>True once every puzzle in the level is solved.</summary>
-    public bool IsLevelSolved => _graphs.Count > 0 && _graphs.All(g => g.IsSolved);
+    /// <summary>True once every puzzle in the level is solved and all tier-count regions are satisfied.</summary>
+    public bool IsLevelSolved => _graphs.Count > 0 && _graphs.All(g => g.IsSolved) && !_regions.Any(r => r.IsViolated);
 }

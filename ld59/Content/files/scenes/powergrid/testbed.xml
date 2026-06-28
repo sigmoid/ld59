@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Scene>
+  <Entities>
+    <Entity Name="node1">
+      <Position>
+        <X>-4.046875</X>
+        <Y>1.4375</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node2,node4</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node2">
+      <Position>
+        <X>-1.984375</X>
+        <Y>-0.46875</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="false" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node4,node3</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node3">
+      <Position>
+        <X>-2.203125</X>
+        <Y>4.015625</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="false" Type="bool" />
+        <Property Name="IsGoal" Value="true" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+      </Component>
+    </Entity>
+    <Entity Name="node4">
+      <Position>
+        <X>0.328125</X>
+        <Y>1.78125</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="false" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node5,node2</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node5">
+      <Position>
+        <X>2.296875</X>
+        <Y>1.84375</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="false" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node4</Data>
+      </Component>
+    </Entity>
+    <Entity Name="node6">
+      <Position>
+        <X>4.078125</X>
+        <Y>1.921875</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowerNodeComponent">
+        <Property Name="NodeKind" Value="Normal" Type="enum" />
+        <Property Name="IsAnchor" Value="true" Type="bool" />
+        <Property Name="IsGoal" Value="false" Type="bool" />
+        <Property Name="HeldTokenPower" Value="0" Type="int" />
+        <Data>node5</Data>
+      </Component>
+    </Entity>
+    <Entity Name="level1">
+      <Position>
+        <X>0</X>
+        <Y>0</Y>
+      </Position>
+      <Tag />
+      <Component Type="PowergridLevelComponent">
+        <Property Name="HoldingSlots" Value="3" Type="int" />
+        <Data>inventory:2,2,2,1,1,1,1,1</Data>
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>
