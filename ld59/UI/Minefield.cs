@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
@@ -10,9 +11,9 @@ public class Minefield : UIPanel
 {
     private Rectangle _bounds;
     private Window _rootWindow;
-    private int _cellsWide = 16;
-    private int _cellsHigh = 16;
-    private int _numMines = 40;
+    private int _cellsWide = 12;
+    private int _cellsHigh = 12;
+    private int _numMines = 22;
     private Label _statusLabel;
     private UIImage _splashImage;
     private Dictionary<(int,int), MinefieldCell> _cells = new Dictionary<(int,int), MinefieldCell>();
@@ -31,10 +32,177 @@ public class Minefield : UIPanel
     private float _timer;
     private bool _hasGameStarted = false;
 
+    // Authored board(s) loaded from a text file instead of a random board. A file may hold several
+    // grids (separated by blank/comment lines) that form a progression: clear one to unlock the next.
+    // _mineLayout/_exploredLayout/_flagLayout are the *current* board's layout (see ApplyBoard).
+    private const string LevelsDir = "Content/files/minefield";
+    private bool _authored = false;
+    private HashSet<(int,int)> _mineLayout;
+    private HashSet<(int,int)> _exploredLayout;
+    private HashSet<(int,int)> _flagLayout;
+
+    private List<AuthoredBoard> _progression;
+    private int _progIndex;
+    private bool _solved;
+    private GridLayoutGroup _gridGroup;
+    private Rectangle _gridArea;
+    private Button _nextButton;
+
+    private class AuthoredBoard
+    {
+        public int Width, Height;
+        public HashSet<(int,int)> Mines = new();
+        public HashSet<(int,int)> Explored = new();
+        public HashSet<(int,int)> Flags = new();
+    }
+
     public Minefield(Rectangle bounds)
     {
         _bounds = bounds;
         CreateUI();
+    }
+
+    /// <summary>Opens an authored board from <c>Content/files/minefield/&lt;levelName&gt;.txt</c>. Falls
+    /// back to a random board if the file is missing or empty.</summary>
+    public Minefield(Rectangle bounds, string levelName)
+    {
+        _bounds = bounds;
+        LoadLevel(levelName);
+        CreateUI();
+    }
+
+    /// <summary>
+    /// Parses an authored file into a progression of one or more boards. A board is a run of grid
+    /// rows; a blank or comment line ends the current board (so grids are separated by blank lines,
+    /// and a '#' label between them works too). Boards are shown in order — clear one to unlock the
+    /// next. Characters in a row:
+    ///   '*' (or 'x'/'m') = mine, 'o' = explored (auto-revealed on open), 'f'/'F' = flag (which is
+    ///   also a mine by default), anything else = hidden empty.
+    /// Short rows are padded with empty cells. On any problem it logs and leaves the board in its
+    /// default (random) configuration.
+    /// </summary>
+    private void LoadLevel(string levelName)
+    {
+        var path = $"{LevelsDir}/{levelName}.txt";
+        if (!File.Exists(path))
+        {
+            Core.DeveloperConsole.PrintLine($"minefield: level '{levelName}' not found ({path}); using a random board");
+            return;
+        }
+
+        // Group lines into grid blocks; a blank or comment line breaks the current block.
+        var blocks = new List<List<string>>();
+        var current = new List<string>();
+        foreach (var raw in File.ReadAllLines(path))
+        {
+            var line = raw.TrimEnd();
+            bool boundary = line.Trim().Length == 0 || line.TrimStart().StartsWith("#");
+            if (boundary)
+            {
+                if (current.Count > 0) { blocks.Add(current); current = new List<string>(); }
+                continue;
+            }
+            current.Add(line);
+        }
+        if (current.Count > 0) blocks.Add(current);
+
+        _progression = blocks.Select(ParseBoard).ToList();
+        if (_progression.Count == 0)
+        {
+            Core.DeveloperConsole.PrintLine($"minefield: level '{levelName}' has no grids; using a random board");
+            _progression = null;
+            return;
+        }
+
+        _progIndex = 0;
+        _authored = true;
+        ApplyBoard(0);
+    }
+
+    /// <summary>Turns one block of grid rows into a board layout.</summary>
+    private AuthoredBoard ParseBoard(List<string> rows)
+    {
+        var board = new AuthoredBoard { Width = rows.Max(r => r.Length), Height = rows.Count };
+        for (int y = 0; y < board.Height; y++)
+        {
+            var row = rows[y];
+            for (int x = 0; x < board.Width; x++)
+            {
+                char c = x < row.Length ? row[x] : '.';
+                switch (c)
+                {
+                    case '*': case 'x': case 'X': case 'm': case 'M':
+                        board.Mines.Add((x, y));
+                        break;
+                    case 'o': case 'O':
+                        board.Explored.Add((x, y));
+                        break;
+                    case 'f': case 'F': // a flag — also a mine by default
+                        board.Mines.Add((x, y));
+                        board.Flags.Add((x, y));
+                        break;
+                    // anything else ('.', ' ', '-', …) = hidden empty cell
+                }
+            }
+        }
+        return board;
+    }
+
+    /// <summary>Makes the board at <paramref name="index"/> the current one.</summary>
+    private void ApplyBoard(int index)
+    {
+        var b = _progression[index];
+        _cellsWide = b.Width;
+        _cellsHigh = b.Height;
+        _mineLayout = b.Mines;
+        _exploredLayout = b.Explored;
+        _flagLayout = b.Flags;
+        _numMines = b.Mines.Count;
+    }
+
+    /// <summary>Advances to the next board in the progression and rebuilds the grid for it.</summary>
+    private void AdvanceBoard()
+    {
+        if (_progression == null || _progIndex >= _progression.Count - 1) return;
+        _progIndex++;
+        ApplyBoard(_progIndex);
+        BuildGrid();
+        CreateGame();
+        _nextButton?.SetVisibility(false);
+        _statusLabel.Text = "Click a cell to start!";
+        UpdateTitle();
+    }
+
+    private void UpdateTitle()
+        => _rootWindow.SetTitle(_progression != null && _progression.Count > 1
+            ? $"Minefield ({_progIndex + 1}/{_progression.Count})"
+            : "Minefield");
+
+    /// <summary>Help button: (re)start the demo progression in this window and open the alphabet image.</summary>
+    private void OnHelpClicked()
+    {
+        StartLevel("demo");
+        OpenAlphabetImage();
+    }
+
+    /// <summary>Loads an authored level by name into this window and shows its first board.</summary>
+    private void StartLevel(string levelName)
+    {
+        LoadLevel(levelName); // sets _progression / _progIndex / current board, or logs on failure
+        BuildGrid();
+        CreateGame();
+        UpdateTitle();
+        _nextButton?.SetVisibility(false);
+        _statusLabel.Text = "Click a cell to start!";
+    }
+
+    private void OpenAlphabetImage()
+    {
+        var file = Core.CurrentScene.GetManager<GameFileDataManager>().GetFileByPath("alphabet.img");
+        if (file != null)
+            Core.UISystem.AddElement(new ImageViewerUI(file));
+        else
+            Core.DeveloperConsole.PrintLine("minefield: alphabet.img not found");
     }
 
     public override void SetBounds(Rectangle bounds)
@@ -70,6 +238,9 @@ public class Minefield : UIPanel
                 _splashImage.SetVisibility(false);
             }
         }
+
+        // Offer the next board once the current one is cleared and another follows it.
+        _nextButton?.SetVisibility(_solved && _progression != null && _progIndex < _progression.Count - 1);
 
         _coordinatesLabel.Text = "";
         var mousePoint = Core.GetTransformedMousePoint();
@@ -121,34 +292,74 @@ public class Minefield : UIPanel
         var resetButton = new Button(new Rectangle(cb.Right - 90, cb.Y + (headerHeight - 30) / 2, 80, 30), "Reset", Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, CreateGame);
         _rootWindow.AddChild(resetButton);
 
-        var gridBounds = new Rectangle(cb.X + 10, cb.Y + headerHeight + 25, cb.Width - 20, cb.Height - headerHeight - 60);
-        var grid = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
+        // Shown only once the current board is cleared and another board follows it.
+        _nextButton = new Button(new Rectangle(cb.Right - 180, cb.Y + (headerHeight - 30) / 2, 80, 30), "Next >", Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, AdvanceBoard);
+        _nextButton.SetVisibility(false);
+        _rootWindow.AddChild(_nextButton);
 
-        var cellWidth = gridBounds.Width / _cellsWide;
-        var cellHeight = gridBounds.Height / _cellsHigh;
+        // Help: start the demo progression and open the rune alphabet reference image.
+        var helpButton = new Button(new Rectangle(cb.Right - 220, cb.Y + (headerHeight - 30) / 2, 30, 30), "?", Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, OnHelpClicked);
+        _rootWindow.AddChild(helpButton);
 
-        for(int y = 0; y < _cellsHigh; y++)
-        {
-            for(int x = 0; x < _cellsWide; x++)
-            {
-                var cell = new MinefieldCell(new Rectangle(gridBounds.X + x * cellWidth, gridBounds.Y + y * cellHeight, cellWidth, cellHeight), (x,y));
-                cell.OnClick += OnCellClicked;
-                _cells[(x, y)] = cell;
-                grid.AddChild(cell);
-            }
-        }
+        _gridArea = GridArea();
 
-        _coordinatesLabel = new Label(new Rectangle(_rootWindow.GetContentBounds().X + 10, gridBounds.Bottom + 5, _rootWindow.GetContentBounds().Width - 20, 20), "", Core.DefaultFont, ColorPalette.Black);
+        _coordinatesLabel = new Label(new Rectangle(cb.X + 10, _gridArea.Bottom + 5, cb.Width - 20, 20), "", Core.DefaultFont, ColorPalette.Black);
         _rootWindow.AddChild(_coordinatesLabel);
 
+        BuildGrid();
         CreateGame();
+        UpdateTitle();
 
-        _rootWindow.AddChild(grid);
         Core.UISystem.AddElement(_rootWindow);
 
         _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_rootWindow.GetContentBounds().X, _rootWindow.GetContentBounds().Y + 70, _rootWindow.GetContentBounds().Width, _rootWindow.GetContentBounds().Width ));
         _rootWindow.AddChild(_splashImage);
         _rootWindow.OnFocus();
+    }
+
+    /// <summary>The area available for the cell grid, in the window's CURRENT screen coordinates
+    /// (below the header, inset from the edges). Recomputed each call so the grid lands correctly even
+    /// if the window has been dragged since it was opened.</summary>
+    private Rectangle GridArea()
+    {
+        const int headerHeight = 70;
+        var cb = _rootWindow.GetContentBounds();
+        return new Rectangle(cb.X + 10, cb.Y + headerHeight + 25, cb.Width - 20, cb.Height - headerHeight - 60);
+    }
+
+    /// <summary>(Re)creates the cell grid for the current board dimensions, replacing any existing one.
+    /// Cells are square and centred within <see cref="GridArea"/> so any board shape stays undistorted.</summary>
+    private void BuildGrid()
+    {
+        if (_gridGroup != null) { _rootWindow.DestroyChild(_gridGroup); _gridGroup = null; }
+        _cells.Clear();
+
+        var area = GridArea();
+        int cellSize = System.Math.Max(1, System.Math.Min((area.Width - (_cellsWide - 1)) / _cellsWide,
+                                                          (area.Height - (_cellsHigh - 1)) / _cellsHigh));
+        int gridW = cellSize * _cellsWide + (_cellsWide - 1);
+        int gridH = cellSize * _cellsHigh + (_cellsHigh - 1);
+        var gridBounds = new Rectangle(area.X + (area.Width - gridW) / 2, area.Y + (area.Height - gridH) / 2, gridW, gridH);
+        _gridGroup = new GridLayoutGroup(gridBounds, _cellsWide, _cellsHigh, 1, 1);
+
+        for(int y = 0; y < _cellsHigh; y++)
+        {
+            for(int x = 0; x < _cellsWide; x++)
+            {
+                var cell = new MinefieldCell(new Rectangle(gridBounds.X + x * (cellSize + 1), gridBounds.Y + y * (cellSize + 1), cellSize, cellSize), (x,y));
+                cell.OnClick += OnCellClicked;
+                _cells[(x, y)] = cell;
+                _gridGroup.AddChild(cell);
+            }
+        }
+
+        _rootWindow.AddChild(_gridGroup);
+
+        // Cells only accept input once focused. The window focuses its descendants on a focus change,
+        // which won't fire for a grid rebuilt while the window is already active (e.g. clicking Next),
+        // so focus the new cells now if this window is the active one.
+        if (Core.UISystem.WindowManager.FocusedWindow == _rootWindow)
+            _gridGroup.GainFocus();
     }
 
     private void CreateGame()
@@ -163,16 +374,24 @@ public class Minefield : UIPanel
             cell.NeighborCount = 0;
         }
 
-        for(int i = 0; i < _numMines; i++)
+        if(_authored)
         {
-            int x, y;
-            do
+            foreach(var mine in _mineLayout)
+                if(_cells.ContainsKey(mine)) _cells[mine].HasMine = true;
+        }
+        else
+        {
+            for(int i = 0; i < _numMines; i++)
             {
-                x = Random.Next(0, _cellsWide);
-                y = Random.Next(0, _cellsHigh);
-            } while (_cells[(x, y)].HasMine || _winningSequence.Contains((x, y)));
+                int x, y;
+                do
+                {
+                    x = Random.Next(0, _cellsWide);
+                    y = Random.Next(0, _cellsHigh);
+                } while (_cells[(x, y)].HasMine || _winningSequence.Contains((x, y)));
 
-            _cells[(x, y)].HasMine = true;
+                _cells[(x, y)].HasMine = true;
+            }
         }
 
         for(int y = 0; y < _cellsHigh; y++)
@@ -193,18 +412,55 @@ public class Minefield : UIPanel
                     (x + 1, y + 1)
                 };
 
-                int mineCount = 0;
+                int mineCount = 0, leftMines = 0, rightMines = 0;
                 foreach(var neighbor in neighbors)
                 {
                     if(_cells.ContainsKey(neighbor) && _cells[neighbor].HasMine)
                     {
                         mineCount++;
+                        if(neighbor.Item1 < x) leftMines++;
+                        else if(neighbor.Item1 > x) rightMines++;
                     }
                 }
 
                 _cells[(x, y)].NeighborCount = mineCount;
+                // Which side the mines lean to: only-right (+1), only-left (-1), or both/vertical (0).
+                _cells[(x, y)].MineLean =
+                    (rightMines > 0 && leftMines == 0) ? 1 :
+                    (leftMines > 0 && rightMines == 0) ? -1 : 0;
             }
         }
+
+        // Authored boards: auto-reveal the tiles the author marked as explored, exactly as if clicked
+        // (a revealed empty/0 tile floods open its region, mirroring normal play).
+        if(_authored && _exploredLayout != null)
+        {
+            foreach(var pos in _exploredLayout)
+                if(_cells.TryGetValue(pos, out var cell) && !cell.HasMine)
+                    dfs(pos);
+        }
+
+        // Flags last: a flag sits on a hidden tile, so keep it unrevealed even if a flood reached it.
+        if(_authored && _flagLayout != null)
+        {
+            foreach(var pos in _flagLayout)
+                if(_cells.TryGetValue(pos, out var cell))
+                {
+                    cell.IsRevealed = false;
+                    cell.IsFlagged = true;
+                }
+        }
+
+        // A fully-explored authored board counts as already solved (so Next appears immediately).
+        _solved = AllNonMineRevealed();
+    }
+
+    /// <summary>True once every non-mine cell is revealed (the win condition).</summary>
+    private bool AllNonMineRevealed()
+    {
+        foreach(var cell in _cells.Values)
+            if(!cell.HasMine && !cell.IsRevealed) return false;
+        return true;
     }
 
     private void OnCellClicked((int,int) position)
@@ -225,18 +481,13 @@ public class Minefield : UIPanel
 
     private void CheckVictory()
     {
-        foreach(var cell in _cells.Values)
-        {
-            if(!cell.HasMine && !cell.IsRevealed)
-            {
-                return;
-            }
-        }
+        if(!AllNonMineRevealed()) return;
 
         _inputSequence.Clear();
         AudioAtlas.Confirmation_003.Play();
         _statusLabel.Text = "Cleared! Time: " + _timer.ToString("0.0") + "s";
         _hasGameStarted = false;
+        _solved = true;
     }
 
     private void dfs((int,int) startCell)

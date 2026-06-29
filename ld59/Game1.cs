@@ -53,6 +53,7 @@ public class Game1 : Core
         WindowManager.OnWindowOpened += () => AudioAtlas.Maximize_003.Play();
         DeveloperConsole.RegisterCommandHandler(new PowergridCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new PowergridSaveCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new MinefieldCommandHandler());
         Core.CurrentScene.AddManager(new GameFileDataManager());
         Core.CurrentScene.AddManager(new EmailDataManager());
 

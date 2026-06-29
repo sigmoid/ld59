@@ -1,0 +1,19 @@
+# Minefield tutorial — a progression of boards.
+# Separate boards with a blank line (or a '#' label). Clear one to unlock the next.
+# Legend:  * mine   o explored   f/F flag (also a mine)   . hidden
+
+# Board 1 — one mine, reveal the rest
+.*.
+...
+...
+
+# Board 2 — two mines
+.*..*
+.....
+..*..
+
+# Board 3 — corners
+*...*
+.....
+.....
+*...*

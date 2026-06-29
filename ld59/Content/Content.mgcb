@@ -163,6 +163,15 @@
 #begin emails/welcome.eml
 /copy:emails/welcome.eml
 
+#begin files/minefield/demo.txt
+/copy:files/minefield/demo.txt
+
+#begin files/minefield/tutorial.txt
+/copy:files/minefield/tutorial.txt
+
+#begin files/root/alphabet.img
+/copy:files/root/alphabet.img
+
 #begin files/root/my_scene.scene3d
 /copy:files/root/my_scene.scene3d
 
@@ -210,6 +219,9 @@
 
 #begin files/scenes/pinball.xml
 /copy:files/scenes/pinball.xml
+
+#begin files/scenes/powergrid/ascent.xml
+/copy:files/scenes/powergrid/ascent.xml
 
 #begin files/scenes/powergrid/combine-001.xml
 /copy:files/scenes/powergrid/combine-001.xml
@@ -267,9 +279,6 @@
 
 #begin files/scenes/powergrid/testboy.xml
 /copy:files/scenes/powergrid/testboy.xml
-
-#begin files/scenes/powergrid/ascent.xml
-/copy:files/scenes/powergrid/ascent.xml
 
 #begin files/scenes/powergrid/twin-forges.xml
 /copy:files/scenes/powergrid/twin-forges.xml
@@ -334,6 +343,18 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:fonts/Victory.spritefont
+
+#begin images/alphabet-psd.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/alphabet-psd.png
 
 #begin images/background.png
 /importer:TextureImporter
@@ -842,6 +863,18 @@
 /processorParam:TextureFormat=Color
 /build:images/symbols/chi.png
 
+#begin images/symbols/clock.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/clock.png
+
 #begin images/symbols/d.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -865,6 +898,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/symbols/eye.png
+
+#begin images/symbols/eyes.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/eyes.png
 
 #begin images/symbols/horns.png
 /importer:TextureImporter
@@ -901,6 +946,42 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/symbols/kurt.png
+
+#begin images/symbols/left-gibbous.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/left-gibbous.png
+
+#begin images/symbols/left-l.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/left-l.png
+
+#begin images/symbols/left-lambda.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/left-lambda.png
 
 #begin images/symbols/lith.png
 /importer:TextureImporter
@@ -974,6 +1055,54 @@
 /processorParam:TextureFormat=Color
 /build:images/symbols/phi.png
 
+#begin images/symbols/right-gibbous.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/right-gibbous.png
+
+#begin images/symbols/right-l.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/right-l.png
+
+#begin images/symbols/right-lambda.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/right-lambda.png
+
+#begin images/symbols/right-moon.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/right-moon.png
+
 #begin images/symbols/squid.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -997,6 +1126,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/symbols/target.png
+
+#begin images/symbols/wave.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:images/symbols/wave.png
 
 #begin models/12140_Skull_v3_L2.fbx
 /importer:FbxImporter

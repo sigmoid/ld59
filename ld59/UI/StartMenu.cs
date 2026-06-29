@@ -122,7 +122,9 @@ public class StartMenuUI : UIPanel
 
     private void OpenMinefield()
     {
-        var minefieldUI = new Minefield(new Rectangle(150, 150, 520, 650));
+        // Sized so the per-cell rune glyphs are readable; centred on the 1920x1080 screen.
+        int w = 800, h = 840;
+        var minefieldUI = new Minefield(new Rectangle((Core.ScreenWidth - w) / 2, (Core.ScreenHeight - h) / 2, w, h));
         Core.UISystem.AddElement(minefieldUI);
         HideMenu();
     }

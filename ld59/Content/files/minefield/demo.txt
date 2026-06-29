@@ -1,0 +1,77 @@
+# Minefield board — demo / format reference
+#
+# Legend (one character per cell):
+#   *   mine            (also accepts x or m)
+#   o   explored        revealed automatically when the level opens
+#   .   hidden empty    (any other character is treated as hidden empty)
+#
+# Lines starting with '#' are comments; blank lines are ignored.
+# Each remaining line is one grid row. Short rows are padded with empty cells.
+#
+# This board reveals the top row so players can read how the numbers
+# (shown as tier runes) count the mines hidden directly below them.
+
+...
+...
+..f
+
+...
+f.f
+...
+
+.f.
+...
+.f.
+
+.o.o
+.*..
+....
+...*
+
+.*..
+*oo*
+....
+...o
+
+..*.
+*oo*
+....
+...o
+
+..f.
+..f.
+..f.
+....
+
+.*.o
+.*..
+.*..
+oooo
+
+.f..
+...f
+.f..
+....
+
+o...
+....
+...f
+.fff
+
+o...
+....
+.f.f
+.fff
+
+f..
+f.f
+fff
+
+f.f
+f.f
+fff
+
+fff
+f.f
+fff
+

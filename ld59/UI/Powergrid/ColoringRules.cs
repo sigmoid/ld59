@@ -20,7 +20,7 @@ public enum ColoringRule
     /// <see cref="DifferentRune"/>), so it composes cleanly with them.</summary>
     TierStep,
 
-    /// <summary>Within a tier, adjacent runes must sit on opposite sides of the row (left vs right by
+    /// <summary>Within a tier, adjacent runes must sit on the same side of the row (left or right by
     /// <see cref="Symbol.RowOrder"/>). A centred rune (odd-length row, e.g. Chi) pairs with either
     /// side. Runes of different tiers are unconstrained by this rule.</summary>
     Sidedness,
@@ -34,33 +34,41 @@ public static class ColoringRules
         ColoringRule.DifferentRune => a.Name == b.Name,
         ColoringRule.DifferentTier => a.Tier == b.Tier,
         ColoringRule.TierStep      => a.Tier != b.Tier && System.Math.Abs(a.Tier - b.Tier) != 1,
-        ColoringRule.Sidedness     => SameSideOfTier(a, b),
+        ColoringRule.Sidedness     => OppositeSidesOfTier(a, b),
         _ => false,
     };
 
     private enum Side { Left, Center, Right }
 
-    /// <summary>A rune's side within its row: left/right of the row centre, or centre (wildcard).</summary>
-    private static Side SideOf(Symbol s)
+    /// <summary>Horizontal position of a rune within its tier row: -1 = left of centre, +1 = right of
+    /// centre, 0 = centred (only when the row has an odd rune count).</summary>
+    public static int HorizontalSide(Symbol s)
     {
         int n = 0;
         foreach (var sym in SymbolDictionary.All)
             if (sym.Tier == s.Tier) n++;
 
         float center = (n + 1) / 2f;
-        if (s.RowOrder < center) return Side.Left;
-        if (s.RowOrder > center) return Side.Right;
-        return Side.Center;
+        if (s.RowOrder < center) return -1;
+        if (s.RowOrder > center) return 1;
+        return 0;
     }
 
-    /// <summary>Same tier and the same definite side (both Left or both Right). A centred rune never
-    /// counts as "same side", so it pairs with either.</summary>
-    private static bool SameSideOfTier(Symbol a, Symbol b)
+    /// <summary>A rune's side within its row: left/right of the row centre, or centre (wildcard).</summary>
+    private static Side SideOf(Symbol s)
+    {
+        int h = HorizontalSide(s);
+        return h < 0 ? Side.Left : h > 0 ? Side.Right : Side.Center;
+    }
+
+    /// <summary>Same tier and opposite definite sides (one Left, one Right). A centred rune never
+    /// counts as a definite side, so it pairs with either.</summary>
+    private static bool OppositeSidesOfTier(Symbol a, Symbol b)
     {
         if (a.Tier != b.Tier) return false;
         var sa = SideOf(a);
         var sb = SideOf(b);
-        return sa != Side.Center && sb != Side.Center && sa == sb;
+        return sa != Side.Center && sb != Side.Center && sa != sb;
     }
 
     /// <summary>Requirement clause for the status line, e.g. "be one tier apart".</summary>
@@ -69,7 +77,7 @@ public static class ColoringRules
         ColoringRule.DifferentRune => "hold different runes",
         ColoringRule.DifferentTier => "hold different tiers",
         ColoringRule.TierStep      => "be one tier apart (across tiers)",
-        ColoringRule.Sidedness     => "be opposite sides (within a tier)",
+        ColoringRule.Sidedness     => "be the same side (within a tier)",
         _ => "",
     };
 
