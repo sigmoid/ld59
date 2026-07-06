@@ -178,7 +178,7 @@ public sealed class SymbolsSolver
             {
                 byte top          = cols[j][^1];
                 int  belowTopTier = cols[j].Count >= 2 ? Tier(cols[j][^2]) : -1;
-                if (!SymbolStackRule.CanPlaceOn(Tier(top), Suit(top), belowTopTier, Tier(card), Suit(card), isSingle: true))
+                if (!SymbolStackRule.CanPlaceOn(Tier(top), Suit(top), belowTopTier, Tier(card), Suit(card), incomingSameTier: true))
                     continue;
 
                 if (IsRunStep(top, card))

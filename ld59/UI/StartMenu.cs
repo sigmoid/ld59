@@ -57,10 +57,6 @@ public class StartMenuUI : UIPanel
         var notepadButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y, _layoutGroup.GetBoundingBox().Width, 80), notepadIcon, "Notepad", () => OpenNotepad());
         _layoutGroup.AddChild(notepadButton);
 
-        var keygenIcon = Core.Content.Load<Texture2D>("images/key_icon");
-        var keygenButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 100, _layoutGroup.GetBoundingBox().Width, 80), keygenIcon, "Keygen", () => OpenKeygen());
-        _layoutGroup.AddChild(keygenButton);
-
         var minefieldIcon = Core.Content.Load<Texture2D>("images/minefield_icon");
         var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 80), minefieldIcon, "Minefield", () => OpenMinefield());
         _layoutGroup.AddChild(minefieldButton);
@@ -69,29 +65,9 @@ public class StartMenuUI : UIPanel
         var fileExplorerButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 400, _layoutGroup.GetBoundingBox().Width, 80), fileExplorerIcon, "File Explorer", () => OpenFileExplorer());
         _layoutGroup.AddChild(fileExplorerButton);
 
-        var puzzleIcon = Core.Content.Load<Texture2D>("images/puzzle_icon");
-        var puzzleButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 500, _layoutGroup.GetBoundingBox().Width, 80), puzzleIcon, "Looking Glass", () => {
-            var puzzleSolutionUI = new PuzzleSolutionUI(new Rectangle(150, 150, 700, 800), "");
-            Core.UISystem.AddElement(puzzleSolutionUI);
-            HideMenu();
-        });
-        _layoutGroup.AddChild(puzzleButton);
-
         var emailIcon = Core.Content.Load<Texture2D>("images/email_icon");
         var emailButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 600, _layoutGroup.GetBoundingBox().Width, 80), emailIcon, "Email", () => OpenEmail());
         _layoutGroup.AddChild(emailButton);
-
-        var browserIcon = Core.Content.Load<Texture2D>("images/browser_icon");
-        var browserButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 700, _layoutGroup.GetBoundingBox().Width, 80), browserIcon, "LithNET", () => OpenBrowser());
-        _layoutGroup.AddChild(browserButton);
-
-        var pinballIcon = Core.Content.Load<Texture2D>("images/pinball_icon");
-        var pinballButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 800, _layoutGroup.GetBoundingBox().Width, 80), pinballIcon, "Pinball", () => {
-            var pinballUI = new PinballUI(new Rectangle(150, 150, 700, 800));
-            Core.UISystem.AddElement(pinballUI);
-            HideMenu();
-        });
-        _layoutGroup.AddChild(pinballButton);
 
         var solitaireIcon = Core.Content.Load<Texture2D>("images/file_icon");
         var solitaireButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 900, _layoutGroup.GetBoundingBox().Width, 80), solitaireIcon, "Solitaire", () => {
@@ -99,6 +75,11 @@ public class StartMenuUI : UIPanel
             HideMenu();
         });
         _layoutGroup.AddChild(solitaireButton);
+
+        // Placeholder icon until Powergrid gets its own art.
+        var powergridIcon = Core.Content.Load<Texture2D>("images/puzzle_icon");
+        var powergridButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1000, _layoutGroup.GetBoundingBox().Width, 80), powergridIcon, "Powergrid", () => OpenPowergrid());
+        _layoutGroup.AddChild(powergridButton);
 
         _rootElement.AddChild(_layoutGroup);
 
@@ -112,13 +93,16 @@ public class StartMenuUI : UIPanel
         HideMenu();
     }
 
-    private void OpenKeygen()
+    private void OpenPowergrid()
     {
-        var keygenUI = new KeygenUI(new Rectangle(150, 150, 700, 600));
-        Core.UISystem.AddElement(keygenUI);
+        // Launch straight into the preset "basic-prog" progression for the demo.
+        var levels = PowergridCommandHandler.LoadProgression("basic-prog");
+        if (levels.Count > 0)
+            Core.UISystem.AddElement(new PowergridUI(new Rectangle(40, 70, 1150, 720), "basic-prog", levels));
+        else
+            Core.UISystem.AddElement(new PowergridUI(new Rectangle(40, 70, 1150, 720)));
         HideMenu();
     }
-
 
     private void OpenMinefield()
     {
@@ -159,13 +143,6 @@ public class StartMenuUI : UIPanel
     {
         var emailListUI = new EmailListUI(new Rectangle(150, 150, 700, 600));
         Core.UISystem.AddElement(emailListUI);
-        HideMenu();
-    }
-
-    private void OpenBrowser()
-    {
-        var browserUI = new BrowserUI(new Rectangle(100, 50, 1000, 700));
-        Core.UISystem.AddElement(browserUI);
         HideMenu();
     }
 

@@ -59,25 +59,7 @@ public class PowergridCommandHandler : ConsoleCommandHandler
     /// level name per line (blank lines and lines starting with '#' are ignored).</summary>
     private void OpenProgression(string name)
     {
-        var path = $"{ProgressionsDir}/{name}.txt";
-        if (!File.Exists(path))
-        {
-            Console.PrintLine($"powergrid --prog: progression '{name}' not found ({path})");
-            return;
-        }
-
-        var levels = new List<string>();
-        foreach (var raw in File.ReadAllLines(path))
-        {
-            var line = raw.Trim();
-            if (line.Length == 0 || line.StartsWith("#")) continue;
-
-            if (File.Exists($"{ScenesDir}/{line}.xml"))
-                levels.Add(line);
-            else
-                Console.PrintLine($"powergrid --prog: skipping missing level '{line}'");
-        }
-
+        var levels = LoadProgression(name);
         if (levels.Count == 0)
         {
             Console.PrintLine($"powergrid --prog: '{name}' lists no valid levels");
@@ -87,6 +69,33 @@ public class PowergridCommandHandler : ConsoleCommandHandler
         var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), name, levels);
         Core.UISystem.AddElement(ui);
         Console.PrintLine($"Opened progression '{name}' ({levels.Count} levels)");
+    }
+
+    /// <summary>Reads a progression file (one level name per line; blank lines and '#' comments ignored)
+    /// and returns the ordered list of levels whose scene files actually exist. Returns an empty list if
+    /// the progression file is missing. Shared by the console command and the Start-menu launcher.</summary>
+    public static List<string> LoadProgression(string name)
+    {
+        var levels = new List<string>();
+        var path = $"{ProgressionsDir}/{name}.txt";
+        if (!File.Exists(path))
+        {
+            Core.DeveloperConsole?.PrintLine($"powergrid: progression '{name}' not found ({path})");
+            return levels;
+        }
+
+        foreach (var raw in File.ReadAllLines(path))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith("#")) continue;
+
+            if (File.Exists($"{ScenesDir}/{line}.xml"))
+                levels.Add(line);
+            else
+                Core.DeveloperConsole?.PrintLine($"powergrid: skipping missing level '{line}'");
+        }
+
+        return levels;
     }
 
     private void ListProgressions()

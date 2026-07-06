@@ -14,8 +14,20 @@ public class Minefield : UIPanel
     private int _cellsWide = 12;
     private int _cellsHigh = 12;
     private int _numMines = 22;
+
+    // Player-selectable mine count for the standard random board (Easy is the original 22).
+    private enum Difficulty { Easy, Medium, Hard }
+    private Difficulty _difficulty = Difficulty.Easy;
+    private Button _difficultyButton;
+    private static int MinesFor(Difficulty d) => d switch
+    {
+        Difficulty.Easy   => 22,
+        Difficulty.Medium => 35,
+        Difficulty.Hard   => 50,
+        _ => 22,
+    };
+
     private Label _statusLabel;
-    private UIImage _splashImage;
     private Dictionary<(int,int), MinefieldCell> _cells = new Dictionary<(int,int), MinefieldCell>();
     private Label _coordinatesLabel;
     private List<(int, int)> _inputSequence = new List<(int, int)>();
@@ -27,10 +39,12 @@ public class Minefield : UIPanel
         (8,7),
         (5,4)
     };
-    private float _splashTimer = 0;
-    private float _splashDuration = 0.8f;
     private float _timer;
     private bool _hasGameStarted = false;
+
+    // When set (during first-click regeneration), these cells are kept mine-free so the opening click
+    // is safe and lands on a zero that floods a region open. Null the rest of the time.
+    private HashSet<(int,int)> _firstClickSafeZone;
 
     // Authored board(s) loaded from a text file instead of a random board. A file may hold several
     // grids (separated by blank/comment lines) that form a progression: clear one to unlock the next.
@@ -230,15 +244,6 @@ public class Minefield : UIPanel
             _statusLabel.Text = $"Time: {_timer.ToString("0.0")}s";
         }
 
-        if(_splashImage.IsVisible())
-        {
-            _splashTimer += deltaTime;
-            if(_splashTimer >= _splashDuration)
-            {
-                _splashImage.SetVisibility(false);
-            }
-        }
-
         // Offer the next board once the current one is cleared and another follows it.
         _nextButton?.SetVisibility(_solved && _progression != null && _progIndex < _progression.Count - 1);
 
@@ -301,6 +306,10 @@ public class Minefield : UIPanel
         var helpButton = new Button(new Rectangle(cb.Right - 220, cb.Y + (headerHeight - 30) / 2, 30, 30), "?", Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, OnHelpClicked);
         _rootWindow.AddChild(helpButton);
 
+        // Difficulty: cycles Easy -> Medium -> Hard, each starting a fresh random board.
+        _difficultyButton = new Button(new Rectangle(cb.Right - 340, cb.Y + (headerHeight - 30) / 2, 110, 30), _difficulty.ToString(), Core.DefaultFont, ColorPalette.Black, ColorPalette.DarkGreen, ColorPalette.ActualWhite, CycleDifficulty);
+        _rootWindow.AddChild(_difficultyButton);
+
         _gridArea = GridArea();
 
         _coordinatesLabel = new Label(new Rectangle(cb.X + 10, _gridArea.Bottom + 5, cb.Width - 20, 20), "", Core.DefaultFont, ColorPalette.Black);
@@ -312,8 +321,6 @@ public class Minefield : UIPanel
 
         Core.UISystem.AddElement(_rootWindow);
 
-        _splashImage = new UIImage( Core.Content.Load<Texture2D>("images/scramlogo"), new Rectangle(_rootWindow.GetContentBounds().X, _rootWindow.GetContentBounds().Y + 70, _rootWindow.GetContentBounds().Width, _rootWindow.GetContentBounds().Width ));
-        _rootWindow.AddChild(_splashImage);
         _rootWindow.OnFocus();
     }
 
@@ -362,6 +369,25 @@ public class Minefield : UIPanel
             _gridGroup.GainFocus();
     }
 
+    // Advances Easy -> Medium -> Hard and starts a fresh random board at the new mine count. Difficulty
+    // only applies to the standard random game, so this also drops out of any authored progression.
+    private void CycleDifficulty()
+    {
+        _difficulty = (Difficulty)(((int)_difficulty + 1) % 3);
+        _numMines = MinesFor(_difficulty);
+        _difficultyButton.SetText(_difficulty.ToString());
+
+        _authored = false;
+        _progression = null;
+        _nextButton?.SetVisibility(false);
+        _cellsWide = 12;
+        _cellsHigh = 12;
+
+        BuildGrid();
+        CreateGame();
+        UpdateTitle();
+    }
+
     private void CreateGame()
     {
         _timer = 0;
@@ -388,7 +414,8 @@ public class Minefield : UIPanel
                 {
                     x = Random.Next(0, _cellsWide);
                     y = Random.Next(0, _cellsHigh);
-                } while (_cells[(x, y)].HasMine || _winningSequence.Contains((x, y)));
+                } while (_cells[(x, y)].HasMine || _winningSequence.Contains((x, y))
+                         || (_firstClickSafeZone != null && _firstClickSafeZone.Contains((x, y))));
 
                 _cells[(x, y)].HasMine = true;
             }
@@ -465,7 +492,20 @@ public class Minefield : UIPanel
 
     private void OnCellClicked((int,int) position)
     {
+        if(_solved) return;   // board already cleared — ignore further clicks (no replayed win sound)
+
         _statusLabel.Text = "";
+
+        // First move on a random board: re-roll the mines with a mine-free zone around the click so it
+        // can never hit a mine and lands on a zero, flooding several cells open. Authored puzzles keep
+        // their fixed layout.
+        if(_inputSequence.Count == 0 && !_authored)
+        {
+            _firstClickSafeZone = NeighborhoodOf(position);
+            CreateGame();
+            _firstClickSafeZone = null;
+        }
+
         if(_cells[position].HasMine)
         {
             GameOver();
@@ -477,6 +517,19 @@ public class Minefield : UIPanel
         dfs(position);
 
         CheckVictory();
+    }
+
+    /// <summary>A cell plus its in-bounds 8 neighbours — the zone kept mine-free for a safe first click.</summary>
+    private HashSet<(int,int)> NeighborhoodOf((int,int) position)
+    {
+        var zone = new HashSet<(int,int)>();
+        for(int dy = -1; dy <= 1; dy++)
+            for(int dx = -1; dx <= 1; dx++)
+            {
+                var neighbor = (position.Item1 + dx, position.Item2 + dy);
+                if(_cells.ContainsKey(neighbor)) zone.Add(neighbor);
+            }
+        return zone;
     }
 
     private void CheckVictory()

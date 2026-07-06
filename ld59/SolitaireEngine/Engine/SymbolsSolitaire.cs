@@ -32,8 +32,14 @@ public class SymbolsSolitaire : SolitaireGameMode
 
     private static int MaxTier => SymbolDictionary.All.Max(s => s.Tier);
 
-    // Won once every tableau column has been completed and removed.
-    public override bool IsWon => _tableau.Count > 0 && _tableau.All(t => t.IsCompleted);
+    // Won once every card is packed into complete runs: each tableau column is either a completed
+    // (removed) run or empty, no cards remain in free cells, and at least one run was completed. Empty
+    // columns must count as won — the deck forms fewer complete runs than there are columns, so a
+    // solved board always leaves one or more columns empty.
+    public override bool IsWon =>
+        _tableau.Any(t => t.IsCompleted)
+        && _tableau.All(t => t.IsCompleted || t.Cards.Count == 0)
+        && _freeCells.All(c => c.Cards.Count == 0);
 
     // A column is complete when it is a full descending tier-max..1 run with alternating suits.
     public override bool IsStackComplete(SolitaireStack stack)

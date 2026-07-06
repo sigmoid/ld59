@@ -137,7 +137,7 @@ public class DesktopUI : UIPanel
     {
         if (_startMenuUI == null)
         {
-            _startMenuUI = new StartMenuUI(new Rectangle(_taskbar.GetBoundingBox().X  + 5, _taskbar.GetBoundingBox().Top - 900, 400, 900));
+            _startMenuUI = new StartMenuUI(new Rectangle(_taskbar.GetBoundingBox().X  + 5, _taskbar.GetBoundingBox().Top - 560, 400, 560));
             _startMenuUI.OnClose += () => _startMenuUI = null;
             AddChild(_startMenuUI);
         }

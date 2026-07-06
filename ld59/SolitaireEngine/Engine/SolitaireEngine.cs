@@ -25,6 +25,10 @@ public class SolitaireEngine
     // whether the player has touched the board since a cached solution was computed.
     public int MoveVersion { get; private set; }
 
+    // Increments on ANY board change — player moves and programmatic ApplyMove alike. The UI watches
+    // this to re-evaluate winnability after each move, independent of MoveVersion's cache semantics.
+    public int StateVersion { get; private set; }
+
     public SolitaireEngine(SolitaireGameMode mode, float contentWidth)
     {
         _mode = mode;
@@ -143,6 +147,7 @@ public class SolitaireEngine
                 _heldFromStack.Cards[^1].IsFaceUp = true;
             _heldCards = null;
             MoveVersion++;            // a player-made move
+            StateVersion++;
             ResolveCompletedStacks();
             return;
         }
@@ -161,6 +166,7 @@ public class SolitaireEngine
         var moving = from.Cards.GetRange(fromIndex, count);
         from.Cards.RemoveRange(fromIndex, count);
         to.Cards.AddRange(moving);
+        StateVersion++;
         ResolveCompletedStacks();
     }
 
