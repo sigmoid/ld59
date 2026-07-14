@@ -20,22 +20,21 @@
 
 # Demo todo
 
+1. TCG
+    1. It makes no sense that a card with one symbol can destroy a card with two symbols if they are the same tier
+        1. There needs to be some better tie-breaking here. If the tiers are a tie and we can remove the lowest symbol from the other card, we do that. However, if it's a true tie and both cards have the same tier and number of symbols THEN both are destroyed
 1. Solitaire
     1. Make start menu icon
     1. Improve dragging and dropping
 1. Minesweeper
     1. Improve demo levels design
     1. Make it so player can exit demo
-    1. Experiment with difficulty
     1. Make mines show grid behind them
-    1. Fix bug when the game is solved and you click a cell and it counts as a new solve
 1. Powergrid
     1. Make a version with no editor
     1. Make a clean progression
     1. Make start menu icon
     1. Expalain rules better
-1. Email
-    1. Write some email text for narrative
 1. Misc
     1. Make sure fullscreen works
     1. Come up with a better name

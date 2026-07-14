@@ -170,16 +170,24 @@ public class SolitaireEngine
         ResolveCompletedStacks();
     }
 
-    // Removes any stack the mode considers complete, leaving an inert (card-back) slot behind.
+    // Removes any stack the mode considers complete, leaving an inert (card-back) slot behind, then
+    // notifies the mode of each completion. The notify pass runs after the scan so the mode may add or
+    // remove stacks (e.g. award a free cell) without mutating the list we're iterating.
     private void ResolveCompletedStacks()
     {
+        List<SolitaireStack> completed = null;
         foreach (var stack in _mode.Stacks)
         {
             if (!stack.IsCompleted && stack.Cards.Count > 0 && _mode.IsStackComplete(stack))
             {
                 stack.Cards.Clear();
                 stack.IsCompleted = true;
+                (completed ??= new()).Add(stack);
             }
         }
+
+        if (completed != null)
+            foreach (var stack in completed)
+                _mode.OnStackCompleted(stack);
     }
 }

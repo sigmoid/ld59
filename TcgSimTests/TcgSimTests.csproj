@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless test harness for the TCG minigame engine (see tcg.md). Compile-includes the real
+    engine sources from ../ld59 — the TcgEngine layer is deliberately MonoGame-free, so unlike
+    PowergridSimTests no stubs are needed. Run with: dotnet run, project TcgSimTests.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>TcgSimTests</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\ld59\Alphabet\Symbols.cs"        Link="Engine\Symbols.cs" />
+    <Compile Include="..\ld59\Alphabet\Words.cs"          Link="Engine\Words.cs" />
+    <Compile Include="..\ld59\TcgEngine\*.cs"             Link="Engine\%(Filename).cs" />
+  </ItemGroup>
+
+</Project>

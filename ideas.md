@@ -404,3 +404,22 @@ Logic Engine
     - API to place cards on stacks
         - validation
         - effects
+
+
+# 7/12/26
+
+Back at it again. I made a blog post today talking about what I've worked. It was fun! I'm thinking more about how the game is going to work, and I realized that I need to spend more time thinking about the core gameplay.
+
+Oh also the game is called Legacy System now.
+
+One idea is to have the graph coloring puzzles represent categories of words. This way it's a useful tool for players to learn things.
+
+I think this game does in fact need a walking simulator. I played chants of sennar and I didn't love it, but it does prove the theory that just learning words can be fun
+
+# 7/13/26
+
+Walking simulator is a cool idea, but requires 3d assets and stuff. So we'll see.
+
+I like the idea that powergrid puzzles represent categories of words.
+
+This now means that powergrid has a different purpose in game, solitaire I think is going to be tertiary. TCG might not really fit this game. Pinball could be fun though

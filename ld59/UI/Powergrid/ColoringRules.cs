@@ -41,18 +41,9 @@ public static class ColoringRules
     private enum Side { Left, Center, Right }
 
     /// <summary>Horizontal position of a rune within its tier row: -1 = left of centre, +1 = right of
-    /// centre, 0 = centred (only when the row has an odd rune count).</summary>
-    public static int HorizontalSide(Symbol s)
-    {
-        int n = 0;
-        foreach (var sym in SymbolDictionary.All)
-            if (sym.Tier == s.Tier) n++;
-
-        float center = (n + 1) / 2f;
-        if (s.RowOrder < center) return -1;
-        if (s.RowOrder > center) return 1;
-        return 0;
-    }
+    /// centre, 0 = centred (only when the row has an odd rune count). Defined by the alphabet itself
+    /// (<see cref="SymbolDictionary.HorizontalSide"/>) so sidedness is the same everywhere it's used.</summary>
+    public static int HorizontalSide(Symbol s) => SymbolDictionary.HorizontalSide(s);
 
     /// <summary>A rune's side within its row: left/right of the row centre, or centre (wildcard).</summary>
     private static Side SideOf(Symbol s)

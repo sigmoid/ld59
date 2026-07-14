@@ -208,6 +208,9 @@
 #begin files/root/test_scene.scene3d
 /copy:files/root/test_scene.scene3d
 
+#begin files/root/walk_level.scene3d
+/copy:files/root/walk_level.scene3d
+
 #begin files/root/test.img
 /copy:files/root/test.img
 
@@ -288,6 +291,15 @@
 
 #begin files/scenes/test_3d_scene.xml
 /copy:files/scenes/test_3d_scene.xml
+
+#begin files/scenes/walk_level.xml
+/copy:files/scenes/walk_level.xml
+
+#begin files/scenes/walk_level_asset.xml
+/copy:files/scenes/walk_level_asset.xml
+
+#begin files/scenes/walk_level_navmesh.obj
+/copy:files/scenes/walk_level_navmesh.obj
 
 #begin FluidEffect.fx
 /importer:EffectImporter
@@ -3143,6 +3155,12 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:shaders/shadow-depth.fx
+
+#begin shaders/id-color.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/id-color.fx
 
 #begin shaders/static_noise.fx
 /importer:EffectImporter

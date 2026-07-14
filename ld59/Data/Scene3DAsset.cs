@@ -6,8 +6,10 @@ using Microsoft.Xna.Framework;
 // Exists so metadata (title, camera hints, etc.) can be added without changing the scene XML.
 public class Scene3DAsset
 {
-    public string ScenePath { get; set; }   // path relative to content root
-    public string Title     { get; set; } = "";
+    public string ScenePath   { get; set; }        // path relative to content root
+    public string Title       { get; set; } = "";
+    public string Mode        { get; set; } = "";  // "Walk" launches the walking sim; empty = viewer
+    public string NavMeshPath { get; set; } = "";  // navmesh .obj, relative to content root (Walk mode)
 
     public static Scene3DAsset Load(string contentRelativePath)
     {
@@ -16,8 +18,10 @@ public class Scene3DAsset
         var doc = XDocument.Load(stream);
         return new Scene3DAsset
         {
-            ScenePath = doc.Root?.Element("ScenePath")?.Value ?? "",
-            Title     = doc.Root?.Element("Title")?.Value     ?? "",
+            ScenePath   = doc.Root?.Element("ScenePath")?.Value   ?? "",
+            Title       = doc.Root?.Element("Title")?.Value       ?? "",
+            Mode        = doc.Root?.Element("Mode")?.Value        ?? "",
+            NavMeshPath = doc.Root?.Element("NavMeshPath")?.Value ?? "",
         };
     }
 }

@@ -25,7 +25,7 @@ public class Game1 : Core
     private int _fpsFrameCount;
     private double _fpsReportInterval = 5.0;
 
-    public Game1() : base("Glory, Glory, Anastasia", 1920, 1080, false, "fonts/Default")
+    public Game1() : base("Legacy System", 1920, 1080, false, "fonts/Default")
     {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;

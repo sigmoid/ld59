@@ -11,8 +11,9 @@ using System.Linq;
 // descending tier-(max)..1 sequence with alternating suits. With the equal-tier deck the whole
 // pack is exactly N complete runs, so this is reachable only when there are enough columns.
 //
-// A card is encoded as a byte: (tier << 1) | suit, where suit 0 = Light, 1 = Dark. The stacking
-// test comes from SymbolStackRule so it always matches the live game rules.
+// A card is encoded as a byte (see SymbolsSolitaire.Encode): bit 0 = suit (0 Light, 1 Dark),
+// bits 1-2 = sidedness, bits 3+ = tier. The stacking test comes from SymbolStackRule so it always
+// matches the live game rules.
 public sealed class SymbolsSolver
 {
     public sealed class Problem
@@ -52,8 +53,9 @@ public sealed class SymbolsSolver
         };
     }
 
-    private static int  Tier(byte code) => code >> 1;
+    private static int  Tier(byte code) => code >> 3;
     private static int  Suit(byte code) => code & 1;
+    private static int  Side(byte code) => ((code >> 1) & 3) - 1;   // 0/1/2 -> -1/0/+1
     private static bool IsRunStep(byte lower, byte upper) => SymbolStackRule.IsRunStep(Tier(lower), Suit(lower), Tier(upper), Suit(upper));
 
     // Greedy best-first search: always expand the state that looks closest to solved (fewest
@@ -178,7 +180,7 @@ public sealed class SymbolsSolver
             {
                 byte top          = cols[j][^1];
                 int  belowTopTier = cols[j].Count >= 2 ? Tier(cols[j][^2]) : -1;
-                if (!SymbolStackRule.CanPlaceOn(Tier(top), Suit(top), belowTopTier, Tier(card), Suit(card), incomingSameTier: true))
+                if (!SymbolStackRule.CanPlaceOn(Tier(top), Suit(top), Side(top), belowTopTier, Tier(card), Suit(card), Side(card), incomingSameTier: true))
                     continue;
 
                 if (IsRunStep(top, card))

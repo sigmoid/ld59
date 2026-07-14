@@ -118,7 +118,7 @@ public class SolitaireUI : UIPanel
             _rootWindow.RemoveChild(_activePanel);
 
         var contentBounds = _rootWindow.GetContentBounds();
-        var mode   = new SymbolsSolitaire(columnCount: 7, freeCellCount: 1);
+        var mode   = new SymbolsSolitaire(columnCount: 6, freeCellCount: 2);
         var engine = new SolitaireEngine(mode, contentBounds.Width);
 
         _engine  = engine;

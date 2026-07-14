@@ -44,4 +44,20 @@ public static class SymbolDictionary
         Moon, Horns, Kurt, Kite,
         Mouth, D, Chi, Target, Eye,
     };
+
+    // Sidedness: a rune's horizontal position within its tier row. -1 = left of centre, +1 = right of
+    // centre, 0 = centred (only when the row has an odd rune count). A centred rune is a wildcard for
+    // sidedness rules, pairing with either side. This is the alphabet's single source of truth for
+    // sidedness, shared by the Powergrid colouring rules and the Symbols solitaire stacking rule.
+    public static int HorizontalSide(Symbol s)
+    {
+        int n = 0;
+        foreach (var sym in All)
+            if (sym.Tier == s.Tier) n++;
+
+        float center = (n + 1) / 2f;
+        if (s.RowOrder < center) return -1;
+        if (s.RowOrder > center) return 1;
+        return 0;
+    }
 }

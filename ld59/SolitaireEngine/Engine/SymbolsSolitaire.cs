@@ -7,9 +7,14 @@ using Microsoft.Xna.Framework;
 // an equal-tier deck so all cards can be built into complete runs. No win condition yet.
 public class SymbolsSolitaire : SolitaireGameMode
 {
-    private const float CardWidth  = 100f;
-    private const float ColumnGap  = 10f;
-    private const float SideMargin = 10f;
+    private const float CardWidth   = 100f;
+    private const float ColumnGap   = 10f;
+    private const float SideMargin  = 10f;
+    private const float FreeCellRowY = 15f;
+    private const int   MaxFreeCells = 4;   // hard cap on total free cells, including run-completion rewards
+
+    // X of the next free cell to add; advances as completing a run awards an extra free cell.
+    private float _nextFreeCellX;
 
     private readonly int _columnCount;
     private readonly int _freeCellCount;
@@ -55,6 +60,31 @@ public class SymbolsSolitaire : SolitaireGameMode
         return true;
     }
 
+    // Completing a run frees up the board, so reward it with an extra free cell — up to a hard cap of
+    // MaxFreeCells total. The added cell is picked up automatically by BuildSolverProblem (which reads
+    // _freeCells.Count as capacity).
+    public override void OnStackCompleted(SolitaireStack stack)
+    {
+        if (_freeCells.Count >= MaxFreeCells) return;
+
+        AddFreeCell(_nextFreeCellX);
+        _nextFreeCellX += CardWidth + ColumnGap;
+    }
+
+    // Creates an empty free cell at x on the free-cell row and registers it for rendering/interaction.
+    private void AddFreeCell(float x)
+    {
+        var cell = new SolitaireStack
+        {
+            Position             = new Vector2(x, FreeCellRowY),
+            Layout               = new StackedLayout(),
+            Rules                = new FreeCellCellRules(),
+            ShowEmptyPlaceholder = true,
+        };
+        _freeCells.Add(cell);
+        _allStacks.Add(cell);
+    }
+
     // Snapshot the current layout (copied, so it's safe to hand to a background solver thread).
     // Completed columns are removed from play, so they are excluded — the solver only sees the
     // columns still in use, which keeps its winnability verdict honest.
@@ -83,8 +113,15 @@ public class SymbolsSolitaire : SolitaireGameMode
     public IReadOnlyList<SolitaireStack> ActiveColumns => _tableau.Where(t => !t.IsCompleted).ToList();
     public IReadOnlyList<SolitaireStack> FreeCells => _freeCells;
 
+    // Pack tier, sidedness and suit into one byte so the solver models the same stacking rules as the
+    // live game: bit 0 = suit (Light/Dark), bits 1-2 = side (HorizontalSide -1/0/+1 stored as 0/1/2),
+    // bits 3+ = tier.
     public static byte Encode(SolitaireCardInstance card)
-        => (byte)((card.CardData.Symbol.Tier << 1) | (int)card.CardData.SymbolSuit);
+    {
+        var symbol = card.CardData.Symbol;
+        int side   = SymbolDictionary.HorizontalSide(symbol) + 1;   // -1/0/+1 -> 0/1/2
+        return (byte)((symbol.Tier << 3) | (side << 1) | (int)card.CardData.SymbolSuit);
+    }
 
     public override void Initialize(float contentWidth)
     {
@@ -100,17 +137,10 @@ public class SymbolsSolitaire : SolitaireGameMode
         float startX        = MathF.Max(SideMargin, (contentWidth - tableauWidth) * 0.5f);
 
         for (int i = 0; i < _freeCellCount; i++)
-        {
-            var cell = new SolitaireStack
-            {
-                Position             = new Vector2(startX + i * step, 15),
-                Layout               = new StackedLayout(),
-                Rules                = new FreeCellCellRules(),
-                ShowEmptyPlaceholder = true,
-            };
-            _freeCells.Add(cell);
-            _allStacks.Add(cell);
-        }
+            AddFreeCell(startX + i * step);
+
+        // Any free cell awarded later (by completing a run) is appended to the right of the last one.
+        _nextFreeCellX = startX + _freeCellCount * step;
 
         for (int col = 0; col < _columnCount; col++)
         {

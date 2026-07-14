@@ -22,5 +22,10 @@ public abstract class SolitaireGameMode
     // such stacks after each move and marks the slot completed. Default: never.
     public virtual bool IsStackComplete(SolitaireStack stack) => false;
 
+    // Called by the engine right after a stack has been cleared and marked completed, so a mode can
+    // react (e.g. award an extra free cell). Runs after the engine has finished scanning, so the mode
+    // may safely add or remove stacks. Default: nothing.
+    public virtual void OnStackCompleted(SolitaireStack stack) { }
+
     public abstract bool IsWon { get; }
 }

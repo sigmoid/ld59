@@ -81,6 +81,14 @@ public class StartMenuUI : UIPanel
         var powergridButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1000, _layoutGroup.GetBoundingBox().Width, 80), powergridIcon, "Powergrid", () => OpenPowergrid());
         _layoutGroup.AddChild(powergridButton);
 
+        // Placeholder icon and name per tcg.md.
+        var tcgIcon = Core.Content.Load<Texture2D>("images/file_icon");
+        var tcgButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1100, _layoutGroup.GetBoundingBox().Width, 80), tcgIcon, "TCG", () => {
+            _ = new TcgUI(new Rectangle(150, 90, 980, 800));
+            HideMenu();
+        });
+        _layoutGroup.AddChild(tcgButton);
+
         _rootElement.AddChild(_layoutGroup);
 
         Core.UISystem.AddElement(_rootElement);
@@ -129,8 +137,15 @@ public class StartMenuUI : UIPanel
         }
         else if (file.FileType == FileType.Scene3D)
         {
-            var sceneViewer = new Scene3DViewerUI(file);
-            Core.UISystem.AddElement(sceneViewer);
+            // A Scene3D asset with Mode=Walk launches the walking sim; otherwise the viewer.
+            bool walk = false;
+            try { walk = Scene3DAsset.Load(file.Content).Mode == "Walk"; }
+            catch { /* fall through to the viewer, which has its own fallback */ }
+
+            if (walk)
+                Core.UISystem.AddElement(new WalkingSimUI(file));
+            else
+                Core.UISystem.AddElement(new Scene3DViewerUI(file));
         }
         else
         {
