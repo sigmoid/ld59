@@ -7,14 +7,15 @@ public class BrowserUI : UIPanel
 {
     private Window _rootContainer;
     private Rectangle _bounds;
-    private BrowserTextArea _contentArea;
-    private Label _urlLabel;
+    private UIElement _currentPage;
+    private TextInput _urlInput;
     private SpriteFont _font;
 
     private System.Collections.Generic.List<string> _history = new();
     private int _historyIndex = -1;
 
     private const string HomePage = "home.txt";
+    private const int ToolbarHeight = 40;
 
     public BrowserUI(Rectangle bounds)
     {
@@ -41,18 +42,15 @@ public class BrowserUI : UIPanel
         Core.UISystem.AddElement(_rootContainer);
         TaskbarRegistry.Register("LithNET", Core.Content.Load<Texture2D>("images/browser_icon"), _rootContainer);
 
-        var content = _rootContainer.GetContentBounds();
-        CreateToolbar(content);
-        CreateContentArea(content);
+        CreateToolbar(_rootContainer.GetContentBounds());
     }
 
     private void CreateToolbar(Rectangle content)
     {
-        int toolbarH = 40;
         int btnSize = 30;
-        int btnY = content.Y + (toolbarH - btnSize) / 2;
+        int btnY = content.Y + (ToolbarHeight - btnSize) / 2;
 
-        var toolbarBg = new Canvas(new Rectangle(content.X, content.Y, content.Width, toolbarH), ColorPalette.LightGreen);
+        var toolbarBg = new Canvas(new Rectangle(content.X, content.Y, content.Width, ToolbarHeight), ColorPalette.LightGreen);
         _rootContainer.AddChild(toolbarBg);
 
         var backBtn = new Button(
@@ -71,70 +69,132 @@ public class BrowserUI : UIPanel
 
         int urlX = content.X + 5 + (btnSize + 5) * 2 + 5;
         int urlW = content.Right - urlX - 5;
-        var urlBg = new Canvas(new Rectangle(urlX, btnY, urlW, btnSize), ColorPalette.ActualWhite);
-        _rootContainer.AddChild(urlBg);
 
-        _urlLabel = new Label(
-            new Rectangle(urlX + 6, btnY, urlW - 6, btnSize),
-            "", Core.DefaultFont, ColorPalette.DarkGreen);
-        _rootContainer.AddChild(_urlLabel);
+        _urlInput = new TextInput(
+            new Rectangle(urlX, btnY, urlW, btnSize), Core.DefaultFont,
+            placeholder: "Type a url and press Enter",
+            backgroundColor: ColorPalette.ActualWhite,
+            textColor: ColorPalette.DarkGreen,
+            borderColor: ColorPalette.DarkGreen,
+            focusedBorderColor: ColorPalette.Green,
+            padding: 6, borderWidth: 2);
+        _urlInput.OnEnterPressed += NavigateTyped;
+        _rootContainer.AddChild(_urlInput);
     }
 
-    private void CreateContentArea(Rectangle content)
+    /// <summary>
+    /// The area a page is rendered into. Recomputed on every navigation so that pages built after
+    /// the window has been dragged or resized land in the right place.
+    /// </summary>
+    private Rectangle GetPageBounds()
     {
-        int toolbarH = 40;
-        var areaBounds = new Rectangle(
-            content.X, content.Y + toolbarH,
-            content.Width, content.Height - toolbarH);
+        var content = _rootContainer.GetContentBounds();
+        return new Rectangle(
+            content.X, content.Y + ToolbarHeight,
+            content.Width, content.Height - ToolbarHeight);
+    }
 
-        _contentArea = new BrowserTextArea(areaBounds, _font,
-            ColorPalette.ActualWhite, ColorPalette.Black);
-        _rootContainer.AddChild(_contentArea);
+    /// <summary>
+    /// Handles a url typed into the address bar. What the player types is rarely the literal page
+    /// name, so the candidates are tried in order and the first that exists wins. If none do, the
+    /// typed text is navigated to anyway so the error page names what they actually asked for.
+    /// </summary>
+    private void NavigateTyped(string typed)
+    {
+        Navigate(ResolveTypedUrl(typed) ?? (typed ?? string.Empty).Trim());
+        _urlInput.SetFocus(false);
+    }
+
+    private static string ResolveTypedUrl(string typed)
+    {
+        foreach (var candidate in WebPageLoader.ExpandTypedUrl(typed))
+        {
+            if (WebPageRegistry.TryGet(candidate, out _) || WebPageLoader.Exists(candidate))
+                return candidate;
+        }
+        return null;
     }
 
     private void Navigate(string url)
     {
-        var page = WebPageLoader.Load(url);
-        if (page == null) { ShowError(url); return; }
-
-        WebPage.VisitedUrls.Add(url);
+        if (!ShowUrl(url)) { ShowError(url); return; }
 
         if (_historyIndex < _history.Count - 1)
             _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
         _history.Add(url);
         _historyIndex = _history.Count - 1;
-
-        LoadPage(page);
     }
 
     private void GoBack()
     {
         if (_historyIndex <= 0) return;
         _historyIndex--;
-        var page = WebPageLoader.Load(_history[_historyIndex]);
-        if (page != null) LoadPage(page);
+        if (!ShowUrl(_history[_historyIndex])) ShowError(_history[_historyIndex]);
     }
 
     private void GoForward()
     {
         if (_historyIndex >= _history.Count - 1) return;
         _historyIndex++;
-        var page = WebPageLoader.Load(_history[_historyIndex]);
-        if (page != null) LoadPage(page);
+        if (!ShowUrl(_history[_historyIndex])) ShowError(_history[_historyIndex]);
     }
 
-    private void LoadPage(WebPage page)
+    /// <summary>
+    /// Replaces the displayed page. Code pages registered in <see cref="WebPageRegistry"/> win over
+    /// text pages in <c>Content/www/</c>. Returns false if the url resolved to neither.
+    /// </summary>
+    private bool ShowUrl(string url)
     {
-        _urlLabel.Text = WebPageLoader.FormatDisplayUrl(page.Url);
-        _contentArea.ClearLinks();
-        _contentArea.ClearHighlights();
-        _contentArea.Text = page.DisplayText;
+        ClearCurrentPage();
+
+        if (WebPageRegistry.TryGet(url, out var factory))
+        {
+            var root = factory(GetPageBounds(), Navigate);
+            if (root == null) return false;
+
+            WebPage.VisitedUrls.Add(url);
+            _urlInput.Text = WebPageLoader.FormatDisplayUrl(url);
+            _rootContainer.AddChild(root);
+            _currentPage = root;
+            return true;
+        }
+
+        var page = WebPageLoader.Load(url);
+        if (page == null) return false;
+
+        WebPage.VisitedUrls.Add(url);
+        LoadTextPage(page);
+        return true;
+    }
+
+    private void ClearCurrentPage()
+    {
+        if (_currentPage == null) return;
+        _rootContainer.DestroyChild(_currentPage);
+        _currentPage = null;
+    }
+
+    private BrowserTextArea CreateTextArea()
+    {
+        var area = new BrowserTextArea(GetPageBounds(), _font,
+            ColorPalette.ActualWhite, ColorPalette.Black);
+        _rootContainer.AddChild(area);
+        _currentPage = area;
+        return area;
+    }
+
+    private void LoadTextPage(WebPage page)
+    {
+        _urlInput.Text = WebPageLoader.FormatDisplayUrl(page.Url);
+
+        var contentArea = CreateTextArea();
+        contentArea.Text = page.DisplayText;
 
         foreach (var (label, href) in page.Links)
         {
             string captured = href;
             var color = ColorPalette.Black;
-            _contentArea.AddLink(label, color, () => Navigate(captured));
+            contentArea.AddLink(label, color, () => Navigate(captured));
         }
 
         if (page.Info.Count > 0)
@@ -163,15 +223,15 @@ public class BrowserUI : UIPanel
                     InfoType.CauseOfDeath => ColorPalette.InfoCauseOfDeath,
                     _                     => ColorPalette.Black
                 };
-                _contentArea.AddHighlight(info.Value, color);
+                contentArea.AddHighlight(info.Value, color);
             }
         }
     }
 
     private void ShowError(string url)
     {
-        _urlLabel.Text = WebPageLoader.FormatDisplayUrl(url);
-        _contentArea.ClearLinks();
-        _contentArea.Text = "Page not found.\n\nCould not load: " + url;
+        ClearCurrentPage();
+        _urlInput.Text = WebPageLoader.FormatDisplayUrl(url);
+        CreateTextArea().Text = "Page not found.\n\nCould not load: " + url;
     }
 }

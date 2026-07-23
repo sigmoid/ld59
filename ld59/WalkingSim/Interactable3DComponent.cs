@@ -7,16 +7,22 @@ namespace ld59.WalkingSim;
 // carry a Mesh3DComponent, or it will never appear in the ID buffer and can never be hovered.
 //
 // Auto-registers with EntityFactory by reflection, so scene XML references it as
-// Type="Interactable3D" with Property Name="PromptText"/"Action"/"Message".
+// Type="Interactable3D" with Property Name="PromptText"/"Action"/"Target"/"Message".
+//
+// Interaction is data-driven: InteractionDispatcher switches on Action and interprets Target
+// (a file path, glyph id, entity name, ...) and Message (display payload) per action.
 public class Interactable3DComponent : Component
 {
     // Shown next to the crosshair while hovered, e.g. "read the tablet".
     public string PromptText { get; set; } = "interact";
 
-    // Action verb the host handles (reserved for routing: "open-file", "show-word", ...).
+    // Action verb the dispatcher routes on (e.g. "show-text", "reveal-file", "play-sound").
     public string Action { get; set; } = "";
 
-    // Payload for the action; v1 host just shows it in a notification.
+    // The thing acted on; meaning depends on Action (file path, glyph id, entity name, ...).
+    public string Target { get; set; } = "";
+
+    // Payload for the action; for "show-text" this is the text shown in a notification.
     public string Message { get; set; } = "";
 
     // Assigned at scene load by UI3DScene (1..255, encoded into the ID buffer's red channel).

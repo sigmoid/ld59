@@ -127,6 +127,29 @@ public sealed class NavMesh
         return best;
     }
 
+    // Best-effort spawn point near `pos`: if pos.XZ is on the mesh, its exact projection (X, floor
+    // height, Z); otherwise the centroid of whichever triangle's centroid is closest in XZ. Used
+    // for "start game from camera" (editor) and similar approximate placements where a precise
+    // walk to the nearest edge isn't needed.
+    public Vector3 NearestPointApprox(Vector3 pos)
+    {
+        int tri = FindTriangle(pos);
+        if (tri >= 0)
+            return new Vector3(pos.X, HeightAt(tri, pos.X, pos.Z), pos.Z);
+
+        int best = 0;
+        float bestDistSq = float.MaxValue;
+        for (int t = 0; t < Triangles.Length; t++)
+        {
+            CentroidXZ(t, out float cx, out float cz);
+            float dx = cx - pos.X, dz = cz - pos.Z;
+            float d2 = dx * dx + dz * dz;
+            if (d2 < bestDistSq) { bestDistSq = d2; best = t; }
+        }
+        CentroidXZ(best, out float bx, out float bz);
+        return new Vector3(bx, HeightAt(best, bx, bz), bz);
+    }
+
     // Height of the current triangle's plane at (x, z).
     public float HeightAt(int tri, float x, float z)
     {

@@ -1,6 +1,6 @@
 ![alt](images/lithnet_header)
                                                                    
-BOOKMARKS:  [Big Metro Times](bigmetrotimes/index.txt) | [Code Matrix](codematrix/index.txt)
+BOOKMARKS:  [Big Metro Times](bigmetrotimes/index.txt) | [Code Matrix](codematrix/index.txt) | [Diagnostics](tools/index.txt)
 
 
 Announcements:

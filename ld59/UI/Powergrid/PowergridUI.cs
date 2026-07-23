@@ -27,32 +27,41 @@ public class PowergridUI : UIPanel
     private readonly Dictionary<EditTool, Button> _toolButtons = new();
     private bool _editMode;
 
+    /// <summary>Which authoring affordances this window exposes (see <see cref="PowergridFeatures"/>).
+    /// The player-facing launch passes <see cref="PowergridFeatures.None"/>.</summary>
+    private readonly PowergridFeatures _features;
+    private bool EditorEnabled => _features.HasFlag(PowergridFeatures.Editor);
+
     private static readonly EditTool[] Tools =
     {
-        EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete, EditTool.Region,
+        EditTool.Select, EditTool.AddNode, EditTool.Connect, EditTool.Delete, EditTool.Region, EditTool.Text,
     };
 
     private const int ToolbarHeight = 40;
     private const int InspectorWidth = 234;
     private const int ButtonHeight = 30;
 
-    public PowergridUI(Rectangle bounds, string levelName = null)
+    public PowergridUI(Rectangle bounds, string levelName = null,
+        PowergridFeatures features = PowergridFeatures.All)
     {
         _bounds    = bounds;
         _levelName = levelName;
+        _features  = features;
         CreateUI();
         Current = this;
     }
 
     /// <summary>Opens a level <em>progression</em>: an ordered list of level names. Starts on the first
     /// and lets the player advance once each is fully solved.</summary>
-    public PowergridUI(Rectangle bounds, string progressionName, List<string> progression)
+    public PowergridUI(Rectangle bounds, string progressionName, List<string> progression,
+        PowergridFeatures features = PowergridFeatures.All)
     {
         _bounds      = bounds;
         _progName    = progressionName;
         _progression = progression;
         _progIndex   = 0;
         _levelName   = progression.Count > 0 ? progression[0] : null;
+        _features    = features;
         CreateUI();
         Current = this;
     }
@@ -132,7 +141,10 @@ public class PowergridUI : UIPanel
             }
         }
 
-        _sceneView = new PowergridView(_rootWindow.GetContentBounds(), scene);
+        _sceneView = new PowergridView(_rootWindow.GetContentBounds(), scene)
+        {
+            ShowSolver = _features.HasFlag(PowergridFeatures.Solver),
+        };
         _rootWindow.AddChild(_sceneView);
 
         _inspector = new PowergridInspector(new Rectangle(0, 0, 10, 10), _sceneView);
@@ -149,8 +161,8 @@ public class PowergridUI : UIPanel
     private string TitleForCurrent()
     {
         if (_progression != null)
-            return $"Powergrid - {_progName} ({_progIndex + 1}/{_progression.Count}): {_levelName}";
-        return _levelName != null ? $"Powergrid - {_levelName}" : "Powergrid - (new)";
+            return $"Powergrid ({_progIndex + 1}/{_progression.Count})";
+        return "Powergrid";
     }
 
     /// <summary>Advances to the next level in the progression (no-op if there isn't one).</summary>
@@ -167,19 +179,23 @@ public class PowergridUI : UIPanel
             new Rectangle(0, 0, 10, 10), text, Core.DefaultFont,
             ColorPalette.Black, ColorPalette.DarkCream, ColorPalette.ActualWhite, onClick);
 
-        _editToggle = Mk("Edit: off", ToggleEditMode);
-        _rootWindow.AddChild(_editToggle);
-
-        foreach (var tool in Tools)
+        // The editor controls aren't built at all for a player-facing launch.
+        if (EditorEnabled)
         {
-            var captured = tool;
-            var btn = Mk(ToolName(tool), () => { _sceneView.Tool = captured; RefreshToolLabels(); });
-            _toolButtons[tool] = btn;
-            _rootWindow.AddChild(btn);
-        }
+            _editToggle = Mk("Edit: off", ToggleEditMode);
+            _rootWindow.AddChild(_editToggle);
 
-        _saveBtn = Mk("Save", () => Save());
-        _rootWindow.AddChild(_saveBtn);
+            foreach (var tool in Tools)
+            {
+                var captured = tool;
+                var btn = Mk(ToolName(tool), () => { _sceneView.Tool = captured; RefreshToolLabels(); });
+                _toolButtons[tool] = btn;
+                _rootWindow.AddChild(btn);
+            }
+
+            _saveBtn = Mk("Save", () => Save());
+            _rootWindow.AddChild(_saveBtn);
+        }
 
         // Only meaningful in a progression; visibility is driven each frame in Update.
         _nextBtn = Mk("Next Level >", AdvanceLevel);
@@ -194,6 +210,7 @@ public class PowergridUI : UIPanel
         EditTool.Connect => "Connect",
         EditTool.Delete  => "Delete",
         EditTool.Region  => "Region",
+        EditTool.Text    => "Text",
         _ => tool.ToString(),
     };
 
@@ -217,19 +234,22 @@ public class PowergridUI : UIPanel
         const int gap = 6;
 
         int x = content.X + pad;
-        x += Place(_editToggle, x, btnY, "Edit: off") + gap;
-
-        foreach (var tool in Tools)
+        if (EditorEnabled)
         {
-            var btn = _toolButtons[tool];
-            btn.SetVisibility(_editMode);
-            if (_editMode)
-                x += Place(btn, x, btnY, $"[{ToolName(tool)}]") + gap; // size for the widest (active) label
-        }
+            x += Place(_editToggle, x, btnY, "Edit: off") + gap;
 
-        _saveBtn.SetVisibility(_editMode);
-        if (_editMode)
-            x += Place(_saveBtn, x, btnY, "Save") + gap;
+            foreach (var tool in Tools)
+            {
+                var btn = _toolButtons[tool];
+                btn.SetVisibility(_editMode);
+                if (_editMode)
+                    x += Place(btn, x, btnY, $"[{ToolName(tool)}]") + gap; // size for the widest (active) label
+            }
+
+            _saveBtn.SetVisibility(_editMode);
+            if (_editMode)
+                x += Place(_saveBtn, x, btnY, "Save") + gap;
+        }
 
         // Next-level button sits at the far right of the toolbar (play mode only; see Update).
         if (_nextBtn != null)
@@ -258,6 +278,7 @@ public class PowergridUI : UIPanel
 
     private void RefreshToolLabels()
     {
+        if (!EditorEnabled) return;
         _editToggle.SetText(_editMode ? "Edit: ON" : "Edit: off");
         foreach (var (tool, btn) in _toolButtons)
             btn.SetText(_sceneView.Tool == tool ? $"[{ToolName(tool)}]" : ToolName(tool));

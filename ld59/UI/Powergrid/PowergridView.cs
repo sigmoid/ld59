@@ -9,7 +9,23 @@ using Quartz.UI;
 
 namespace ld59.UI.Powergrid;
 
-public enum EditTool { Select, AddNode, Connect, Delete, Region }
+public enum EditTool { Select, AddNode, Connect, Delete, Region, Text }
+
+/// <summary>
+/// Which authoring affordances a powergrid window exposes. The player-facing launch (Start menu, an
+/// in-world puzzle panel) opens with <see cref="None"/> — just the board. Opening from the developer
+/// console uses <see cref="All"/> so levels can be built and checked.
+/// </summary>
+[Flags]
+public enum PowergridFeatures
+{
+    None = 0,
+    /// <summary>The Solve / step / clear controls under the alphabet panel.</summary>
+    Solver = 1 << 0,
+    /// <summary>The Edit toggle, tool buttons, inspector and Save button.</summary>
+    Editor = 1 << 1,
+    All = Solver | Editor,
+}
 
 /// <summary>
 /// 2D viewport for a graph-colouring level. Owns a pan/zoom camera and renders the puzzle graph
@@ -56,14 +72,20 @@ public class PowergridView : UIElement
     private bool _prevLeftPressed;
     private bool _prevRightPressed;
 
+    /// <summary>When false the solver controls are hidden and the alphabet panel takes their space —
+    /// the board is play-only. Set by whoever opens the view; see <see cref="PowergridFeatures"/>.</summary>
+    public bool ShowSolver { get; set; } = true;
+
     // Edit state
     public bool EditMode { get; set; }
     public EditTool Tool { get; set; } = EditTool.Select;
     public PowerNodeComponent Selected { get; private set; }
     public Connection SelectedConnection { get; private set; }
     public PowergridRegionComponent SelectedRegion { get; private set; }
+    public PowergridTextComponent SelectedText { get; private set; }
     private bool _needsRebuild;
     private PowerNodeComponent _movingNode;
+    private PowergridTextComponent _movingText;
     private Point _moveLast;
     private PowerNodeComponent _connectSource;
     private Vector2? _regionStart;
@@ -254,6 +276,7 @@ public class PowergridView : UIElement
     /// start a rune drag).</summary>
     private bool HandleSolverClick(Point mp)
     {
+        if (!ShowSolver) return false;
         var (solve, prev, next, clear) = SolverLayout();
         if (solve.Contains(mp)) { RunSolver(); return true; }
         if (_solverRun && clear.Contains(mp)) { ClearSolver(); return true; }
@@ -498,9 +521,10 @@ public class PowergridView : UIElement
             .ToList();
         if (tiers.Count == 0) return slots;
 
-        // The pyramid lives between the header (top) and the solver controls (bottom band).
+        // The pyramid lives between the header (top) and the solver controls (bottom band). With the
+        // solver hidden it runs all the way down to the panel's padding.
         int bandTop = panel.Y + PyramidPad + 30;
-        int bandBottom = panel.Bottom - SolverAreaHeight;
+        int bandBottom = panel.Bottom - (ShowSolver ? SolverAreaHeight : PyramidPad);
         int cols = tiers.Max(t => t.Count);
         int inner = panel.Width - 2 * PyramidPad;
         int chipW = (inner - (cols - 1) * PyramidGap) / cols;
@@ -543,39 +567,41 @@ public class PowergridView : UIElement
                     var hitNode = HitTestNode(mp);
                     if (hitNode != null)
                     {
-                        Selected = hitNode;
-                        SelectedConnection = null;
-                        SelectedRegion = null;
+                        SelectOnly(node: hitNode);
                         _movingNode = hitNode;
                         _moveLast = mp;
                     }
                     else
                     {
                         var hitConn = ConnectionHitTest(mp);
+                        var hitText = hitConn == null ? TextHitTest(mp) : null;
                         if (hitConn != null)
                         {
-                            SelectedConnection = hitConn;
-                            Selected = null;
-                            SelectedRegion = null;
+                            SelectOnly(connection: hitConn);
+                        }
+                        else if (hitText != null)
+                        {
+                            SelectOnly(text: hitText);
+                            _movingText = hitText;
+                            _moveLast = mp;
                         }
                         else
                         {
-                            var hitRegion = RegionHitTest(mp);
-                            SelectedRegion = hitRegion;
-                            Selected = null;
-                            SelectedConnection = null;
+                            SelectOnly(region: RegionHitTest(mp));
                         }
                         _movingNode = null;
                     }
                 }
-                if (left && _movingNode != null)
+                if (left && (_movingNode != null || _movingText != null))
                 {
                     var delta = mp - _moveLast;
                     _moveLast = mp;
-                    _movingNode.Entity.LocalPosition += new Vector2(delta.X / _zoom, -delta.Y / _zoom);
+                    var worldDelta = new Vector2(delta.X / _zoom, -delta.Y / _zoom);
+                    if (_movingNode != null) _movingNode.Entity.LocalPosition += worldDelta;
+                    else _movingText.Entity.LocalPosition += worldDelta;
                     MarkDirty();
                 }
-                if (leftRelease) _movingNode = null;
+                if (leftRelease) { _movingNode = null; _movingText = null; }
                 break;
 
             case EditTool.Connect:
@@ -602,6 +628,9 @@ public class PowergridView : UIElement
                     var conn = ConnectionHitTest(mp);
                     if (conn != null) { RemoveConnection(conn); break; }
 
+                    var label = TextHitTest(mp);
+                    if (label != null) { DeleteText(label); break; }
+
                     var region = RegionHitTest(mp);
                     if (region != null) DeleteRegion(region);
                 }
@@ -615,6 +644,11 @@ public class PowergridView : UIElement
                     CreateRegion(_regionStart.Value, ScreenToWorld(mp));
                     _regionStart = null;
                 }
+                break;
+
+            case EditTool.Text:
+                if (leftClick && inside && GraphRegion.Contains(mp))
+                    AddTextAt(ScreenToWorld(mp));
                 break;
         }
     }
@@ -638,7 +672,7 @@ public class PowergridView : UIElement
         var node = new PowerNodeComponent();
         entity.AddComponent(node);
         _scene.AddEntity(entity);
-        Selected = node;
+        SelectOnly(node: node);
         MarkDirty();
     }
 
@@ -701,7 +735,7 @@ public class PowergridView : UIElement
         var region = new PowergridRegionComponent { HalfWidth = halfW, HalfHeight = halfH };
         entity.AddComponent(region);
         _scene.AddEntity(entity);
-        SelectedRegion = region;
+        SelectOnly(region: region);
         MarkDirty();
     }
 
@@ -719,6 +753,69 @@ public class PowergridView : UIElement
             if (region.Contains(worldPos)) return region;
         return null;
     }
+
+    /// <summary>Clears every selection channel, then sets the one that was passed. Node/connection/
+    /// region/text selections are mutually exclusive — the inspector shows one section at a time.</summary>
+    private void SelectOnly(PowerNodeComponent node = null, Connection connection = null,
+        PowergridRegionComponent region = null, PowergridTextComponent text = null)
+    {
+        Selected = node;
+        SelectedConnection = connection;
+        SelectedRegion = region;
+        SelectedText = text;
+    }
+
+    private void AddTextAt(Vector2 world)
+    {
+        var entity = new Entity { Name = UniqueName("text") };
+        entity.LocalPosition = world;
+        var label = new PowergridTextComponent { Text = "New text" };
+        entity.AddComponent(label);
+        _scene.AddEntity(entity);
+        SelectOnly(text: label);
+        Tool = EditTool.Select; // drop straight into editing the label we just placed
+        MarkDirty();
+    }
+
+    private void DeleteText(PowergridTextComponent label)
+    {
+        _scene.RemoveEntity(label.Entity);
+        if (SelectedText == label) SelectedText = null;
+        if (_movingText == label) _movingText = null;
+        MarkDirty();
+    }
+
+    private PowergridTextComponent TextHitTest(Point screen)
+    {
+        foreach (var label in _controller.Labels)
+            if (TextScreenRect(label).Contains(screen)) return label;
+        return null;
+    }
+
+    /// <summary>On-screen box a label occupies, given the current camera. Empty labels still get a
+    /// clickable box so they can be selected and typed into.</summary>
+    private Rectangle TextScreenRect(PowergridTextComponent label)
+    {
+        float scale = TextDrawScale(label);
+        var size = _font.MeasureString(DisplayText(label)) * scale;
+        var origin = WorldToScreen(label.Entity.Position);
+        float left = label.Align switch
+        {
+            TextAlign.Left  => origin.X,
+            TextAlign.Right => origin.X - size.X,
+            _               => origin.X - size.X / 2f,
+        };
+        return new Rectangle((int)left, (int)(origin.Y - size.Y / 2f), (int)size.X, (int)size.Y);
+    }
+
+    /// <summary>Font scale for a label: its authored size, scaled with the camera so labels stay
+    /// pinned to the world rather than the screen.</summary>
+    private float TextDrawScale(PowergridTextComponent label) => label.Scale * (_zoom / 64f);
+
+    /// <summary>What a label renders as. An empty one stands in as "(empty)" so a freshly placed label
+    /// is still visible and clickable in the editor (it's skipped entirely during play).</summary>
+    private static string DisplayText(PowergridTextComponent label)
+        => string.IsNullOrEmpty(label.Text) ? "(empty)" : label.Text;
 
     private static float DistPointSeg(Vector2 p, Vector2 a, Vector2 b)
     {
@@ -955,6 +1052,46 @@ public class PowergridView : UIElement
         if (SelectedRegion != null) DeleteRegion(SelectedRegion);
     }
 
+    // ── Text label authoring ──────────────────────────────────────────────
+
+    public string SelectedTextContent => SelectedText?.Text ?? string.Empty;
+
+    /// <summary>Replaces the selected label's body (driven by the inspector's text field).</summary>
+    public void SetSelectedTextContent(string text)
+    {
+        if (SelectedText == null || SelectedText.Text == text) return;
+        SelectedText.Text = text ?? string.Empty;
+        MarkDirty();
+    }
+
+    public float SelectedTextScale => SelectedText?.Scale ?? 1f;
+
+    public void AdjustTextScale(float delta)
+    {
+        if (SelectedText == null) return;
+        SelectedText.Scale = MathHelper.Clamp(MathF.Round((SelectedText.Scale + delta) * 100f) / 100f, 0.25f, 6f);
+        MarkDirty();
+    }
+
+    public TextAlign SelectedTextAlign => SelectedText?.Align ?? TextAlign.Center;
+
+    public void CycleTextAlign()
+    {
+        if (SelectedText == null) return;
+        SelectedText.Align = SelectedText.Align switch
+        {
+            TextAlign.Left   => TextAlign.Center,
+            TextAlign.Center => TextAlign.Right,
+            _                => TextAlign.Left,
+        };
+        MarkDirty();
+    }
+
+    public void DeleteSelectedText()
+    {
+        if (SelectedText != null) DeleteText(SelectedText);
+    }
+
     /// <summary>The level config component if one exists, else null (does not create one).</summary>
     private PowergridLevelComponent FindLevelComponent()
     {
@@ -997,6 +1134,7 @@ public class PowergridView : UIElement
                 spriteBatch.Draw(_pixel, rect, null, ColorPalette.ActualWhite, 0f, Vector2.Zero, SpriteEffects.None, 0.05f);
 
         DrawRegions(spriteBatch);
+        DrawLabels(spriteBatch);
 
         foreach (var graph in _controller.Graphs)
         {
@@ -1160,6 +1298,14 @@ public class PowergridView : UIElement
         if (Tool == EditTool.Region && _regionStart.HasValue)
             DrawWorldRect(sb, _regionStart.Value, ScreenToWorld(mp), Color.DimGray, 1.5f);
 
+        // Selected label highlight (a screen-space box round the text).
+        if (SelectedText != null)
+        {
+            var r = TextScreenRect(SelectedText);
+            r.Inflate(4, 4);
+            DrawScreenRect(sb, r, ColorPalette.Black, 2f);
+        }
+
         // Selected region highlight.
         if (SelectedRegion != null)
         {
@@ -1183,20 +1329,6 @@ public class PowergridView : UIElement
             sb.DrawString(_font, msg, pos, ColorPalette.DarkGreen, 0f, Vector2.Zero, 1.5f, SpriteEffects.None, 0.2f);
         }
 
-        string status;
-        if (solved)
-        {
-            status = "Solved!";
-        }
-        else
-        {
-            var hints = string.Join(" and ",
-                _controller.ActiveRules.Select(ColoringRules.Hint).Where(h => h.Length > 0));
-            status = $"Drag runes onto nodes  -  connected nodes must {hints}";
-        }
-        sb.DrawString(_font, status, new Vector2(GraphRegion.X + 10, GraphRegion.Y + 8), ColorPalette.Black,
-            0f, Vector2.Zero, 1f, SpriteEffects.None, 0.2f);
-
         // Panel last (over any overflow from the status line); the held rune stays on top of all.
         DrawPyramidPanel(sb);
         if (Dragging) DrawRuneIcon(sb, new Vector2(_handPos.X, _handPos.Y), HandIconSize, _handRune);
@@ -1209,16 +1341,6 @@ public class PowergridView : UIElement
         foreach (var graph in _controller.Graphs)
         {
             if (!TryGetPuzzleScreenRect(graph, out var rect)) continue;
-
-            if (graph.RewardRunes.Count > 0)
-            {
-                bool earned = _rewarded.Contains(graph.Id);
-                var text = earned ? "Reward earned" : "Reward: " + RewardSummary(graph.RewardRunes);
-                var color = earned ? ColorPalette.DarkGreen : ColorPalette.Black;
-                var size = _font.MeasureString(text);
-                var pos = new Vector2(rect.X + (rect.Width - size.X) / 2f, rect.Y - 2);
-                sb.DrawString(_font, text, pos, color, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.19f);
-            }
 
             if (!graph.Unlocked)
             {
@@ -1256,7 +1378,7 @@ public class PowergridView : UIElement
         foreach (var (name, rect) in slots)
             DrawRuneChip(sb, rect, name, _inventory.Count(r => r == name));
 
-        DrawSolverControls(sb);
+        if (ShowSolver) DrawSolverControls(sb);
     }
 
     /// <summary>Solver controls in the panel's bottom band: a Solve button, the solution count, and
@@ -1388,6 +1510,19 @@ public class PowergridView : UIElement
         sb.DrawString(_font, text, center - size * 0.5f, color);
     }
 
+    /// <summary>Authored text labels, drawn in world space beneath the graph so nodes and edges always
+    /// stay readable on top. In edit mode empty labels get a placeholder so they can still be found.</summary>
+    private void DrawLabels(SpriteBatch sb)
+    {
+        foreach (var label in _controller.Labels)
+        {
+            if (!EditMode && string.IsNullOrEmpty(label.Text)) continue;
+            var rect = TextScreenRect(label);
+            sb.DrawString(_font, DisplayText(label), new Vector2(rect.X, rect.Y), ColorPalette.Black,
+                0f, Vector2.Zero, TextDrawScale(label), SpriteEffects.None, 0.44f);
+        }
+    }
+
     private void DrawRegions(SpriteBatch sb)
     {
         foreach (var region in _controller.Regions)
@@ -1407,6 +1542,19 @@ public class PowergridView : UIElement
                 region.IsViolated ? ColorPalette.DarkRed : ColorPalette.Black,
                 0f, Vector2.Zero, 0.8f, SpriteEffects.None, 0.15f);
         }
+    }
+
+    /// <summary>Draws an axis-aligned rectangle outline in screen space.</summary>
+    private void DrawScreenRect(SpriteBatch sb, Rectangle r, Color color, float thickness)
+    {
+        var tl = new Vector2(r.Left, r.Top);
+        var tr = new Vector2(r.Right, r.Top);
+        var bl = new Vector2(r.Left, r.Bottom);
+        var br = new Vector2(r.Right, r.Bottom);
+        DrawLine(sb, tl, tr, thickness, color);
+        DrawLine(sb, tr, br, thickness, color);
+        DrawLine(sb, br, bl, thickness, color);
+        DrawLine(sb, bl, tl, thickness, color);
     }
 
     /// <summary>Draws an axis-aligned rectangle outline in world space.</summary>

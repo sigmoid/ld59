@@ -54,6 +54,9 @@ public class Game1 : Core
         DeveloperConsole.RegisterCommandHandler(new PowergridCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new PowergridSaveCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new MinefieldCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new BrowserCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new OneBitCommandHandler());
+        WebPages.RegisterAll();
         Core.CurrentScene.AddManager(new GameFileDataManager());
         Core.CurrentScene.AddManager(new EmailDataManager());
 

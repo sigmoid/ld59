@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
+using ld59.UI.Powergrid;
 
 public class StartMenuUI : UIPanel
 {
@@ -57,6 +58,10 @@ public class StartMenuUI : UIPanel
         var notepadButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y, _layoutGroup.GetBoundingBox().Width, 80), notepadIcon, "Notepad", () => OpenNotepad());
         _layoutGroup.AddChild(notepadButton);
 
+        var browserIcon = Core.Content.Load<Texture2D>("images/browser_icon");
+        var browserButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 200, _layoutGroup.GetBoundingBox().Width, 80), browserIcon, "LithNET", () => OpenBrowser());
+        _layoutGroup.AddChild(browserButton);
+
         var minefieldIcon = Core.Content.Load<Texture2D>("images/minefield_icon");
         var minefieldButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 300, _layoutGroup.GetBoundingBox().Width, 80), minefieldIcon, "Minefield", () => OpenMinefield());
         _layoutGroup.AddChild(minefieldButton);
@@ -103,12 +108,21 @@ public class StartMenuUI : UIPanel
 
     private void OpenPowergrid()
     {
-        // Launch straight into the preset "basic-prog" progression for the demo.
+        // Launch straight into the preset "basic-prog" progression for the demo. This is the player's
+        // way in, so no editor and no solver — those live behind the `powergrid` console command.
         var levels = PowergridCommandHandler.LoadProgression("basic-prog");
-        if (levels.Count > 0)
-            Core.UISystem.AddElement(new PowergridUI(new Rectangle(40, 70, 1150, 720), "basic-prog", levels));
-        else
-            Core.UISystem.AddElement(new PowergridUI(new Rectangle(40, 70, 1150, 720)));
+        var bounds = new Rectangle(40, 70, 1150, 720);
+        Core.UISystem.AddElement(levels.Count > 0
+            ? new PowergridUI(bounds, "basic-prog", levels, PowergridFeatures.None)
+            : new PowergridUI(bounds, null, PowergridFeatures.None));
+        HideMenu();
+    }
+
+    private void OpenBrowser()
+    {
+        // BrowserUI adds its own window to the UI system, so it is not added here.
+        int w = 900, h = 700;
+        _ = new BrowserUI(new Rectangle((Core.ScreenWidth - w) / 2, (Core.ScreenHeight - h) / 2, w, h));
         HideMenu();
     }
 

@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Scene>
+  <Entities>
+    <Entity Name="Sun">
+      <Position3D>
+        <X>0</X>
+        <Y>10</Y>
+        <Z>0</Z>
+      </Position3D>
+      <Component Type="DirectionalLightComponent">
+        <Property Name="Direction" Value="0.5,0.28,0.3" Type="Vector3" />
+        <Property Name="Color" Value="1,0.95686275,0.8392157,1" Type="Color" />
+        <Property Name="Intensity" Value="0.25" Type="float" />
+        <Property Name="CastShadows" Value="false" Type="bool" />
+        <Property Name="ShadowDistance" Value="8" Type="float" />
+        <Property Name="ShadowBlurRadius" Value="2" Type="float" />
+      </Component>
+    </Entity>
+    <Entity Name="PlayerStart">
+      <Position3D>
+        <X>-0.81231046</X>
+        <Y>2.8619595</Y>
+        <Z>-14.005983</Z>
+      </Position3D>
+    </Entity>
+    <Entity Name="moon_terrain_near">
+      <Position3D>
+        <X>-0.043342862</X>
+        <Y>4.0930743</Y>
+        <Z>-4.3339014</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/moon_terrain_near" Type="string" />
+        <Property Name="Scale" Value="1,1,1" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="moon_terrain_far">
+      <Position3D>
+        <X>3.3228576</X>
+        <Y>0.8923838</Y>
+        <Z>-3.668501</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/moon_terrain_far" Type="string" />
+        <Property Name="Scale" Value="1,1,1" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="moon_ground_plane">
+      <Position3D>
+        <X>3.8051977</X>
+        <Y>1.4300332</Y>
+        <Z>2.2398324</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/moon_ground_plane" Type="string" />
+        <Property Name="Scale" Value="0.005,0.005,0.005" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,3.14" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+      <Component Type="NavMeshObstacleComponent" />
+    </Entity>
+    <Entity Name="cube">
+      <Position3D>
+        <X>10.004356</X>
+        <Y>2.0190992</Y>
+        <Z>-13.379872</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="0.041093595,0.027183924,0.068785146" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0.23,0.41999984,-0.12999998" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+      <Component Type="NavMeshObstacleComponent" />
+    </Entity>
+    <Entity Name="cube">
+      <Position3D>
+        <X>40.520054</X>
+        <Y>3.0701647</Y>
+        <Z>-6.7479877</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="0.044162333,0.05769977,0.07568604" Type="Vector3" />
+        <Property Name="RotationEuler" Value="-0.16000001,0.55,0.01" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+      <Component Type="NavMeshObstacleComponent" />
+    </Entity>
+    <Entity Name="PointLight">
+      <Position3D>
+        <X>20.187786</X>
+        <Y>31.495495</Y>
+        <Z>-27.84943</Z>
+      </Position3D>
+      <Component Type="PointLightComponent">
+        <Property Name="Color" Value="1,1,1,1" Type="Color" />
+        <Property Name="Intensity" Value="0.4" Type="float" />
+        <Property Name="Range" Value="199" Type="float" />
+      </Component>
+    </Entity>
+    <Entity Name="moon_ground_plane">
+      <Position3D>
+        <X>-37.56724</X>
+        <Y>-94.18298</Y>
+        <Z>0.36957836</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/moon_ground_plane" Type="string" />
+        <Property Name="Scale" Value="1,1,1" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,3.14" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="dome">
+      <Position3D>
+        <X>21.055851</X>
+        <Y>2.0792065</Y>
+        <Z>-67.62311</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/dome" Type="string" />
+        <Property Name="Scale" Value="1,1,1" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+  </Entities>
+</Scene>

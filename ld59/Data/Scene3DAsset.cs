@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Xml.Linq;
 using Microsoft.Xna.Framework;
@@ -10,6 +11,8 @@ public class Scene3DAsset
     public string Title       { get; set; } = "";
     public string Mode        { get; set; } = "";  // "Walk" launches the walking sim; empty = viewer
     public string NavMeshPath { get; set; } = "";  // navmesh .obj, relative to content root (Walk mode)
+    public string Ambient     { get; set; } = "";  // ambient light "r,g,b" (0-255); empty = default
+    public bool   Skybox      { get; set; }        // render the procedural moon skybox
 
     public static Scene3DAsset Load(string contentRelativePath)
     {
@@ -22,6 +25,8 @@ public class Scene3DAsset
             Title       = doc.Root?.Element("Title")?.Value       ?? "",
             Mode        = doc.Root?.Element("Mode")?.Value        ?? "",
             NavMeshPath = doc.Root?.Element("NavMeshPath")?.Value ?? "",
+            Ambient     = doc.Root?.Element("Ambient")?.Value     ?? "",
+            Skybox      = string.Equals(doc.Root?.Element("Skybox")?.Value, "true", StringComparison.OrdinalIgnoreCase),
         };
     }
 }

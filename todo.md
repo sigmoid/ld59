@@ -2,12 +2,38 @@
 
 [Ideas](ideas.md)
 
-1. Change sidedness rule, same side can be adjacent and middle can be adjacent to either side
-1. Remake alphabet to encode information about sidedness and tier in the design
-1. Prototype puzzles where player builds words and needs to follow grammar rules to build a sentence
-1. Create dictionary app
-    1. Dictionary app displays words that have been discovered with info about those words (part of speech, conjugation, word meaning)
-1. Minesweeper should use tiers of symbols to decide what to show instead of just numbers
+1. Editor
+    1. Make gizmos bullet-proof
+    1. Copy-paste
+    1. Create prefabs for lights
+1. Add skybox (stars and earth and the sun)
+1. Add fog to 3d scenes
+1. Ignore purely visual objects in navmesh bake
+1. Make basic puzzle area
+    1. Introduce powergrid on monoliths
+    1. There should be a deduction puzzle using the vocabulary the player can find in the first area
+
+
+1. Remove TCG for now
+1. Write intro email
+1. Make forum website and reintegrate web browser
+    1. Web browser redesign
+1. Solitaire
+    1. Make start menu icon
+    1. Improve dragging and dropping
+1. Minesweeper
+    1. Improve demo levels design
+    1. Make it so player can exit demo
+    1. Make mines show grid behind them
+1. Powergrid
+    1. Make a clean progression
+    1. Make start menu icon
+    1. Improve standalone UI
+1. Misc
+    1. Make sure fullscreen works
+    1. Come up with a better name
+    1. Need basic introduction to the alphabet
+    1. Clean up file system
 
 # Future Milestone ideas
 
@@ -20,23 +46,6 @@
 
 # Demo todo
 
-1. TCG
-    1. It makes no sense that a card with one symbol can destroy a card with two symbols if they are the same tier
-        1. There needs to be some better tie-breaking here. If the tiers are a tie and we can remove the lowest symbol from the other card, we do that. However, if it's a true tie and both cards have the same tier and number of symbols THEN both are destroyed
-1. Solitaire
-    1. Make start menu icon
-    1. Improve dragging and dropping
-1. Minesweeper
-    1. Improve demo levels design
-    1. Make it so player can exit demo
-    1. Make mines show grid behind them
-1. Powergrid
-    1. Make a version with no editor
-    1. Make a clean progression
-    1. Make start menu icon
-    1. Expalain rules better
-1. Misc
-    1. Make sure fullscreen works
-    1. Come up with a better name
-    1. Need basic introduction to the alphabet
-    1. Clean up file system
+
+
+

@@ -1,0 +1,8 @@
+<Entity Name="WarmPointLight">
+  <Position3D><X>0</X><Y>0</Y><Z>0</Z></Position3D>
+  <Component Type="PointLight">
+    <Property Name="Color" Value="1,0.85,0.6,1" Type="Color"/>
+    <Property Name="Intensity" Value="2.5" Type="Single"/>
+    <Property Name="Range" Value="12" Type="Single"/>
+  </Component>
+</Entity>

@@ -17,9 +17,13 @@ public class PowergridLevelController
     private readonly Scene _scene;
     private readonly List<PuzzleGraph> _graphs = new();
     private readonly List<PowergridRegionComponent> _regions = new();
+    private readonly List<PowergridTextComponent> _labels = new();
 
     public Scene Scene => _scene;
     public IReadOnlyList<PuzzleGraph> Graphs => _graphs;
+
+    /// <summary>Decorative text labels authored in this level (no effect on solving).</summary>
+    public IReadOnlyList<PowergridTextComponent> Labels => _labels;
 
     /// <summary>All tier-count regions authored in this level. Each region limits how many runes of a
     /// specific tier may be placed within its bounding box.</summary>
@@ -49,12 +53,16 @@ public class PowergridLevelController
         var nodeEntities = entities.Where(e => e.GetComponent<PowerNodeComponent>() != null).ToList();
         var nodesByName = nodeEntities.ToDictionary(e => e.Name, e => e.GetComponent<PowerNodeComponent>());
 
-        // Collect all region components.
+        // Collect all region + label components.
         _regions.Clear();
+        _labels.Clear();
         foreach (var e in entities)
         {
             var region = e.GetComponent<PowergridRegionComponent>();
             if (region != null) _regions.Add(region);
+
+            var label = e.GetComponent<PowergridTextComponent>();
+            if (label != null) _labels.Add(label);
         }
 
         PowerNodeComponent Resolve(string name)

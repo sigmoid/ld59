@@ -33,6 +33,8 @@ internal static class Program
         EscapeFuzz();
         OverlapTunnel();
         DemoLevel();
+        BakedLevel();
+        TerrainLevel();
 
         Console.WriteLine($"\n{_passed}/{_passed + _failed} passed.");
         return _failed == 0 ? 0 : 1;
@@ -342,5 +344,106 @@ internal static class Program
             if (walker.Position.Y > 1.5f) stayedLow = false;
         }
         Check("walker on lower floor never surfaces to upper", stayedLow);
+    }
+
+    // ── Baked level: load the Recast-generated navmesh and traverse it ─────────────────
+    // (walk_level_navmesh_baked.obj is produced by NavMeshBaker from walk_level.xml's boxes.)
+
+    private static void BakedLevel()
+    {
+        Console.WriteLine("Baked level (walk_level_navmesh_baked.obj)");
+
+        string path = Path.Combine(AppContext.BaseDirectory,
+            "..", "..", "..", "..", "ld59", "Content", "files", "scenes", "walk_level_navmesh_baked.obj");
+        if (!File.Exists(path))
+        {
+            Check("baked navmesh file exists (run NavMeshBaker first)", false);
+            return;
+        }
+
+        NavMesh mesh;
+        using (var r = new StreamReader(File.OpenRead(path)))
+            mesh = ObjParser.LoadNavMesh(r);
+
+        Check("baked mesh is non-empty", mesh.Triangles.Length > 0);
+        int shared = 0;
+        foreach (var t in mesh.Triangles)
+            foreach (int n in new[] { t.N01, t.N12, t.N20 }) if (n >= 0) shared++;
+        Check("baked mesh is connected (has shared edges)", shared > 0);
+
+        // spawn near the scene's PlayerStart; Recast insets from walls + quantizes height, so
+        // tolerances are looser than the hand mesh.
+        var courtyard = new WalkController(mesh) { MoveSpeed = 3f };
+        Check("spawn near PlayerStart succeeds", courtyard.Spawn(new Vector3(3, 0.2f, 3)));
+        Check("spawn floor height near 0", Near(courtyard.Position.Y, 0f, 0.4f));
+
+        // climb the stairs onto the platform (y~2)
+        var toStairs = new WalkController(mesh) { MoveSpeed = 4f };
+        if (toStairs.Spawn(new Vector3(9, 0.2f, 3)))
+        {
+            var top = WalkDir(toStairs, new Vector2(0, 1), 6f);
+            Check("baked ramp path climbs onto the platform (y>1.5)", top.Y > 1.5f);
+            Check("baked ramp path stays on mesh", mesh.FindTriangle(top) >= 0);
+        }
+        else Check("spawn at stairs base succeeds", false);
+
+        // walk the corridor under the platform (stays low)
+        var toTunnel = new WalkController(mesh) { MoveSpeed = 4f };
+        if (toTunnel.Spawn(new Vector3(3, 0.2f, 3)))
+        {
+            var underneath = WalkDir(toTunnel, new Vector2(0, 1), 6f);
+            Check("baked tunnel path reaches under the platform (z>14)", underneath.Z > 14f);
+            Check("baked tunnel path stays low (y<1)", underneath.Y < 1f);
+            Check("baked tunnel path stays on mesh", mesh.FindTriangle(underneath) >= 0);
+        }
+        else Check("spawn at corridor succeeds", false);
+    }
+
+    // ── Terrain level: the Recast-baked navmesh from the imported LowPolyTerrain model ──
+
+    private static void TerrainLevel()
+    {
+        Console.WriteLine("Terrain level (terrain_navmesh.obj)");
+
+        string path = Path.Combine(AppContext.BaseDirectory,
+            "..", "..", "..", "..", "ld59", "Content", "files", "scenes", "terrain_navmesh.obj");
+        if (!File.Exists(path))
+        {
+            Check("terrain navmesh file exists (bake LowPolyTerrain.obj first)", false);
+            return;
+        }
+
+        NavMesh mesh;
+        using (var r = new StreamReader(File.OpenRead(path)))
+            mesh = ObjParser.LoadNavMesh(r);
+
+        Check("terrain mesh is non-empty", mesh.Triangles.Length > 0);
+
+        // spawn at the scene's PlayerStart and confirm it lands on the surface
+        var walker = new WalkController(mesh) { MoveSpeed = 3f };
+        bool spawned = walker.Spawn(new Vector3(-3.29f, 17.95f, -0.62f));
+        Check("spawn at PlayerStart lands on terrain", spawned);
+
+        if (!spawned) return;
+
+        // Wander the surface: the walker must never leave the mesh, never NaN, and its height
+        // must track the terrain's relief. A high move speed makes the walk range widely enough
+        // to cross elevation changes rather than jitter in place near spawn.
+        walker.MoveSpeed = 10f;
+        var rng = new Random(99);
+        bool everOff = false, everNaN = false;
+        float minY = walker.Position.Y, maxY = walker.Position.Y;
+        for (int i = 0; i < 4000; i++)
+        {
+            var dir = new Vector2((float)(rng.NextDouble() * 2 - 1), (float)(rng.NextDouble() * 2 - 1));
+            walker.Move(dir, 1f / 30f);
+            if (mesh.FindTriangle(walker.Position) < 0) everOff = true;
+            if (float.IsNaN(walker.Position.Y)) everNaN = true;
+            minY = MathF.Min(minY, walker.Position.Y);
+            maxY = MathF.Max(maxY, walker.Position.Y);
+        }
+        Check("terrain walk never leaves the mesh", !everOff);
+        Check("terrain walk never NaNs", !everNaN);
+        Check("terrain walk follows height changes", maxY - minY > 0.5f); // relief, so Y varies
     }
 }

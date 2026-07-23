@@ -1,6 +1,0 @@
-<Scene3DAsset>
-  <ScenePath>files/scenes/walk_level.xml</ScenePath>
-  <Title>Buried Road</Title>
-  <Mode>Walk</Mode>
-  <NavMeshPath>files/scenes/walk_level_navmesh.obj</NavMeshPath>
-</Scene3DAsset>

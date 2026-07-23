@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Offline navmesh baker for the walking sim. Takes level geometry (an OBJ, or the
+    BoxPrimitive3D entities of a scene XML), runs Recast (DotRecast, pure C#), and writes the
+    navmesh OBJ that the game already loads via Scene3DAsset.NavMeshPath. DotRecast lives here,
+    not in the shipped game. Shares ObjParser/NavMesh with ld59 via Compile Include.
+    Run from this folder with:  dotnet run  input  output.obj  [options]
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>NavMeshBaker</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0169;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotRecast.Recast" Version="2026.1.3" />
+    <PackageReference Include="DotRecast.Core" Version="2026.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Stubs.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="TriangleSoup.cs" />
+    <Compile Include="NavMeshBake.cs" />
+    <Compile Include="ObjWriter.cs" />
+    <Compile Include="..\ld59\WalkingSim\ObjParser.cs" Link="Engine\ObjParser.cs" />
+    <Compile Include="..\ld59\WalkingSim\NavMesh.cs"   Link="Engine\NavMesh.cs" />
+  </ItemGroup>
+
+</Project>

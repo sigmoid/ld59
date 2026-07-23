@@ -10,11 +10,11 @@ namespace ld59.WalkingSim;
 // input-free so it is unit-testable headlessly.
 public sealed class WalkController
 {
-    public NavMesh Mesh { get; }
+    public NavMesh Mesh { get; private set; }
     public int Triangle { get; private set; } = -1;
     public Vector3 Position { get; private set; }   // point on the mesh (Y = floor height)
     public float EyeHeight { get; set; } = 1.6f;
-    public float MoveSpeed { get; set; } = 3f;
+    public float MoveSpeed { get; set; } = 12f;
     public float HeightSmoothTime { get; set; } = 0.08f;
 
     private float _smoothY;
@@ -36,6 +36,14 @@ public sealed class WalkController
         _smoothY = y;
         _smoothYVel = 0f;
         return true;
+    }
+
+    // Swap in a freshly baked navmesh (from the in-game baker). Keeps the walker's XZ and
+    // re-locates the containing triangle; returns false if the current spot is now off-mesh.
+    public bool Rebind(NavMesh mesh)
+    {
+        Mesh = mesh;
+        return Spawn(Position);
     }
 
     // Move by a horizontal direction (need not be normalized) for dt seconds.

@@ -1,0 +1,8 @@
+<Entity Name="PointLight">
+  <Position3D><X>0</X><Y>0</Y><Z>0</Z></Position3D>
+  <Component Type="PointLight">
+    <Property Name="Color" Value="1,1,1,1" Type="Color"/>
+    <Property Name="Intensity" Value="2" Type="Single"/>
+    <Property Name="Range" Value="15" Type="Single"/>
+  </Component>
+</Entity>

@@ -116,20 +116,106 @@ well:
   boxes.
 
 ### 5. Level authoring
-- A level in scene XML is: `Mesh3D` visuals (pure decoration — never collided with), a
-  navmesh `.obj`, `BoxCollider3D` interactables/triggers, lights, and a `PlayerStart` entity.
-- Navmesh in Blender, two routes:
-  - **Hand-model it** — duplicate the floor faces of the level mesh, simplify, and inset
-    ~0.35 m from walls (that inset *is* the player radius). It doesn't need to be pretty,
-    just low-poly and connected. Cover stairs with a simple ramp ribbon.
-  - **Generate it** — Recast-based Blender addons produce a navmesh from the level geometry
-    with agent radius/height parameters (the inset comes free). Worth trying once levels get
-    organic; hand-modeling is fine to start.
-- One-time sanity check: export a marker cube in both the FBX visuals and the navmesh `.obj`
-  and confirm they land in the same place in-game — catches axis-convention mismatches on
-  day one.
+
+#### Design a whole level in Blender (recommended)
+`tools/blender_export_walksim.py` exports the visible Blender scene as a ready-to-walk level in
+one run: mesh objects → FBX + `Mesh3D`, marked objects → `Interactable3D`, walkable meshes →
+a navmesh (baked via `NavMeshBaker`), point/sun lights, a spawn, plus the scene XML +
+`Scene3DAsset` (`Mode=Walk`) + `.scene3d`, and patches `Content.mgcb`. Meter-scaled
+(`SceneScale=1`). Set `GAME_CONTENT_DIR`/`REPO_DIR`/`OUTPUT_SCENE_NAME` at the top, run in
+Blender's Scripting workspace, then rebuild the game.
+
+Mark objects with **custom properties** (Object Properties → Custom Properties):
+
+| Property | On | Effect |
+|---|---|---|
+| `interact_action` | mesh | marks it interactable; the dispatcher verb (e.g. `show-text`) |
+| `interact_prompt` | mesh | crosshair hint (default "interact") |
+| `interact_target` | mesh | what the action acts on (file path / glyph id / entity name) |
+| `interact_message` | mesh | payload text (for `show-text`, the text shown) |
+| `no_collide` = 1 | mesh | exclude from the navmesh (props you can't walk on) |
+| `player_start` = 1 | any | spawn point (or just name an object `PlayerStart`) |
+| `intensity`, `range`, `shadows` | lights | override defaults (range = point only, shadows = sun only) |
+
+Interaction is data-driven: `Action` flows Blender → `Interactable3DComponent` →
+`InteractionDispatcher.Dispatch` (`ld59/WalkingSim/`), which switches on `Action`. Today only
+`show-text` is wired; add new effects as one `case` there (the file lists the wireable menu:
+reveal/open a file, play a sound, unlock a clue, learn a glyph, toggle an entity).
+
+Because Blender levels are `Mesh3D` throughout, terrain **occludes** ID-buffer picks (no
+hover-through-walls) and gets full point + directional lighting and shadows — unlike the raw-OBJ
+`ObjTerrain` path. Do the marker-cube check on your first export (below).
+
+#### Powergrid puzzle panels (internals)
+`PuzzlePanelComponent` (`ld59/WalkingSim/`) hosts a powergrid puzzle on an object. It loads the
+puzzle scene, renders a (view-only) `PowergridView` to a `RenderTarget2D` in an offscreen pass in
+`UI3DScene.Update` (before the main pass), and draws a world-mounted textured quad
+(`shaders/textured-quad.fx`, unlit) at the entity, oriented by `PanelYaw` (a fixed part of the
+level, not a billboard). On `OnInteract`, `WalkingSimUI` opens a
+`PuzzleSolveOverlay` — the **same** `PowergridView` resized to a large centred rect with the walk
+camera capture suspended (`UI3DScene.SuspendCapture`), so the real cursor solves it. The overlay
+polls `Controller.IsLevelSolved` (no events exist), and on the rising edge reads the solution
+(`Graphs[].Nodes[].Rune`), matches it against the `Outcomes` DSL (which-solution mapping), and
+fires the effect through `InteractionDispatcher`. Environment effects (`reveal`/`hide`/`toggle`)
+flip `Entity.Visible`, gated in `Entity.Draw3D` and the pick pass. Note: revealed **walkable**
+geometry must be pre-baked into the navmesh (hidden only visually) — the navmesh is static.
+
+#### Hand-authored scene XML
+- A level in scene XML is: `Mesh3D` visuals, a navmesh `.obj`, `Interactable3D` (+ optional
+  `BoxCollider3D` triggers), lights, and a `PlayerStart` entity.
+- Navmesh, two routes:
+  - **Generate it with `NavMeshBaker` (default)** — the offline Recast tool (`NavMeshBaker/`,
+    built on DotRecast) bakes the walkable navmesh from level geometry. The ~0.35 m wall inset,
+    stair/slope walkability, and tunnel headroom all fall out of the agent parameters.
+  - **Hand-model it** — duplicate the floor faces, simplify, inset ~0.35 m from walls, cover
+    stairs with a ramp ribbon. Only needed for total control; the baker is the normal path.
+- One-time sanity check: export a marker cube in both the FBX visuals and the navmesh input and
+  confirm they land in the same place in-game — catches axis-convention mismatches on day one.
 - Debug (dev-console toggles): draw the navmesh wireframe in-world with the current triangle
   highlighted; noclip = switch the camera back to Fly mode (already exists).
+
+#### NavMeshBaker (Recast) — baking a navmesh
+Offline console tool (`NavMeshBaker/`, DotRecast). DotRecast is referenced only here, never in
+the shipped game — the game just loads the OBJ the baker writes (via `Scene3DAsset.NavMeshPath`).
+
+```
+cd NavMeshBaker
+dotnet run -- <input.obj | scene.xml>  <output.obj>  [options]
+  --radius <m>   agent radius / wall inset (default 0.35)
+  --height <m>   agent height / min headroom (default 1.8)
+  --step <m>     max step climb (default 0.3; must exceed stair rise)
+  --slope <deg>  max walkable slope (default 45)
+  --cell <m>     XZ voxel size (default 0.15); --cellHeight for Y
+  --validate     load the result back and report connectivity
+```
+
+Two input sources (auto-detected by extension):
+- **`.obj`** — a Blender-exported level (or a simplified collision mesh). The natural
+  "navmesh from a 3D model" path.
+- **scene `.xml`** — bakes from the level's `BoxPrimitive3D` entities (blockouts, no Blender
+  step). `Mesh3D` entities are ignored (their geometry is in FBX, not read).
+
+Output is the detail mesh (terrain-following triangles), vertex-welded so seams stay walkable.
+The demo `walk_level_navmesh_baked.obj` is produced this way from `walk_level.xml`.
+
+**Getting the model in as visible terrain:** do NOT load it as a MonoGame `Model` — the OBJ/FBX
+content pipeline (`OpenAssetImporter`) emits a `MaterialContent` that has no runtime reader, so
+`Content.Load<Model>` throws (`Could not find ContentTypeReader ... MaterialContent`) and the
+level shows as a blank window. Instead `/copy:` the OBJ into content and point an
+`ObjTerrain` component at it (`Property Name="ObjPath"`) — it builds the vertex buffer itself
+(flat-shaded) and draws with the `point-light` shader, no materials involved. The same OBJ feeds
+the navmesh baker, so visual and navmesh always align. See `terrain.xml` / `terrain_asset.xml`.
+
+Gotchas (all learned the hard way, covered by `WalkingSimTests`):
+- **Walkable faces need up-facing normals.** Recast's slope test is winding-sensitive (unlike
+  the runtime `NavMesh`). Blender exports up-facing floor normals by default; a floor wound the
+  other way bakes to *nothing*. Box-scene input handles this automatically.
+- **Overlapping surfaces need ≥ agent-height clearance.** A floor under a platform only stays
+  walkable if the gap ≥ `--height` (the demo tunnel is 2.0 m vs 1.8 m — tight but fine). This
+  is a design constraint the hand-authored mesh didn't have.
+- **Stairs**: `--step` must exceed the step rise or the staircase bakes as a wall.
+- **Units/axes**: the baker works in the input's coordinate space; an OBJ must already match the
+  scene's world axes/scale (walk scenes use SceneScale = 1, so box-scene input is automatic).
 
 ### 6. App shell + integration
 - `WalkingSimUI` window modeled on `Scene3DViewerUI`; reuse `FileType.Scene3D` with a

@@ -130,6 +130,36 @@ public static class WebPageLoader
         return string.Join("/", resolved);
     }
 
+    public static bool Exists(string url)
+        => !string.IsNullOrEmpty(url) && File.Exists(WwwRoot + url);
+
+    /// <summary>
+    /// Turns something the player typed into the candidate urls it could mean, most literal first.
+    /// This is the inverse of <see cref="FormatDisplayUrl"/>: the address bar shows "http://bigmetrotimes/",
+    /// so typing that back (or just "bigmetrotimes") has to find "bigmetrotimes/index.txt".
+    /// Callers test the candidates against the page registry and the www folder in order.
+    /// </summary>
+    public static List<string> ExpandTypedUrl(string typed)
+    {
+        var candidates = new List<string>();
+        if (string.IsNullOrWhiteSpace(typed)) return candidates;
+
+        string s = typed.Trim();
+        if (s.StartsWith("http://")) s = s.Substring("http://".Length);
+        else if (s.StartsWith("https://")) s = s.Substring("https://".Length);
+
+        s = s.Trim().Trim('/');
+        if (s.Length == 0) return candidates;
+
+        candidates.Add(s);
+        if (!s.EndsWith(".txt"))
+        {
+            candidates.Add(s + ".txt");
+            candidates.Add(s + "/index.txt");
+        }
+        return candidates;
+    }
+
     public static string FormatDisplayUrl(string url)
     {
         string display = url;

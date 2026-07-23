@@ -25,9 +25,20 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+    <!-- Recast (pure C#) so the in-game editor can bake navmeshes in-process. -->
+    <PackageReference Include="DotRecast.Recast" Version="2026.1.3" />
+    <PackageReference Include="DotRecast.Core" Version="2026.1.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\quartz\quartz.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Share the baker's Recast wrapper with the offline NavMeshBaker tool. Stubs.cs is
+         excluded on purpose: it defines placeholder Vector types the tool needs headlessly,
+         but here we have the real MonoGame ones. -->
+    <Compile Include="..\NavMeshBaker\TriangleSoup.cs" Link="WalkingSim\Baker\TriangleSoup.cs" />
+    <Compile Include="..\NavMeshBaker\NavMeshBake.cs"  Link="WalkingSim\Baker\NavMeshBake.cs" />
+    <Compile Include="..\NavMeshBaker\ObjWriter.cs"    Link="WalkingSim\Baker\ObjWriter.cs" />
   </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="CollectPackageReferences">
     <Message Text="Restoring dotnet tools (this might take a while depending on your internet speed and should only happen upon building your project for the first time, or after upgrading MonoGame, or clearing your nuget cache)" Importance="High" />

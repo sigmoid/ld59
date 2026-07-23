@@ -20,6 +20,13 @@ float4 LightPositions[MAX_LIGHTS];
 float4 LightColors[MAX_LIGHTS];
 float  NumLights;
 
+// Optional directional light (sun). HasDirLight defaults to 0, so callers that never set it
+// (e.g. BoxPrimitive3D) are unaffected.
+bool   HasDirLight;
+float3 DirLightDirection;   // normalized, toward the light
+float3 DirLightColor;
+float  DirLightIntensity;
+
 struct VertexInput
 {
     float4 Position : POSITION;
@@ -64,6 +71,9 @@ float4 PS(VertexOutput input) : COLOR
     int n = int(NumLights);
     for (int i = 0; i < n; i++)
         lighting += CalcPointLight(input.WorldPos, normal, LightPositions[i], LightColors[i]);
+
+    if (HasDirLight)
+        lighting += DirLightColor * (DirLightIntensity * saturate(dot(normal, DirLightDirection)));
 
     return float4(input.Color.rgb * saturate(lighting), input.Color.a);
 }

@@ -63,6 +63,14 @@ public sealed class PowergridInspector : UIPanel
     private readonly Button _regionMaxMinus, _regionMaxPlus;
     private readonly Button _deleteRegion;
 
+    // ── Text section ──────────────────────────────────────────────────────
+    private readonly TextArea _textField;
+    private readonly Button _textScaleMinus, _textScalePlus;
+    private readonly Button _textAlign, _deleteText;
+    /// <summary>The label the text field is currently bound to, so we only push the field's contents
+    /// into it (and only re-fill the field) when the selection actually changes.</summary>
+    private PowergridTextComponent _boundLabel;
+
     // ── Level section ─────────────────────────────────────────────────────
     private readonly Button _targetToggle;
     private readonly Dictionary<ColoringRule, Button> _ruleButtons = new();
@@ -77,11 +85,12 @@ public sealed class PowergridInspector : UIPanel
     private Vector2 _influencePos;
     private Vector2 _puzHeaderPos, _puzOrderPos;
     private Vector2 _regionTierPos, _regionMaxPos;
+    private Vector2 _textScalePos;
     private Vector2 _connHeaderPos;
     private Vector2 _levelHeaderPos, _gridHintPos, _rulesLabelPos;
 
     // Track selection type to re-layout when it changes.
-    private enum SelectionKind { None, Node, Connection, Region }
+    private enum SelectionKind { None, Node, Connection, Region, Text }
     private SelectionKind _lastKind = SelectionKind.None;
 
     public PowergridInspector(Rectangle bounds, PowergridView view)
@@ -136,6 +145,21 @@ public sealed class PowergridInspector : UIPanel
         AddChild(_regionMaxPlus);
         AddChild(_deleteRegion);
 
+        // Text section
+        _textField = new TextArea(new Rectangle(0, 0, 10, 10), _font,
+            backgroundColor: ColorPalette.ActualWhite, textColor: ColorPalette.Black,
+            borderColor: ColorPalette.Black, focusedBorderColor: ColorPalette.DarkGreen);
+        _textField.OnTextChanged += t => _view.SetSelectedTextContent(t);
+        _textScaleMinus = Mk("-", () => _view.AdjustTextScale(-0.25f));
+        _textScalePlus  = Mk("+", () => _view.AdjustTextScale(0.25f));
+        _textAlign      = Mk("Align: Center", _view.CycleTextAlign);
+        _deleteText     = Mk("Delete Text", _view.DeleteSelectedText);
+        AddChild(_textField);
+        AddChild(_textScaleMinus);
+        AddChild(_textScalePlus);
+        AddChild(_textAlign);
+        AddChild(_deleteText);
+
         // Level section
         _targetToggle = Mk("Target: Inventory",
             () => _target = _target == ChipTarget.Inventory ? ChipTarget.Reward : ChipTarget.Inventory);
@@ -158,6 +182,7 @@ public sealed class PowergridInspector : UIPanel
     {
         if (_view.SelectedConnection != null) return SelectionKind.Connection;
         if (_view.SelectedRegion    != null) return SelectionKind.Region;
+        if (_view.SelectedText      != null) return SelectionKind.Text;
         if (_view.Selected          != null) return SelectionKind.Node;
         return SelectionKind.None;
     }
@@ -217,6 +242,19 @@ public sealed class PowergridInspector : UIPanel
             _regionMaxMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
             y += h + gap;
             _deleteRegion.SetBounds(new Rectangle(x, y, w, h));
+            y += h + gap + 14;
+        }
+        else if (kind == SelectionKind.Text)
+        {
+            y += 26;
+            _textField.SetBounds(new Rectangle(x, y, w, 96)); y += 96 + gap;
+            // Scale row
+            _textScalePos = new Vector2(x, y + (h - _font.LineSpacing) / 2f);
+            _textScalePlus.SetBounds(new Rectangle(_bounds.Right - pad - h, y, h, h));
+            _textScaleMinus.SetBounds(new Rectangle(_bounds.Right - pad - h * 2 - 4, y, h, h));
+            y += h + gap;
+            _textAlign.SetBounds(new Rectangle(x, y, w, h)); y += h + gap;
+            _deleteText.SetBounds(new Rectangle(x, y, w, h));
             y += h + gap + 14;
         }
 
@@ -292,6 +330,7 @@ public sealed class PowergridInspector : UIPanel
         bool nodeSelected = kind == SelectionKind.Node;
         bool connSelected = kind == SelectionKind.Connection;
         bool regionSelected = kind == SelectionKind.Region;
+        bool textSelected = kind == SelectionKind.Text;
 
         _fixedRune.SetEnabled(nodeSelected);
         _deleteNode.SetEnabled(nodeSelected);
@@ -320,6 +359,25 @@ public sealed class PowergridInspector : UIPanel
         _regionMaxMinus.SetEnabled(regionSelected);
         _regionMaxPlus.SetEnabled(regionSelected);
         _deleteRegion.SetEnabled(regionSelected);
+
+        _textField.SetVisibility(textSelected);
+        foreach (var btn in new[] { _textScaleMinus, _textScalePlus, _textAlign, _deleteText })
+        {
+            btn.SetVisibility(textSelected);
+            btn.SetEnabled(textSelected);
+        }
+
+        // Bind the text field to whichever label is selected (only on a change, so typing isn't
+        // clobbered every frame).
+        if (_view.SelectedText != _boundLabel)
+        {
+            _boundLabel = _view.SelectedText;
+            _textField.Text = _boundLabel?.Text ?? string.Empty;
+            _textField.SetFocus(textSelected);
+        }
+
+        if (textSelected)
+            _textAlign.SetText($"Align: {_view.SelectedTextAlign}");
 
         // Update dynamic labels
         if (nodeSelected)
@@ -403,6 +461,12 @@ public sealed class PowergridInspector : UIPanel
                 sb.DrawString(_font, $"Tier: {r.Tier}", _regionTierPos, ColorPalette.Black);
                 sb.DrawString(_font, $"Max: {r.MaxCount}", _regionMaxPos, ColorPalette.Black);
             }
+        }
+
+        else if (kind == SelectionKind.Text)
+        {
+            sb.DrawString(_font, "Text", _topSectionHeaderPos, ColorPalette.Black);
+            sb.DrawString(_font, $"Scale: {_view.SelectedTextScale:0.##}", _textScalePos, ColorPalette.Black);
         }
 
         sb.DrawString(_font, "Level", _levelHeaderPos, ColorPalette.Black);

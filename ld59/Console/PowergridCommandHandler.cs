@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Quartz;
+using ld59.UI.Powergrid;
 
 public class PowergridCommandHandler : ConsoleCommandHandler
 {
@@ -50,8 +51,9 @@ public class PowergridCommandHandler : ConsoleCommandHandler
             return;
         }
 
+        // Opened from the console: the full authoring surface (editor + solver).
         string levelName = args.Length > 0 ? args[0] : null;
-        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), levelName);
+        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), levelName, PowergridFeatures.All);
         Core.UISystem.AddElement(ui);
     }
 
@@ -66,7 +68,7 @@ public class PowergridCommandHandler : ConsoleCommandHandler
             return;
         }
 
-        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), name, levels);
+        var ui = new PowergridUI(new Rectangle(40, 70, 1150, 720), name, levels, PowergridFeatures.All);
         Core.UISystem.AddElement(ui);
         Console.PrintLine($"Opened progression '{name}' ({levels.Count} levels)");
     }

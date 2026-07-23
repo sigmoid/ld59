@@ -508,8 +508,9 @@ public class BrowserTextArea : UIElement
         RebuildWrappedLines();
     }
 
-    public void Dispose()
+    public override void OnRemovedFromUI()
     {
+        base.OnRemovedFromUI();
         _pixel?.Dispose();
         _scrollbar?.Dispose();
     }
