@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -13,7 +13,7 @@ public enum EditTool { Select, AddNode, Connect, Delete, Region, Text }
 
 /// <summary>
 /// Which authoring affordances a powergrid window exposes. The player-facing launch (Start menu, an
-/// in-world puzzle panel) opens with <see cref="None"/> — just the board. Opening from the developer
+/// in-world puzzle panel) opens with <see cref="None"/> â€” just the board. Opening from the developer
 /// console uses <see cref="All"/> so levels can be built and checked.
 /// </summary>
 [Flags]
@@ -72,7 +72,7 @@ public class PowergridView : UIElement
     private bool _prevLeftPressed;
     private bool _prevRightPressed;
 
-    /// <summary>When false the solver controls are hidden and the alphabet panel takes their space —
+    /// <summary>When false the solver controls are hidden and the alphabet panel takes their space â€”
     /// the board is play-only. Set by whoever opens the view; see <see cref="PowergridFeatures"/>.</summary>
     public bool ShowSolver { get; set; } = true;
 
@@ -103,7 +103,7 @@ public class PowergridView : UIElement
     /// <summary>Remaining runes the player can still place this session (flat; repeats = quantity).</summary>
     private readonly List<string> _inventory = new();
     /// <summary>Puzzle ids whose reward has already been granted this session (rewards are permanent
-    /// once earned — never revoked even if the puzzle is later unsolved).</summary>
+    /// once earned â€” never revoked even if the puzzle is later unsolved).</summary>
     private readonly HashSet<string> _rewarded = new();
 
     // Solver state (runtime). When viewing a solution the board is overwritten; the player's own board
@@ -138,7 +138,7 @@ public class PowergridView : UIElement
         _circleFilled   = Core.Content.Load<Texture2D>("images/powergrid/circle-filled");
         _circleOutlined = Core.Content.Load<Texture2D>("images/powergrid/circle-outlined");
 
-        _prevScroll = Mouse.GetState().ScrollWheelValue;
+        _prevScroll = Quartz.Core.GetMouseState().ScrollWheelValue;
         ResetPlayState();
     }
 
@@ -178,7 +178,7 @@ public class PowergridView : UIElement
     #region Solver
 
     /// <summary>The full rune budget the solver may use: the starting inventory plus every puzzle's
-    /// reward (sequencing/gating is ignored — it answers "with all the runes, how many colourings?").</summary>
+    /// reward (sequencing/gating is ignored â€” it answers "with all the runes, how many colourings?").</summary>
     private List<string> SolverBudget()
     {
         var budget = new List<string>(_controller.InitialInventory);
@@ -326,7 +326,7 @@ public class PowergridView : UIElement
 
     public override void Update(float deltaTime)
     {
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         var mp = Core.GetTransformedMousePoint();
         bool inside = _bounds.Contains(mp);
 
@@ -440,7 +440,7 @@ public class PowergridView : UIElement
             return;
         }
 
-        // Or lift a placed rune off a (non-fixed) node — it stays "in hand", out of the inventory.
+        // Or lift a placed rune off a (non-fixed) node â€” it stays "in hand", out of the inventory.
         if (GraphRegion.Contains(mp))
         {
             var node = HitTestNode(mp);
@@ -506,8 +506,8 @@ public class PowergridView : UIElement
 
     private void Reject(Vector2 screenPos) { _rejectTimer = 0.4f; _rejectPos = screenPos; }
 
-    /// <summary>Lays the whole alphabet out as a pyramid inside <see cref="PyramidPanel"/> — one row
-    /// per tier, ordered by <see cref="Symbol.RowOrder"/>, each row centred — and returns every rune's
+    /// <summary>Lays the whole alphabet out as a pyramid inside <see cref="PyramidPanel"/> â€” one row
+    /// per tier, ordered by <see cref="Symbol.RowOrder"/>, each row centred â€” and returns every rune's
     /// on-screen slot. Cheap; recomputed on demand for both drawing and hit-testing.</summary>
     private List<(string name, Rectangle rect)> PyramidSlots()
     {
@@ -755,7 +755,7 @@ public class PowergridView : UIElement
     }
 
     /// <summary>Clears every selection channel, then sets the one that was passed. Node/connection/
-    /// region/text selections are mutually exclusive — the inspector shows one section at a time.</summary>
+    /// region/text selections are mutually exclusive â€” the inspector shows one section at a time.</summary>
     private void SelectOnly(PowerNodeComponent node = null, Connection connection = null,
         PowergridRegionComponent region = null, PowergridTextComponent text = null)
     {
@@ -825,9 +825,9 @@ public class PowergridView : UIElement
         return Vector2.Distance(p, a + ab * t);
     }
 
-    // ── Inspector ops ─────────────────────────────────────────────────────
+    // â”€â”€ Inspector ops â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    /// <summary>Cycles the selected node's fixed-clue rune: none → palette runes → none.</summary>
+    /// <summary>Cycles the selected node's fixed-clue rune: none â†’ palette runes â†’ none.</summary>
     public void CycleFixedRune()
     {
         if (Selected == null) return;
@@ -865,7 +865,7 @@ public class PowergridView : UIElement
         MarkDirty();
     }
 
-    // ── Per-puzzle sequence authoring (acts on the puzzle containing the selected node) ──────
+    // â”€â”€ Per-puzzle sequence authoring (acts on the puzzle containing the selected node) â”€â”€â”€â”€â”€â”€
 
     /// <summary>Id of the puzzle the selected node belongs to, or null if nothing is selected.</summary>
     public string SelectedPuzzleId => Selected == null ? null : _controller.GraphOf(Selected)?.Id;
@@ -966,7 +966,7 @@ public class PowergridView : UIElement
         return _controller.ActiveRules.Contains(rule);
     }
 
-    // ── Per-connection rule override authoring ─────────────────────────────
+    // â”€â”€ Per-connection rule override authoring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>True when the selected connection has a rule override (not using level defaults).</summary>
     public bool ConnectionHasOverride => SelectedConnection?.RuleOverride != null;
@@ -1031,7 +1031,7 @@ public class PowergridView : UIElement
         return conn.From;
     }
 
-    // ── Region authoring ──────────────────────────────────────────────────
+    // â”€â”€ Region authoring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void AdjustRegionTier(int delta)
     {
@@ -1052,7 +1052,7 @@ public class PowergridView : UIElement
         if (SelectedRegion != null) DeleteRegion(SelectedRegion);
     }
 
-    // ── Text label authoring ──────────────────────────────────────────────
+    // â”€â”€ Text label authoring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public string SelectedTextContent => SelectedText?.Text ?? string.Empty;
 
@@ -1361,7 +1361,7 @@ public class PowergridView : UIElement
     /// <summary>The right-hand alphabet panel: the whole rune set laid out as a pyramid (so the tier /
     /// side relationships the rules depend on are visible). Owned runes render as a black disc with a
     /// white glyph and a small count badge; runes the player has none of render inverted (a white
-    /// outlined ring with a black glyph) and can't be picked up. This panel is the rune source — drag a
+    /// outlined ring with a black glyph) and can't be picked up. This panel is the rune source â€” drag a
     /// chip onto a node to place it.</summary>
     private void DrawPyramidPanel(SpriteBatch sb)
     {
@@ -1452,7 +1452,7 @@ public class PowergridView : UIElement
     }
 
     /// <summary>Draws one pyramid chip. Owned (count &gt; 0): filled black disc + white glyph + badge.
-    /// Unavailable (count 0): foreground/background swapped — a white outlined ring + black glyph.</summary>
+    /// Unavailable (count 0): foreground/background swapped â€” a white outlined ring + black glyph.</summary>
     private void DrawRuneChip(SpriteBatch sb, Rectangle rect, string rune, int count)
     {
         bool owned = count > 0;

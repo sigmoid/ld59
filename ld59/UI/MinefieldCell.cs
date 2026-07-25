@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -58,7 +58,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
 
     private static readonly System.Random _runeRng = new System.Random();
     /// <summary>The rune shown in place of the neighbour count: a random symbol whose tier equals
-    /// <see cref="NeighborCount"/>. Null when no tier matches (count exceeds the tier count) — then the
+    /// <see cref="NeighborCount"/>. Null when no tier matches (count exceeds the tier count) â€” then the
     /// raw number is shown. Resolved once and cached so it doesn't flicker between frames.</summary>
     private string _runeName;
     /// <summary>When the mines straddle both sides but the tier row has no centre rune, the display
@@ -84,7 +84,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
 
         if (tierRunes.Count == 0)
         {
-            // Beyond the tier count: write the number in bijective base-(tierCount) — one rune per digit.
+            // Beyond the tier count: write the number in bijective base-(tierCount) â€” one rune per digit.
             if (NeighborCount > tierCount)
                 _digitRunes = BijectiveDigits(NeighborCount, tierCount)
                     .Select(RepresentativeRune).ToArray();
@@ -120,7 +120,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
         }
     }
 
-    /// <summary>The rune name to draw this frame: the resolved single rune, or — when flashing — one of
+    /// <summary>The rune name to draw this frame: the resolved single rune, or â€” when flashing â€” one of
     /// the two middle runes chosen by wall-clock time so all flashing cells stay in sync.</summary>
     private string ActiveRune()
         => _flashRunes != null
@@ -171,7 +171,7 @@ public class MinefieldCell : UIElement, IHoverableUIElement
 
     public override void Update(float deltaTime)
     {
-        var mouseState = Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
 
         _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && _isFocused;
 

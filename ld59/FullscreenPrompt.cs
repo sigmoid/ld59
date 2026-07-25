@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -84,7 +84,7 @@ public class FullscreenPrompt : UIPanel
                 Choose(false);
             _prevKeys = keys;
 
-            var mouse = Mouse.GetState();
+            var mouse = Quartz.Core.GetMouseState();
             bool mouseDown = mouse.LeftButton == ButtonState.Pressed;
             if (mouseDown && !_lastMouseDown)
             {

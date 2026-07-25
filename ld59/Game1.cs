@@ -111,7 +111,7 @@ public class Game1 : Core
             Exit();
 
         var keyboard = Keyboard.GetState();
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
 
         if (keyboard.IsKeyDown(Keys.F1) && !_prevKeyboard.IsKeyDown(Keys.F1))
             SkipIntro();

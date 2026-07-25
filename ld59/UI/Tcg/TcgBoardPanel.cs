@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -8,8 +8,8 @@ using Quartz;
 using Quartz.UI;
 
 /// <summary>
-/// The TCG's content panel: board layout, the click-select → click-target state machine,
-/// paced AI turns, and the win/lose overlay. Follows SolitaireUI's content-panel pattern —
+/// The TCG's content panel: board layout, the click-select â†’ click-target state machine,
+/// paced AI turns, and the win/lose overlay. Follows SolitaireUI's content-panel pattern â€”
 /// scissor-clipped drawing, direct mouse polling with edge detection, engine owned by the
 /// panel and replaced wholesale on reset.
 ///
@@ -72,7 +72,7 @@ public class TcgBoardPanel : UIElement
         _dictionary.SetBounds(DictionaryBounds());
     }
 
-    // ── Layout ─────────────────────────────────────────────────────────────────
+    // â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void Layout()
     {
@@ -135,12 +135,12 @@ public class TcgBoardPanel : UIElement
         return new Rectangle(_bounds.Right - w - Margin, _bounds.Y + Margin, w, _bounds.Height - 2 * Margin);
     }
 
-    // ── Input ──────────────────────────────────────────────────────────────────
+    // â”€â”€ Input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         var pt = Core.GetTransformedMousePoint();
         bool clicked = mouse.LeftButton == ButtonState.Pressed && _prevLeft == ButtonState.Released;
         _prevLeft = mouse.LeftButton;
@@ -251,7 +251,7 @@ public class TcgBoardPanel : UIElement
                 AudioAtlas.Confirmation_001.Play();
                 _selected = null;
             }
-            else Select(TcgZone.Front, frontHit);   // incompatible sidedness → reselect the clicked card
+            else Select(TcgZone.Front, frontHit);   // incompatible sidedness â†’ reselect the clicked card
             return;
         }
 
@@ -292,7 +292,7 @@ public class TcgBoardPanel : UIElement
         return -1;
     }
 
-    // ── Drawing ────────────────────────────────────────────────────────────────
+    // â”€â”€ Drawing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public override void Draw(SpriteBatch spriteBatch)
     {
@@ -366,7 +366,7 @@ public class TcgBoardPanel : UIElement
             new Vector2(_handStrip.Right - size.X, _handStrip.Y + (_cardH - size.Y) / 2), new Color(210, 230, 210));
     }
 
-    // Selection in orange, legal destinations in white — the highlights double as rule teaching.
+    // Selection in orange, legal destinations in white â€” the highlights double as rule teaching.
     private void DrawHighlights(SpriteBatch sb)
     {
         if (_selected == null || S.CurrentPlayer != 0 || S.Winner >= 0 || _dictOpen) return;
@@ -463,7 +463,7 @@ public class TcgBoardPanel : UIElement
             Color.White * (_endFade * 0.85f));
     }
 
-    // Concise how-to-play tutorial (the "?" button). ASCII only — the UI font lacks glyphs for
+    // Concise how-to-play tutorial (the "?" button). ASCII only â€” the UI font lacks glyphs for
     // typographic dashes/dots. Section headers are drawn brighter; the title is centred.
     private static readonly string[] HelpLines =
     {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -11,10 +11,10 @@ namespace ld59.UI.Powergrid;
 
 /// <summary>
 /// Right-hand editor inspector. Shows a different top section depending on what is selected:
-///   • Node selected   → Node + Puzzle sections
-///   • Connection selected → Connection rules section
-///   • Region selected → Region (tier / max-count) section
-///   • Nothing selected → (no top section)
+///   â€¢ Node selected   â†’ Node + Puzzle sections
+///   â€¢ Connection selected â†’ Connection rules section
+///   â€¢ Region selected â†’ Region (tier / max-count) section
+///   â€¢ Nothing selected â†’ (no top section)
 /// The Level section (inventory, adjacency rules) is always shown at the bottom.
 ///
 /// The inventory/reward editor reuses the play-mode <b>alphabet pyramid</b>: every rune is a chip
@@ -47,23 +47,23 @@ public sealed class PowergridInspector : UIPanel
     private readonly Texture2D _circleFilled;
     private readonly Texture2D _circleOutlined;
 
-    // ── Node section ──────────────────────────────────────────────────────
+    // â”€â”€ Node section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly Button _fixedRune, _deleteNode;
     private readonly Button _influenceMinus, _influencePlus;
 
-    // ── Puzzle section ────────────────────────────────────────────────────
+    // â”€â”€ Puzzle section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly Button _puzOrderMinus, _puzOrderPlus;
 
-    // ── Connection section ────────────────────────────────────────────────
+    // â”€â”€ Connection section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly Dictionary<ColoringRule, Button> _connRuleButtons = new();
     private readonly Button _clearOverride;
 
-    // ── Region section ────────────────────────────────────────────────────
+    // â”€â”€ Region section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly Button _regionTierMinus, _regionTierPlus;
     private readonly Button _regionMaxMinus, _regionMaxPlus;
     private readonly Button _deleteRegion;
 
-    // ── Text section ──────────────────────────────────────────────────────
+    // â”€â”€ Text section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly TextArea _textField;
     private readonly Button _textScaleMinus, _textScalePlus;
     private readonly Button _textAlign, _deleteText;
@@ -71,7 +71,7 @@ public sealed class PowergridInspector : UIPanel
     /// into it (and only re-fill the field) when the selection actually changes.</summary>
     private PowergridTextComponent _boundLabel;
 
-    // ── Level section ─────────────────────────────────────────────────────
+    // â”€â”€ Level section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private readonly Button _targetToggle;
     private readonly Dictionary<ColoringRule, Button> _ruleButtons = new();
 
@@ -197,7 +197,7 @@ public sealed class PowergridInspector : UIPanel
 
         var kind = CurrentKind();
 
-        // ── Top section (selection-dependent) ────────────────────────────
+        // â”€â”€ Top section (selection-dependent) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _topSectionHeaderPos = new Vector2(x, y);
 
         if (kind == SelectionKind.Node)
@@ -258,7 +258,7 @@ public sealed class PowergridInspector : UIPanel
             y += h + gap + 14;
         }
 
-        // ── Level section (always at bottom) ─────────────────────────────
+        // â”€â”€ Level section (always at bottom) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _levelHeaderPos = new Vector2(x, y); y += 26;
         _targetToggle.SetBounds(new Rectangle(x, y, w, h)); y += h + gap;
         _gridHintPos = new Vector2(x, y); y += 20;
@@ -326,7 +326,7 @@ public sealed class PowergridInspector : UIPanel
         var kind = CurrentKind();
         if (kind != _lastKind) { _lastKind = kind; SetBounds(_bounds); }
 
-        // ── Show/hide buttons by section ──────────────────────────────────
+        // â”€â”€ Show/hide buttons by section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         bool nodeSelected = kind == SelectionKind.Node;
         bool connSelected = kind == SelectionKind.Connection;
         bool regionSelected = kind == SelectionKind.Region;
@@ -409,7 +409,7 @@ public sealed class PowergridInspector : UIPanel
 
     private void HandleChipClicks()
     {
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         bool left = mouse.LeftButton == ButtonState.Pressed;
         bool right = mouse.RightButton == ButtonState.Pressed;
         bool leftClick = left && !_prevLeft;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -33,10 +33,14 @@ public class UI3DScene : UIElement
     public float FieldOfView      { get; set; } = MathHelper.PiOver4;
     public float NearPlane        { get; set; } = 1.0f;
     public float FarPlane         { get; set; } = 70000f;
-    public float MoveSpeed        { get; set; } = 3f;
+    public float MoveSpeed        { get; set; } = 10f;
     // Shift-to-boost multiplier for the free-fly (editor) camera.
     public float FlyBoostMultiplier { get; set; } = 6f;
     public float LookSensitivity  { get; set; } = 0.002f;
+
+    // Toggle (F3) for diagnosing the "mouse look goes dead" glitch: logs the raw cursor position,
+    // per-frame look delta, accumulated yaw, recentre target and bounds a few times a second.
+    public bool DebugLook { get; set; }
 
     public CameraMode Mode        { get; set; } = CameraMode.Fly;
     public WalkController Walker  { get; set; }
@@ -66,7 +70,11 @@ public class UI3DScene : UIElement
     // change), so live-value displays (the inspector) can track an in-progress gizmo drag.
     public event Action<Entity> OnEntityLiveUpdate;
     private Mesh3DComponent _selectedMesh;
-    private Vector3 _selectedBaseColor;
+
+    // Draw-time highlight multipliers (see Mesh3DComponent.HighlightFactor). Editor selection and
+    // walk-mode hover never apply at once, so a single factor per mesh suffices.
+    private const float SelectedHighlight = 1.8f;
+    private const float HoverHighlight    = 1.6f;
 
     // Fired whenever the scene's entity list changes (delete, undo/redo of add/delete,
     // placement) so panels like the hierarchy list know to rebuild.
@@ -108,6 +116,8 @@ public class UI3DScene : UIElement
     private bool _prevEscapePressed = false;
     private bool _prevTabPressed = false;
     private bool _captureSuspended = false;
+    private bool _prevDebugKey = false;
+    private int  _debugLookFrame = 0;
 
     // Release the mouse and stop re-capturing on click, so a modal (e.g. the puzzle solve view)
     // can use the cursor. Restore with ResumeCapture.
@@ -123,7 +133,7 @@ public class UI3DScene : UIElement
         _captureSuspended = false;
     }
 
-    // ── ID-buffer object picking (Walk mode) ────────────────────────────────────────
+    // â”€â”€ ID-buffer object picking (Walk mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private const int   IdWidth  = 160;
     private const int   IdHeight = 90;
     private const float InteractRange = 2.5f;
@@ -133,7 +143,6 @@ public class UI3DScene : UIElement
         public Entity Entity;
         public Interactable3DComponent Comp;
         public Mesh3DComponent Mesh;
-        public Vector3 BaseColor;
     }
 
     private RenderTarget2D _idTarget;
@@ -188,7 +197,7 @@ public class UI3DScene : UIElement
         // Finalize a background navmesh bake on the main thread once Recast has finished.
         FinishBake();
 
-        var mouse    = Mouse.GetState();
+        var mouse    = Quartz.Core.GetMouseState();
         var keyboard = Keyboard.GetState();
         var mousePos = new Point(mouse.X, mouse.Y);
 
@@ -212,6 +221,7 @@ public class UI3DScene : UIElement
             EditorMode = !EditorMode;
             Mode = EditorMode ? CameraMode.Fly : CameraMode.Walk;
             if (EditorMode) ShowNavMesh = true;
+            else Select(null);   // clear the selection highlight (and gizmo target) on the way out
             OnEditorModeChanged?.Invoke(EditorMode);
         }
         _prevEditorKey = editorKey;
@@ -232,6 +242,14 @@ public class UI3DScene : UIElement
         if (flyKey && !_prevFlyKey && !textFocused && !EditorMode && Walker != null)
             Mode = Mode == CameraMode.Walk ? CameraMode.Fly : CameraMode.Walk;
         _prevFlyKey = flyKey;
+
+        bool debugKey = keyboard.IsKeyDown(Keys.F3);
+        if (debugKey && !_prevDebugKey && !textFocused)
+        {
+            DebugLook = !DebugLook;
+            Console.WriteLine($"[look] debug logging {(DebugLook ? "ON" : "OFF")}");
+        }
+        _prevDebugKey = debugKey;
 
         // Delete: remove the selected entity from the scene.
         bool deleteKey = keyboard.IsKeyDown(Keys.Delete);
@@ -313,16 +331,16 @@ public class UI3DScene : UIElement
         if (EditorMode && SelectedEntity != null)
             OnEntityLiveUpdate?.Invoke(SelectedEntity);
 
+        bool justCaptured = false;
         if (!_captureSuspended && lookPressed && !_prevLookPressed && _bounds.Contains(mousePos))
         {
             _cameraActive = true;
-            _lockCenter   = new Point(_bounds.X + _bounds.Width / 2, _bounds.Y + _bounds.Height / 2);
-            Mouse.SetPosition(_lockCenter.X, _lockCenter.Y);
             Core.Instance.IsMouseVisible = false;
+            justCaptured  = true;   // recentre this frame without treating the click position as a look delta
         }
 
         // Fly releases capture on look-button-up (hold-to-look); Walk keeps capture until released.
-        // Tab releases in both modes (Escape can't be used — it quits the game globally).
+        // Tab releases in both modes (Escape can't be used â€” it quits the game globally).
         bool flyRelease = Mode == CameraMode.Fly && !lookPressed && _prevLookPressed && _cameraActive;
         bool tabRelease = tabPressed && !_prevTabPressed && _cameraActive;
         if (flyRelease || tabRelease)
@@ -333,12 +351,28 @@ public class UI3DScene : UIElement
 
         if (_cameraActive)
         {
-            var delta = new Vector2(mouse.X - _lockCenter.X, mouse.Y - _lockCenter.Y);
+            // Recompute the recentre target every frame. When it was only set at capture-start, a
+            // mid-capture window move/resize/fullscreen-toggle left it stale, so the cursor parked
+            // off-centre and could drift into a screen edge where the OS clamps it -- at which point
+            // the delta reads ~0 forever and the look appears to die.
+            _lockCenter = new Point(_bounds.X + _bounds.Width / 2, _bounds.Y + _bounds.Height / 2);
+
+            // On the frame capture engages the cursor is wherever the user clicked; recentre without
+            // applying that offset as a look delta (otherwise the view snaps).
+            var delta = justCaptured
+                ? Vector2.Zero
+                : new Vector2(mouse.X - _lockCenter.X, mouse.Y - _lockCenter.Y);
             Mouse.SetPosition(_lockCenter.X, _lockCenter.Y);
 
             _yaw   -= delta.X * LookSensitivity;
             _pitch -= delta.Y * LookSensitivity;
             _pitch  = MathHelper.Clamp(_pitch, -MathHelper.PiOver2 + 0.01f, MathHelper.PiOver2 - 0.01f);
+            _yaw    = MathHelper.WrapAngle(_yaw);   // keep yaw in [-pi,pi] so float precision never erodes slow looks
+
+            if (DebugLook && (_debugLookFrame++ % 15) == 0)
+                Console.WriteLine($"[look] mouse=({mouse.X},{mouse.Y}) delta=({delta.X},{delta.Y}) " +
+                    $"yaw={_yaw:F3} lockCenter=({_lockCenter.X},{_lockCenter.Y}) " +
+                    $"bounds={_bounds} suspended={_captureSuspended}");
 
             var forward = new Vector3(
                 MathF.Cos(_pitch) * MathF.Sin(_yaw),
@@ -392,7 +426,7 @@ public class UI3DScene : UIElement
 
         var device = Core.GraphicsDevice;
 
-        // Puzzle-panel surface pass — render each puzzle to its own texture before the main pass.
+        // Puzzle-panel surface pass â€” render each puzzle to its own texture before the main pass.
         if (Mode == CameraMode.Walk)
         {
             _puzzlePanels ??= _scene.FindEntitiesWithComponent<PuzzlePanelComponent>();
@@ -401,7 +435,7 @@ public class UI3DScene : UIElement
                     e.GetComponent<PuzzlePanelComponent>().RenderSurface(device, Core.SpriteBatch);
         }
 
-        // Shadow pass — renders all 6 cube faces
+        // Shadow pass â€” renders all 6 cube faces
         device.DepthStencilState = DepthStencilState.Default;
         device.RasterizerState   = RasterizerState.CullNone;
         _scene.DrawShadowPass(device, _shadowEffect, _dirShadowEffect);
@@ -679,15 +713,12 @@ public class UI3DScene : UIElement
     {
         if (e == SelectedEntity) return;
 
-        if (_selectedMesh != null) _selectedMesh.DiffuseColor = _selectedBaseColor;  // restore
+        if (_selectedMesh != null) _selectedMesh.HighlightFactor = 1f;  // clear old highlight
 
         SelectedEntity = e;
         _selectedMesh  = e?.GetComponent<Mesh3DComponent>();
         if (_selectedMesh != null)
-        {
-            _selectedBaseColor = _selectedMesh.DiffuseColor;
-            _selectedMesh.DiffuseColor = _selectedBaseColor * 1.8f;  // highlight
-        }
+            _selectedMesh.HighlightFactor = SelectedHighlight;  // non-destructive draw-time tint
 
         OnSelectionChanged?.Invoke(e);
     }
@@ -810,7 +841,7 @@ public class UI3DScene : UIElement
 
         // Render the ID buffer and read the crosshair pixel every other frame (GetData forces
         // a GPU sync). Every Mesh3D entity is drawn in its flat id colour; interactables get a
-        // non-zero red channel, everything else black — so occlusion is correct via depth.
+        // non-zero red channel, everything else black â€” so occlusion is correct via depth.
         if ((_pickFrame++ & 1) == 0)
         {
             device.SetRenderTarget(_idTarget);
@@ -855,9 +886,9 @@ public class UI3DScene : UIElement
 
         if (target == _hovered) return;
 
-        // restore the previously-hovered mesh, then tint the new one
-        if (_hovered?.Mesh != null) _hovered.Mesh.DiffuseColor = _hovered.BaseColor;
-        if (target?.Mesh != null)   target.Mesh.DiffuseColor   = target.BaseColor * 1.6f;
+        // clear the previously-hovered mesh's highlight, then tint the new one (draw-time only)
+        if (_hovered?.Mesh != null) _hovered.Mesh.HighlightFactor = 1f;
+        if (target?.Mesh != null)   target.Mesh.HighlightFactor   = HoverHighlight;
         _hovered = target;
     }
 
@@ -885,7 +916,6 @@ public class UI3DScene : UIElement
                 Entity = e,
                 Comp = comp,
                 Mesh = mesh,
-                BaseColor = mesh?.DiffuseColor ?? Vector3.One,
             });
         }
 
@@ -944,7 +974,7 @@ public class UI3DScene : UIElement
             Core.Instance.IsMouseVisible = true;
             _cameraActive = false;
         }
-        if (_hovered?.Mesh != null) _hovered.Mesh.DiffuseColor = _hovered.BaseColor;
+        if (_hovered?.Mesh != null) _hovered.Mesh.HighlightFactor = 1f;
         _pixel?.Dispose();
         _renderTarget?.Dispose();
         _idTarget?.Dispose();

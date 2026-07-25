@@ -1,4 +1,4 @@
-
+﻿
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -155,7 +155,7 @@ public class PinballUI : UIPanel
 
         public override void Update(float deltaTime)
         {
-            if (Mouse.GetState().LeftButton != ButtonState.Pressed) return;
+            if (Quartz.Core.GetMouseState().LeftButton != ButtonState.Pressed) return;
             var pt = Core.GetTransformedMousePoint();
             _engine.PlaceBalls(new Vector2(pt.X - _bounds.X, pt.Y - _bounds.Y));
         }

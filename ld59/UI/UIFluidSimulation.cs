@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -34,7 +34,7 @@ namespace ld59.UI
 
         public override void Update(float deltaTime)
         {
-            var mouseState = Mouse.GetState();
+            var mouseState = Quartz.Core.GetMouseState();
             var mousePos = Core.GetTransformedMousePosition();
 
             var uv = new Vector2(

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -8,7 +8,7 @@ using Quartz.UI;
 /// <summary>
 /// The shared word dictionary (tcg.md's "extra deck"), browsable in a scrolling overlay on the
 /// right side of the TCG window. Scrolling is hand-rolled (wheel delta + scissor clip) in the
-/// same style as the rest of the board panel rather than going through Quartz's ScrollArea —
+/// same style as the rest of the board panel rather than going through Quartz's ScrollArea â€”
 /// the rows are draw calls, not UIElements.
 /// </summary>
 public class TcgDictionaryPanel : UIElement
@@ -30,7 +30,7 @@ public class TcgDictionaryPanel : UIElement
         _uiFont = Core.DefaultFont;
         _white = new Texture2D(Core.GraphicsDevice, 1, 1);
         _white.SetData(new[] { Color.White });
-        _prevWheel = Mouse.GetState().ScrollWheelValue;
+        _prevWheel = Quartz.Core.GetMouseState().ScrollWheelValue;
     }
 
     public override Rectangle GetBoundingBox() => _bounds;
@@ -39,7 +39,7 @@ public class TcgDictionaryPanel : UIElement
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
-        int wheel = Mouse.GetState().ScrollWheelValue;
+        int wheel = Quartz.Core.GetMouseState().ScrollWheelValue;
         int delta = wheel - _prevWheel;
         _prevWheel = wheel;
         if (delta != 0 && _bounds.Contains(Core.GetTransformedMousePoint()))

@@ -15,7 +15,7 @@ public struct BakeParams
 
     public static BakeParams Default => new BakeParams
     {
-        AgentRadius = 0.35f,
+        AgentRadius = 1.1f,
         AgentHeight = 1.8f,
         AgentMaxClimb = 0.3f,
         AgentMaxSlope = 45f,

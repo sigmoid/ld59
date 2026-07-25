@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
@@ -36,7 +36,7 @@ public class StartMenuUI : UIPanel
     public override void Update(float deltaTime)
     {
         // if user clicks outside the start menu close it
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
         if (!GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed && !_lastLeftButtonState)
         {
             Core.UISystem.RemoveElement(_rootElement);
@@ -109,7 +109,7 @@ public class StartMenuUI : UIPanel
     private void OpenPowergrid()
     {
         // Launch straight into the preset "basic-prog" progression for the demo. This is the player's
-        // way in, so no editor and no solver — those live behind the `powergrid` console command.
+        // way in, so no editor and no solver â€” those live behind the `powergrid` console command.
         var levels = PowergridCommandHandler.LoadProgression("basic-prog");
         var bounds = new Rectangle(40, 70, 1150, 720);
         Core.UISystem.AddElement(levels.Count > 0

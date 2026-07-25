@@ -10,7 +10,7 @@
       <Component Type="DirectionalLightComponent">
         <Property Name="Direction" Value="0.5,0.28,0.3" Type="Vector3" />
         <Property Name="Color" Value="1,0.95686275,0.8392157,1" Type="Color" />
-        <Property Name="Intensity" Value="0.25" Type="float" />
+        <Property Name="Intensity" Value="0.5" Type="float" />
         <Property Name="CastShadows" Value="false" Type="bool" />
         <Property Name="ShadowDistance" Value="8" Type="float" />
         <Property Name="ShadowBlurRadius" Value="2" Type="float" />
@@ -33,7 +33,7 @@
         <Property Name="ModelPath" Value="models/moon_terrain_near" Type="string" />
         <Property Name="Scale" Value="1,1,1" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
     </Entity>
@@ -76,7 +76,7 @@
         <Property Name="ModelPath" Value="models/cube" Type="string" />
         <Property Name="Scale" Value="0.041093595,0.027183924,0.068785146" Type="Vector3" />
         <Property Name="RotationEuler" Value="0.23,0.41999984,-0.12999998" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
       <Component Type="NavMeshObstacleComponent" />
@@ -91,7 +91,7 @@
         <Property Name="ModelPath" Value="models/cube" Type="string" />
         <Property Name="Scale" Value="0.044162333,0.05769977,0.07568604" Type="Vector3" />
         <Property Name="RotationEuler" Value="-0.16000001,0.55,0.01" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
       <Component Type="NavMeshObstacleComponent" />
@@ -118,7 +118,7 @@
         <Property Name="ModelPath" Value="models/moon_ground_plane" Type="string" />
         <Property Name="Scale" Value="1,1,1" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0,3.14" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
     </Entity>
@@ -132,9 +132,10 @@
         <Property Name="ModelPath" Value="models/dome" Type="string" />
         <Property Name="Scale" Value="1,1,1" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1.8,1.8,1.8" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
+      <Component Type="NavMeshObstacleComponent" />
     </Entity>
   </Entities>
 </Scene>

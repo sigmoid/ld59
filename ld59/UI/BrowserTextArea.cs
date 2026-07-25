@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -60,7 +60,7 @@ public class BrowserTextArea : UIElement
         _lineHeight = font.LineSpacing;
         _pixel = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
-        _prevMouse = Mouse.GetState();
+        _prevMouse = Quartz.Core.GetMouseState();
         _scrollbarHandler = v =>
         {
             int max = Math.Max(0, _wrappedLines.Count - _maxVisible);
@@ -331,7 +331,7 @@ public class BrowserTextArea : UIElement
     {
         if (!IsVisible()) return;
 
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         var mp = Core.GetTransformedMousePoint();
 
         if (_bounds.Contains(mp) && IsParentWindowFocused())

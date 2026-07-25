@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -35,7 +35,7 @@ public class StartMenuItemUI : UIElement, IHoverableUIElement
 
     public override void Update(float deltaTime)
     {
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
         _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint());
 
         if (_isHovered && mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed && !_lastMouseState)

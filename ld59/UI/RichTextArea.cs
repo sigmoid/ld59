@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -12,7 +12,7 @@ using Quartz.UI;
 /// </summary>
 public class RichTextArea : UIElement
 {
-    // ── Public types ─────────────────────────────────────────────────────────
+    // â”€â”€ Public types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public class Slot
     {
@@ -22,7 +22,7 @@ public class RichTextArea : UIElement
         public string[] AcceptableSolutions { get; set; }
     }
 
-    // ── Private layout types ─────────────────────────────────────────────────
+    // â”€â”€ Private layout types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private enum TokenKind { Word, Slot, Break }
     private struct Token { public TokenKind Kind; public string Text; public int SlotIndex; }
@@ -40,7 +40,7 @@ public class RichTextArea : UIElement
     private record HighlightDef(string MatchText, Color Color);
     private record LinkDef(string MatchText, Color Color, Action OnClick);
 
-    // ── Fields ───────────────────────────────────────────────────────────────
+    // â”€â”€ Fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private Rectangle _bounds;
     private readonly SpriteFont _font;
@@ -76,7 +76,7 @@ public class RichTextArea : UIElement
     // slotIndex, infoType, onValueSelected(string)
     public Action<int, InfoType, Action<string>> OnSlotClicked;
 
-    // ── Constructor ──────────────────────────────────────────────────────────
+    // â”€â”€ Constructor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public RichTextArea(Rectangle bounds, SpriteFont font, Color? bg = null, Color? fg = null)
     {
@@ -88,7 +88,7 @@ public class RichTextArea : UIElement
 
         _pixel = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
-        _prevMouse = Mouse.GetState();
+        _prevMouse = Quartz.Core.GetMouseState();
 
         _scrollbarHandler = v =>
         {
@@ -100,7 +100,7 @@ public class RichTextArea : UIElement
         Rebuild();
     }
 
-    // ── Public API ───────────────────────────────────────────────────────────
+    // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public void SetContent(string template, List<Slot> slots)
     {
@@ -119,7 +119,7 @@ public class RichTextArea : UIElement
     public void AddLink(string matchText, Color color, Action onClick) => _links.Add(new(matchText, color, onClick));
     public void ClearLinks() { _links.Clear(); }
 
-    // ── Tokenize ─────────────────────────────────────────────────────────────
+    // â”€â”€ Tokenize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private List<Token> Tokenize()
     {
@@ -157,7 +157,7 @@ public class RichTextArea : UIElement
         return result;
     }
 
-    // ── Layout ───────────────────────────────────────────────────────────────
+    // â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private Rectangle GetTextBounds()
     {
@@ -231,7 +231,7 @@ public class RichTextArea : UIElement
         _maxVisible = (int)Math.Floor(GetTextBounds().Height / _lineHeight);
     }
 
-    // ── Scrollbar ────────────────────────────────────────────────────────────
+    // â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void InitScrollbar()
     {
@@ -278,7 +278,7 @@ public class RichTextArea : UIElement
         _scrollbar.OnValueChanged += _scrollbarHandler;
     }
 
-    // ── Update ───────────────────────────────────────────────────────────────
+    // â”€â”€ Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private bool IsParentWindowFocused()
     {
@@ -290,7 +290,7 @@ public class RichTextArea : UIElement
     {
         if (!IsVisible()) return;
 
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         var mp = Core.GetTransformedMousePoint();
         var tb = GetTextBounds();
 
@@ -354,7 +354,7 @@ public class RichTextArea : UIElement
         base.Update(deltaTime);
     }
 
-    // ── Draw ─────────────────────────────────────────────────────────────────
+    // â”€â”€ Draw â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public override void Draw(SpriteBatch sb)
     {

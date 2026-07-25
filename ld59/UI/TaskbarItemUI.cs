@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
@@ -28,7 +28,7 @@ public class TaskbarItemUI : UIElement, IHoverableUIElement
 
     public override void Update(float deltaTime)
     {
-        var mouseState = Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
         _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint());
 
         bool mouseDown = mouseState.LeftButton == ButtonState.Pressed;

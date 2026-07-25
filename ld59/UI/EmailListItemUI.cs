@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -25,7 +25,7 @@ public class EmailListItemUI : UIElement
 
     public override void Update(float deltaTime)
     {
-        var mouse = Mouse.GetState();
+        var mouse = Quartz.Core.GetMouseState();
         bool mouseDown = mouse.LeftButton == ButtonState.Pressed;
         _isHovered = IsFocused && GetBoundingBox().Contains(Core.GetTransformedMousePoint());
 

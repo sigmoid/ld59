@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -91,7 +91,7 @@ public class SolitaireUI : UIPanel
         });
     }
 
-    // Only reports whether the board is winnable — deliberately not how (no move hints for now).
+    // Only reports whether the board is winnable â€” deliberately not how (no move hints for now).
     private static StatusInfo ToStatus(SymbolsSolver.Result result) => result.Outcome switch
     {
         SymbolsSolver.Outcome.Winnable   => new StatusInfo("Winnable", StatusWinnable),
@@ -134,7 +134,7 @@ public class SolitaireUI : UIPanel
         _rootWindow.AddChild(_activePanel);
     }
 
-    // ── Game panel ────────────────────────────────────────────────────────────
+    // â”€â”€ Game panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private sealed class SolitaireContentPanel : UIElement
     {
@@ -192,7 +192,7 @@ public class SolitaireUI : UIPanel
             base.Update(deltaTime);
             _onUpdate?.Invoke();
 
-            var mouse = Mouse.GetState();
+            var mouse = Quartz.Core.GetMouseState();
             var pt    = Core.GetTransformedMousePoint();
             bool clicked = mouse.LeftButton == ButtonState.Pressed && _prevLeft == ButtonState.Released;
 
@@ -245,7 +245,7 @@ public class SolitaireUI : UIPanel
             DrawWinOverlay(spriteBatch);
         }
 
-        // Persisted win tally, bottom-left corner — clear of the free-cell row at the top.
+        // Persisted win tally, bottom-left corner â€” clear of the free-cell row at the top.
         private void DrawWinCount(SpriteBatch spriteBatch)
         {
             if (_winCountProvider == null) return;
@@ -255,7 +255,7 @@ public class SolitaireUI : UIPanel
                 new Color(230, 240, 230), 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.91f);
         }
 
-        // The live winnability read-out — plain text under the reset button, right-aligned: a muted
+        // The live winnability read-out â€” plain text under the reset button, right-aligned: a muted
         // "Winnable?" label above the verdict, coloured by outcome. Refreshed after every move.
         private void DrawStatus(SpriteBatch spriteBatch)
         {

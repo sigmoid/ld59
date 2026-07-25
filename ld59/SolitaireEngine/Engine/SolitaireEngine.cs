@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
@@ -25,7 +25,7 @@ public class SolitaireEngine
     // whether the player has touched the board since a cached solution was computed.
     public int MoveVersion { get; private set; }
 
-    // Increments on ANY board change — player moves and programmatic ApplyMove alike. The UI watches
+    // Increments on ANY board change â€” player moves and programmatic ApplyMove alike. The UI watches
     // this to re-evaluate winnability after each move, independent of MoveVersion's cache semantics.
     public int StateVersion { get; private set; }
 
@@ -37,7 +37,7 @@ public class SolitaireEngine
 
     public void Update(GameTime gameTime, Vector2 contentOffset)
     {
-        var mouseState = Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
         var rawMouse   = Core.GetTransformedMousePoint();
         var localMouse = new Vector2(rawMouse.X - contentOffset.X, rawMouse.Y - contentOffset.Y);
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -54,7 +54,7 @@ public class FileItemUI : UIElement, IHoverableUIElement
 
     public override void Update(float dt)
     {
-        var mouseState = Mouse.GetState();
+        var mouseState = Quartz.Core.GetMouseState();
 
         _isHovered = GetBoundingBox().Contains(Core.GetTransformedMousePoint()) && IsFocused;
 
