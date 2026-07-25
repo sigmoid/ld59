@@ -45,7 +45,7 @@ public class UI3DScene : UIElement
     public CameraMode Mode        { get; set; } = CameraMode.Fly;
     public WalkController Walker  { get; set; }
 
-    // Raised when the player presses the interact key while looking at an interactable.
+    // Raised when the player presses the interact key while looking at an interactable.`
     public event Action<Interactable3DComponent> OnInteract;
 
     public Scene Scene => _scene;
@@ -362,7 +362,7 @@ public class UI3DScene : UIElement
             var delta = justCaptured
                 ? Vector2.Zero
                 : new Vector2(mouse.X - _lockCenter.X, mouse.Y - _lockCenter.Y);
-            Mouse.SetPosition(_lockCenter.X, _lockCenter.Y);
+            Core.SetMousePosition(_lockCenter.X, _lockCenter.Y);
 
             _yaw   -= delta.X * LookSensitivity;
             _pitch -= delta.Y * LookSensitivity;
