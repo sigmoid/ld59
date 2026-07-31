@@ -2,19 +2,14 @@
 
 [Ideas](ideas.md)
 
-1. Editor
-    1. Make gizmos bullet-proof
-    1. Copy-paste
-    1. Create prefabs for lights
-1. Add skybox (stars and earth and the sun)
-1. Add fog to 3d scenes
-1. Ignore purely visual objects in navmesh bake
 1. Make basic puzzle area
-    1. Introduce powergrid on monoliths
-    1. There should be a deduction puzzle using the vocabulary the player can find in the first area
+    1. Monolith shows the puzzle
+    1. Powergrid games give the player ability to decode it
+    1. Dictionary app
+    1. Translator
+1. Easy fullscreen for the walking sim
 
 
-1. Remove TCG for now
 1. Write intro email
 1. Make forum website and reintegrate web browser
     1. Web browser redesign

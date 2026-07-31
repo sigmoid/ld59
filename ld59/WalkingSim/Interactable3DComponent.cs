@@ -25,7 +25,15 @@ public class Interactable3DComponent : Component
     // Payload for the action; for "show-text" this is the text shown in a notification.
     public string Message { get; set; } = "";
 
+    // How close (world units) the player's camera eye must be to this entity's origin for it to
+    // become hoverable. Raise it for large or elevated objects, whose origin can sit well away
+    // from the surface the player actually looks at. Editable in the editor Inspector.
+    public float InteractRange { get; set; } = 10f;
+
     // Assigned at scene load by UI3DScene (1..255, encoded into the ID buffer's red channel).
-    // Runtime-only; never serialized.
-    public int Id { get; set; }
+    // Runtime-only: a field (not a property) so the reflection-based ComponentSerializer and the
+    // editor Inspector never touch it — mirrors Mesh3DComponent.HighlightFactor. It must NOT be a
+    // property named Id: that collides with Component.Id (Guid), making GetProperty("Id") ambiguous
+    // and breaking scene load ("Ambiguous match found for '... Int32 Id'"). Hence the PickId name.
+    public int PickId;
 }

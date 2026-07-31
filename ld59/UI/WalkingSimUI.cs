@@ -77,7 +77,9 @@ public class WalkingSimUI : UIPanel
             sceneView.OnInteract += comp =>
             {
                 var puzzle = comp.Entity?.GetComponent<PuzzlePanelComponent>();
-                if (puzzle != null)
+                // Only open the solve view for a configured puzzle whose scene actually loads;
+                // an unconfigured/broken panel falls through to the normal interaction dispatch.
+                if (puzzle != null && puzzle.GetOrCreateView(new Rectangle(0, 0, 1, 1)) != null)
                 {
                     _activeOverlay = new PuzzleSolveOverlay(puzzle, sceneView, scene);
                     Core.UISystem.AddElement(_activeOverlay);

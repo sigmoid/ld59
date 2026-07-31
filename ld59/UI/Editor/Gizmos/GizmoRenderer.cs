@@ -22,6 +22,11 @@ public sealed class GizmoRenderer : IDisposable
     // Per-model native radius (bounding-sphere), so a target size divided by this scales any
     // model to a consistent on-screen size regardless of how it was exported.
     private readonly float _translateReach, _rotateReach, _scaleReach;
+    // Per-model tip extent along the native +Y axis (bounding sphere center.Y + radius). A handle is
+    // drawn scaled by len/reach, so its visible tip sits at len*(tip/reach) from the origin -- which
+    // is farther than `len` when the model's pivot is at its base. Picking uses this so the grabbable
+    // length matches the drawn length.
+    private readonly float _translateTip, _rotateTip, _scaleTip;
 
     public GizmoRenderer(GraphicsDevice device)
     {
@@ -54,6 +59,9 @@ public sealed class GizmoRenderer : IDisposable
         _translateReach = Reach(_translateModel);
         _rotateReach    = Reach(_rotateModel);
         _scaleReach     = Reach(_scaleModel);
+        _translateTip   = Tip(_translateModel);
+        _rotateTip      = Tip(_rotateModel);
+        _scaleTip       = Tip(_scaleModel);
     }
 
     private static Model TryLoad(string path)
@@ -78,6 +86,22 @@ public sealed class GizmoRenderer : IDisposable
         return r <= 1e-4f ? 1f : r;
     }
 
+    // Tip extent along the model's native +Y axis (the transformed bounding sphere's center.Y +
+    // radius). A handle is drawn scaled by len/reach, so its visible tip sits at len*(tip/reach)
+    // from the origin -- farther than `len` when the model's pivot is at its base. Picking uses this
+    // so the grabbable segment reaches the drawn tip instead of stopping at `len`.
+    private static float Tip(Model m)
+    {
+        if (m == null) return 1f;
+        float t = 0f;
+        foreach (var mesh in m.Meshes)
+        {
+            var s = mesh.BoundingSphere.Transform(mesh.ParentBone.Transform);
+            t = MathF.Max(t, s.Center.Y + s.Radius);
+        }
+        return t <= 1e-4f ? 1f : t;
+    }
+
     public Model ModelFor(GizmoMode mode) => mode switch
     {
         GizmoMode.Translate => _translateModel,
@@ -91,6 +115,14 @@ public sealed class GizmoRenderer : IDisposable
         GizmoMode.Translate => _translateReach,
         GizmoMode.Rotate    => _rotateReach,
         GizmoMode.Scale     => _scaleReach,
+        _ => 1f,
+    };
+
+    public float TipFor(GizmoMode mode) => mode switch
+    {
+        GizmoMode.Translate => _translateTip,
+        GizmoMode.Rotate    => _rotateTip,
+        GizmoMode.Scale     => _scaleTip,
         _ => 1f,
     };
 

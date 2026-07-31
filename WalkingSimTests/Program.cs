@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using ld59.WalkingSim;
 
@@ -30,8 +31,10 @@ internal static class Program
         MoveCrossEdge();
         MoveBoundarySlide();
         CornerExit();
+        CornerRounding();
         EscapeFuzz();
         OverlapTunnel();
+        RoofOverhang();
         DemoLevel();
         BakedLevel();
         TerrainLevel();
@@ -283,6 +286,82 @@ internal static class Program
         Check("corner move stays in bounds", pos.X <= 1f + 1e-2f && pos.Z <= 1f + 1e-2f);
     }
 
+    // ── Corner rounding: the walker must not get pinned while sliding along a wall ─────
+    // Real Recast-baked meshes have irregular wall vertices and T-junctions (an adjacent walkable
+    // triangle meeting an edge without a welded/matching edge, so it has no neighbour link and
+    // looks like a wall). Both used to pin the walker while it slid along a wall -- the user-visible
+    // "stuck on a corner / bump". Synthetic axis-aligned meshes never reproduce it, so we fuzz the
+    // real baked meshes for BUMP catches: the walker slid somewhere, ended pinned, yet walkable
+    // floor genuinely continues just past the stop. Legitimate convex apices and head-on walls
+    // (nothing on-mesh past the stop) are excluded.
+    private static void CornerRounding()
+    {
+        Console.WriteLine("Corner rounding (baked-mesh slides)");
+
+        // empty_level's navmesh ships in the repo; the walk-level baked mesh only exists in the
+        // game build output. Test whichever are present.
+        var meshes = new List<(string name, string path)>
+        {
+            ("empty_level", Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "ld59",
+                "Content", "files", "scenes", "empty_level_navmesh.obj")),
+            ("walk_level_baked", Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "ld59",
+                "bin", "Debug", "net9.0-windows", "Content", "files", "scenes", "walk_level_navmesh_baked.obj")),
+        };
+
+        bool anyRan = false;
+        foreach (var (name, path) in meshes)
+        {
+            if (!File.Exists(path)) continue;
+            anyRan = true;
+            NavMesh mesh;
+            using (var r = new StreamReader(File.OpenRead(path))) mesh = ObjParser.LoadNavMesh(r);
+
+            var rng = new Random(4242);
+            int bumps = 0;
+            for (int trial = 0; trial < 4000; trial++)
+            {
+                var w = new WalkController(mesh) { MoveSpeed = 6f };
+                var tr = mesh.Triangles[rng.Next(mesh.Triangles.Length)];
+                var a = mesh.Vertices[tr.V0]; var b = mesh.Vertices[tr.V1]; var c = mesh.Vertices[tr.V2];
+                if (!w.Spawn(new Vector3((a.X + b.X + c.X) / 3f, (a.Y + b.Y + c.Y) / 3f, (a.Z + b.Z + c.Z) / 3f))) continue;
+
+                var dir = new Vector2((float)(rng.NextDouble() * 2 - 1), (float)(rng.NextDouble() * 2 - 1));
+                if (dir.Length() < 1e-3f) continue;
+
+                var prev = new Vector2(w.Position.X, w.Position.Z);
+                float traveled = 0; int tailStuck = 0;
+                for (int i = 0; i < 200; i++)
+                {
+                    w.Move(dir, 1f / 60f);
+                    var p = new Vector2(w.Position.X, w.Position.Z);
+                    traveled += (p - prev).Length();
+                    if (i >= 170 && (p - prev).Length() < 0.002f) tailStuck++;
+                    prev = p;
+                }
+
+                // A BUMP bug = the walker really slid somewhere, then ended pinned, yet walkable floor
+                // genuinely continues just past the stop along the same input. (A legitimate convex
+                // apex or a wall pressed head-on has nothing on-mesh ahead and is excluded.)
+                if (tailStuck >= 28 && traveled > 1.0f)
+                {
+                    var du = dir; du /= du.Length();
+                    var ahead = new Vector3(w.Position.X + du.X * 0.3f, w.Position.Y, w.Position.Z + du.Y * 0.3f);
+                    if (mesh.FindTriangle(ahead) < 0) continue;   // nothing on-mesh past the stop -> not a bump
+                    var w2 = new WalkController(mesh) { MoveSpeed = 6f };
+                    if (w2.Spawn(ahead))
+                    {
+                        var b0 = new Vector2(w2.Position.X, w2.Position.Z);
+                        for (int k = 0; k < 40; k++) w2.Move(dir, 1f / 60f);
+                        if ((new Vector2(w2.Position.X, w2.Position.Z) - b0).Length() > 0.5f) bumps++;
+                    }
+                }
+            }
+            Check($"no bump-stuck spots sliding on {name}", bumps == 0);
+        }
+
+        if (!anyRan) Check("a baked navmesh was present for the corner test (skipped)", true);
+    }
+
     // ── Escape fuzz ──────────────────────────────────────────────────────────────────
 
     private static void EscapeFuzz()
@@ -344,6 +423,56 @@ internal static class Program
             if (walker.Position.Y > 1.5f) stayedLow = false;
         }
         Check("walker on lower floor never surfaces to upper", stayedLow);
+    }
+
+    // ── Overhang: a roof directly above a floor's boundary wall ───────────────────────
+    // Regression for the "walk to an edge inside the house and teleport onto the roof" bug. When
+    // the walker slides into a boundary wall, the mover probes just across the edge for a T-junction
+    // continuation. If a roof triangle overhangs past that wall it is the only thing overlapping the
+    // probe point in XZ, so FindTriangle used to hand it back and the walker "crossed" up onto it.
+    // The floor and roof share no vertices, so the roof is never a real neighbour -- the walker must
+    // stay on the floor and slide along the wall.
+    private static void RoofOverhang()
+    {
+        Console.WriteLine("Overhang: roof above a boundary wall");
+
+        // floor: X in [0,1], Z in [0,2] at y=0.  roof: X in [0,2], Z in [0,2] at y=3 -- it extends
+        // past the floor's +X wall (X=1), so just outside that wall only the roof exists in XZ.
+        var verts = new List<Vector3>
+        {
+            new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 0, 2), new Vector3(0, 0, 2), // floor
+            new Vector3(0, 3, 0), new Vector3(2, 3, 0), new Vector3(2, 3, 2), new Vector3(0, 3, 2), // roof (overhangs +X)
+        };
+        var faces = new List<(int, int, int)>
+        {
+            (0, 1, 2), (0, 2, 3),   // floor, y=0
+            (4, 5, 6), (4, 6, 7),   // roof, y=3
+        };
+        var mesh = NavMesh.Build(verts, faces);
+
+        var walker = new WalkController(mesh);
+        Check("spawn on floor succeeds", walker.Spawn(new Vector3(0.5f, 0, 1f)));
+
+        // push straight into the +X wall for a while; the walker must ride the wall, not the roof.
+        bool everRoof = false;
+        for (int i = 0; i < 400; i++)
+        {
+            walker.Move(new Vector2(1f, 0f), 1f / 60f);
+            if (walker.Position.Y > 1.5f) everRoof = true;
+        }
+        Check("walking into the wall never teleports onto the roof", !everRoof);
+        Check("stayed at floor height (y~0)", Near(walker.Position.Y, 0f, 0.05f));
+        Check("stayed on mesh", mesh.FindTriangle(walker.Position) >= 0);
+
+        // and a diagonal push (slides along the wall) must likewise stay low
+        walker.Spawn(new Vector3(0.5f, 0, 0.5f));
+        everRoof = false;
+        for (int i = 0; i < 400; i++)
+        {
+            walker.Move(new Vector2(1f, 0.6f), 1f / 60f);
+            if (walker.Position.Y > 1.5f) everRoof = true;
+        }
+        Check("diagonal slide into the wall never surfaces to the roof", !everRoof);
     }
 
     // ── Baked level: load the Recast-generated navmesh and traverse it ─────────────────

@@ -28,13 +28,6 @@ public sealed class TransformGizmo : IDisposable
 
     public GizmoMode Mode { get; set; } = GizmoMode.Translate;
 
-    // Reserved pick ids, far above any realistic entity count (the entity pick path caps at
-    // 0xFFFFFF entities but scenes here have at most a few thousand).
-    private const int IdX = 0x00F00001;
-    private const int IdY = 0x00F00002;
-    private const int IdZ = 0x00F00003;
-    private const int IdAll = 0x00F00004;
-
     private const float HandleScaleFactor = 0.09f; // world units of handle length per unit of camera distance
     private const float MinHandleLength = 0.3f;
     private const float MaxHandleLength = 1.5f;      // cap so a far camera doesn't balloon the gizmo
@@ -147,26 +140,112 @@ public sealed class TransformGizmo : IDisposable
         return Matrix.CreateScale(scale) * Matrix.CreateTranslation(origin + AxisVector(axis) * (len * 0.5f));
     }
 
-    public static GizmoAxis DecodeAxis(int id) => id switch
-    {
-        IdX => GizmoAxis.X,
-        IdY => GizmoAxis.Y,
-        IdZ => GizmoAxis.Z,
-        IdAll => GizmoAxis.All,
-        _ => GizmoAxis.None,
-    };
+    // ── screen-space ray picking (CPU) ────────────────────────────────────────────
+    // This is a raycast in the practical sense: pure math against the projected handle geometry (a
+    // screen-space capsule test), evaluated in Update at the exact click position. No GPU readback -> no
+    // frame-lag and no render-target timing hazards (what made the id-buffer attempts select behind).
+    //
+    // Grab tolerance FLOOR in render-target pixels -- used for small/far handles.
+    public const float GrabPixels = 18f;
 
-    private static int EncodeAxisId(GizmoAxis axis) => axis switch
-    {
-        GizmoAxis.X => IdX,
-        GizmoAxis.Y => IdY,
-        GizmoAxis.Z => IdZ,
-        GizmoAxis.All => IdAll,
-        _ => 0,
-    };
+    // The tolerance also scales with the handle's on-screen length: a handle drawn large (camera close)
+    // must be grabbable across its full visible width, and its arrow is fat. A fixed pixel tolerance is
+    // too thin next to a big arrow, which let clicks on the clearly-visible handle fall through and
+    // select the object behind. The grab tolerance is max(GrabPixels, onScreenLength * ThicknessFrac).
+    // Deliberately generous: the selected entity's gizmo should win over selecting whatever is behind it.
+    private const float ThicknessFrac = 0.22f;
 
-    private static Vector4 EncodeIdColor(int id) => new Vector4(
-        (id & 0xFF) / 255f, ((id >> 8) & 0xFF) / 255f, ((id >> 16) & 0xFF) / 255f, 1f);
+    private static float ToleranceFor(float projectedLenPx) => MathF.Max(GrabPixels, projectedLenPx * ThicknessFrac);
+
+    // Return the axis whose handle the cursor is closest to (relative to that handle's tolerance), or
+    // None. `bestPixels` is the winner's pixel miss distance (diagnostics). Picking is screen-space;
+    // dragging uses the world ray (BeginDrag/UpdateDrag) built from the SAME cursor, so they agree.
+    public GizmoAxis PickAxis(Entity entity, Vector3 cameraPos, Vector2 cursor,
+        Matrix view, Matrix proj, Viewport viewport, out float bestPixels)
+    {
+        var (_, _, value) = ResolveTarget(entity);
+        Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
+        float len = HandleLength(origin, cameraPos);
+        float pickLen = len * _renderer.TipFor(Mode) / _renderer.ReachFor(Mode);
+        Matrix vp = view * proj;
+
+        GizmoAxis best = GizmoAxis.None;
+        float bestScore = 1f;   // normalised miss = distance / tolerance; a hit is < 1, smaller is closer
+        bestPixels = GrabPixels;
+
+        // Uniform-scale center box: distance from the cursor to the projected origin.
+        if (Mode == GizmoMode.Scale && Project(origin, vp, viewport, out var oc))
+        {
+            float d = Vector2.Distance(cursor, oc);
+            float score = d / GrabPixels;
+            if (score < bestScore) { bestScore = score; best = GizmoAxis.All; bestPixels = d; }
+        }
+
+        foreach (var axis in Axes)
+        {
+            Vector3 dir = AxisVector(axis);
+            float d, tol;
+            if (Mode == GizmoMode.Rotate)
+            {
+                d = RingPixelDistance(origin, dir, len, cursor, vp, viewport, out float ringRadiusPx);
+                tol = ToleranceFor(ringRadiusPx);
+            }
+            else
+            {
+                if (!Project(origin, vp, viewport, out var o2) ||
+                    !Project(origin + dir * pickLen, vp, viewport, out var t2)) continue;
+                d = PointSegmentDistance2D(cursor, o2, t2);
+                tol = ToleranceFor(Vector2.Distance(o2, t2));
+            }
+            float score = d / tol;
+            if (score < bestScore) { bestScore = score; best = axis; bestPixels = d; }
+        }
+        return best;
+    }
+
+    // Project a world point to render-target pixels. False if on/behind the camera plane (w <= 0).
+    private static bool Project(Vector3 world, Matrix viewProj, Viewport vp, out Vector2 screen)
+    {
+        Vector4 clip = Vector4.Transform(new Vector4(world, 1f), viewProj);
+        if (clip.W <= 1e-4f) { screen = Vector2.Zero; return false; }
+        float nx = clip.X / clip.W, ny = clip.Y / clip.W;
+        screen = new Vector2(vp.X + (nx * 0.5f + 0.5f) * vp.Width,
+                             vp.Y + (1f - (ny * 0.5f + 0.5f)) * vp.Height);
+        return true;
+    }
+
+    // Pixel distance from the cursor to the projected rotate ring (radius `len`, plane normal `axis`),
+    // measured against the sampled screen polyline so foreshortening is handled. Also outputs the ring's
+    // on-screen radius (projected origin -> first ring point) so the tolerance can scale with it.
+    private static float RingPixelDistance(Vector3 origin, Vector3 axis, float len, Vector2 cursor,
+        Matrix vp, Viewport view, out float ringRadiusPx)
+    {
+        Vector3 u = Vector3.Normalize(Vector3.Cross(axis, MathF.Abs(axis.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY));
+        Vector3 v = Vector3.Cross(axis, u);
+        const int N = 48;
+        float best = float.PositiveInfinity;
+        bool ocOk = Project(origin, vp, view, out var oc);
+        Vector3 prevW = origin + u * len;
+        bool prevOk = Project(prevW, vp, view, out var prev);
+        ringRadiusPx = ocOk && prevOk ? Vector2.Distance(oc, prev) : len;
+        for (int i = 1; i <= N; i++)
+        {
+            float a = MathHelper.TwoPi * i / N;
+            Vector3 curW = origin + (u * MathF.Cos(a) + v * MathF.Sin(a)) * len;
+            bool curOk = Project(curW, vp, view, out var cur);
+            if (prevOk && curOk) best = MathF.Min(best, PointSegmentDistance2D(cursor, prev, cur));
+            prev = cur; prevOk = curOk;
+        }
+        return best;
+    }
+
+    private static float PointSegmentDistance2D(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float len2 = ab.LengthSquared();
+        float t = len2 < 1e-6f ? 0f : MathHelper.Clamp(Vector2.Dot(p - a, ab) / len2, 0f, 1f);
+        return Vector2.Distance(p, a + ab * t);
+    }
 
     // ── drawing ──────────────────────────────────────────────────────────────────
     public void Draw(GraphicsDevice device, Entity entity, Vector3 cameraPos, Matrix view, Matrix proj)
@@ -196,22 +275,6 @@ public sealed class TransformGizmo : IDisposable
         }
     }
 
-    // Renders the same handles into whatever render target is currently bound (the caller sets it
-    // up as an ID buffer with a cleared depth buffer), using reserved pick ids instead of colors.
-    public void DrawForPicking(GraphicsDevice device, Entity entity, Vector3 cameraPos, Matrix view, Matrix proj)
-    {
-        var (_, _, value) = ResolveTarget(entity);
-        Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
-        float len = HandleLength(origin, cameraPos);
-        var model = _renderer.ModelFor(Mode);
-
-        foreach (var axis in Axes)
-            DrawHandle(device, model, axis, origin, len, view, proj, EncodeIdColor(EncodeAxisId(axis)));
-
-        if (Mode == GizmoMode.Scale)
-            DrawUniformBox(device, origin, len, view, proj, EncodeIdColor(IdAll));
-    }
-
     // The uniform-scale handle: a small cube at the gizmo origin.
     private void DrawUniformBox(GraphicsDevice device, Vector3 origin, float len, Matrix view, Matrix proj, Vector4 color)
     {
@@ -233,6 +296,11 @@ public sealed class TransformGizmo : IDisposable
         if (Mode == GizmoMode.Rotate)
             _renderer.DrawModel(device, model, HandleModelWorld(axis, origin, len, MathHelper.Pi), view, proj, color, depthTest: true);
     }
+
+    // ── pick debug ────────────────────────────────────────────────────────────────
+    // When on (toggled with F4 in the editor), UI3DScene shows a text readout of what PickAxis reports
+    // under the cursor. No 3D overlay -- just the HUD text.
+    public bool ShowPickDebug;
 
     // ── dragging ─────────────────────────────────────────────────────────────────
     public void BeginDrag(GizmoAxis axis, Entity entity, Vector3 cameraPos, Ray mouseRay, Point mousePos)

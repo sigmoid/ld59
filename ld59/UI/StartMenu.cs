@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.UI;
-using ld59.UI.Powergrid;
 
 public class StartMenuUI : UIPanel
 {
@@ -81,18 +80,9 @@ public class StartMenuUI : UIPanel
         });
         _layoutGroup.AddChild(solitaireButton);
 
-        // Placeholder icon until Powergrid gets its own art.
-        var powergridIcon = Core.Content.Load<Texture2D>("images/puzzle_icon");
-        var powergridButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1000, _layoutGroup.GetBoundingBox().Width, 80), powergridIcon, "Powergrid", () => OpenPowergrid());
-        _layoutGroup.AddChild(powergridButton);
-
-        // Placeholder icon and name per tcg.md.
-        var tcgIcon = Core.Content.Load<Texture2D>("images/file_icon");
-        var tcgButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1100, _layoutGroup.GetBoundingBox().Width, 80), tcgIcon, "TCG", () => {
-            _ = new TcgUI(new Rectangle(150, 90, 980, 800));
-            HideMenu();
-        });
-        _layoutGroup.AddChild(tcgButton);
+        var walkingSimIcon = Core.Content.Load<Texture2D>("images/image_viewer");
+        var walkingSimButton = new StartMenuItemUI(new Rectangle(_layoutGroup.GetBoundingBox().X, _layoutGroup.GetBoundingBox().Y + 1000, _layoutGroup.GetBoundingBox().Width, 80), walkingSimIcon, "Walking Sim", () => OpenWalkingSim());
+        _layoutGroup.AddChild(walkingSimButton);
 
         _rootElement.AddChild(_layoutGroup);
 
@@ -106,15 +96,13 @@ public class StartMenuUI : UIPanel
         HideMenu();
     }
 
-    private void OpenPowergrid()
+    private void OpenWalkingSim()
     {
-        // Launch straight into the preset "basic-prog" progression for the demo. This is the player's
-        // way in, so no editor and no solver â€” those live behind the `powergrid` console command.
-        var levels = PowergridCommandHandler.LoadProgression("basic-prog");
-        var bounds = new Rectangle(40, 70, 1150, 720);
-        Core.UISystem.AddElement(levels.Count > 0
-            ? new PowergridUI(bounds, "basic-prog", levels, PowergridFeatures.None)
-            : new PowergridUI(bounds, null, PowergridFeatures.None));
+        // Launch the walking sim straight into the "empty_level" scene. The .scene3d file lives in
+        // the root file tree; WalkingSimUI reads its Content to find the scene/navmesh assets.
+        var file = Core.CurrentScene.GetManager<GameFileDataManager>().GetFileByPath("empty_level.scene3d");
+        if (file != null)
+            Core.UISystem.AddElement(new WalkingSimUI(file));
         HideMenu();
     }
 

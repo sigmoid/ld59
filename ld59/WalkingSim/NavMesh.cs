@@ -32,6 +32,12 @@ public sealed class NavMesh
     private const float ForwardEps = 1e-5f;   // minimum forward travel before an edge crossing counts
     private const float NudgeEps = 1e-4f;      // push across / inside an edge to avoid re-detecting it
     private const int MaxMoveIterations = 16;
+    private const float CornerProbe = 3e-3f;   // inward bias when probing out of a wall-vertex wedge
+    private const float TJunctionProbe = 1e-2f; // step across a boundary edge to detect a T-junction neighbour
+    private static readonly float[] LimboProbeReaches = { 3e-3f, 1.5e-2f, 5e-2f }; // forward reaches tried to find a continuation
+    private const float LimboPeel = 1e-2f;     // inward step when wedged, to clear a degenerate vertex fast
+    private const float MaxStepHeight = 0.5f;   // reject a probe continuation whose floor is this far (m) above/below --
+                                                // keeps a wall probe from "finding" a roof/floor that only overlaps in XZ
 
     private NavMesh(Vector3[] vertices, NavTriangle[] triangles)
     {
@@ -209,14 +215,57 @@ public sealed class NavMesh
 
             if (hitEdge < 0)
             {
-                // numeric limbo (endpoint outside but no edge crossing found): nudge toward
-                // the centroid and retry.
+                // The straight target lies outside cur, yet no edge registered a crossing. This is
+                // the wall-riding degeneracy: the remaining motion runs parallel to a boundary edge
+                // the walker sits on (a parallel edge never counts as "hit"), or it points out
+                // through a shared vertex. This is what used to pin the walker mid-slide ("stuck on
+                // a corner"); the probe + peel below break it.
                 CentroidXZ(cur, out float cx, out float cz);
-                float dx = cx - curX, dz = cz - curZ;
-                float dl = MathF.Sqrt(dx * dx + dz * dz);
-                if (dl < 1e-6f) break;
-                curX += dx / dl * NudgeEps;
-                curZ += dz / dl * NudgeEps;
+                float inx = cx - curX, inz = cz - curZ;
+                float inl = MathF.Sqrt(inx * inx + inz * inz);
+                if (inl < 1e-6f) break;
+                inx /= inl; inz /= inl;
+
+                // First try to round the corner / continue along the wall: probe along the motion --
+                // pulled slightly inward so a walker riding exactly on the boundary line still lands
+                // on the floor -- and see if the mesh continues in a NEW triangle. Try increasing
+                // reaches so a continuation a little further along (past a small notch or convex
+                // vertex) is still found rather than crawling through it. FindTriangle guarantees the
+                // landing is on the mesh, and requiring a different triangle keeps genuine apices
+                // (where every reach lands off-mesh) stopping cleanly.
+                float rl = MathF.Sqrt(remX * remX + remZ * remZ);
+                bool hopped = false;
+                if (rl > 1e-6f)
+                {
+                    float ux = remX / rl, uz = remZ / rl;
+                    float curY = HeightAt(cur, curX, curZ);
+                    foreach (float reach in LimboProbeReaches)
+                    {
+                        float step = MathF.Min(rl, reach);
+                        float probeX = curX + ux * step + inx * CornerProbe;
+                        float probeZ = curZ + uz * step + inz * CornerProbe;
+                        int landed = FindTriangle(new Vector3(probeX, curY, probeZ));
+                        if (landed >= 0 && landed != cur &&
+                            MathF.Abs(HeightAt(landed, probeX, probeZ) - curY) <= MaxStepHeight)
+                        {
+                            curX = probeX; curZ = probeZ;
+                            remX -= ux * step; remZ -= uz * step;
+                            cur = landed;
+                            hopped = true;
+                            break;
+                        }
+                    }
+                }
+                if (hopped) continue;
+
+                // No continuation ahead: the walker is wedged against a boundary with the motion
+                // parallel to it. Peel it toward the interior by a real amount (bounded by the
+                // remaining motion) so it clears the degenerate vertex within a frame or two instead
+                // of the multi-second crawl a tiny nudge produced. Moving toward the centroid keeps
+                // it inside the mesh, and the final clamp guards any residual drift.
+                float peel = MathF.Min(rl, LimboPeel);
+                curX += inx * peel;
+                curZ += inz * peel;
                 continue;
             }
 
@@ -249,11 +298,33 @@ public sealed class NavMesh
                 if (el < 1e-6f) break;
                 ex /= el; ez /= el;
 
+                CentroidXZ(cur, out float cx, out float cz);
+
+                // A Recast-baked mesh can have T-junctions: an adjacent walkable triangle meets this
+                // edge without a matching (welded) edge, so it has no neighbour link and looks like a
+                // wall. Before treating it as one, probe just across the edge (along its outward
+                // normal, so the test is independent of how grazing the approach is); if walkable
+                // floor is there, cross into it -- the walker would otherwise pin at the junction. A
+                // genuine wall borders non-walkable space, so the probe finds nothing.
+                float nx = -ez, nz = ex;                                  // edge normal
+                if (nx * (hx - cx) + nz * (hz - cz) < 0f) { nx = -nx; nz = -nz; }  // orient outward
+                float acrossX = hx + nx * TJunctionProbe;
+                float acrossZ = hz + nz * TJunctionProbe;
+                float edgeY = HeightAt(cur, hx, hz);
+                int across = FindTriangle(new Vector3(acrossX, edgeY, acrossZ));
+                if (across >= 0 && across != cur &&
+                    MathF.Abs(HeightAt(across, acrossX, acrossZ) - edgeY) <= MaxStepHeight)
+                {
+                    curX = acrossX; curZ = acrossZ;
+                    remX *= (1f - hitT); remZ *= (1f - hitT);
+                    cur = across;
+                    continue;
+                }
+
                 float leftX = remX * (1f - hitT), leftZ = remZ * (1f - hitT);
                 float proj = leftX * ex + leftZ * ez;
 
                 // sit at the contact point pulled slightly back inside the triangle
-                CentroidXZ(cur, out float cx, out float cz);
                 float ix = cx - hx, iz = cz - hz;
                 float il = MathF.Sqrt(ix * ix + iz * iz);
                 curX = hx + (il > 1e-6f ? ix / il * NudgeEps : 0f);
@@ -262,6 +333,19 @@ public sealed class NavMesh
                 remX = ex * proj;
                 remZ = ez * proj;
             }
+        }
+
+        // Safety net: the degenerate-corner handling can leave the position a hair (~1e-4) outside
+        // cur through floating-point drift. Snap it back inside so callers never see an off-mesh
+        // point (FindTriangle would reject it and the walker would freeze).
+        for (int k = 0; k < 4 && !PointInTriangleXZ(cur, curX, curZ); k++)
+        {
+            CentroidXZ(cur, out float fx, out float fz);
+            float dx = fx - curX, dz = fz - curZ;
+            float dl = MathF.Sqrt(dx * dx + dz * dz);
+            if (dl < 1e-6f) break;
+            curX += dx / dl * (NudgeEps * 4f);
+            curZ += dz / dl * (NudgeEps * 4f);
         }
 
         float y = HeightAt(cur, curX, curZ);

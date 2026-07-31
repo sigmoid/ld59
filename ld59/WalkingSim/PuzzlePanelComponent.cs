@@ -26,8 +26,17 @@ public class PuzzlePanelComponent : Component
     public int    PanelWidth  { get; set; } = 1024;   // surface render-target resolution
     public int    PanelHeight { get; set; } = 640;
     public float  PanelSize   { get; set; } = 2.0f;   // world width of the panel (meters)
-    public float  PanelYOffset { get; set; } = 1.0f;  // panel centre above the entity origin
-    public float  PanelYaw    { get; set; } = 0f;     // facing, degrees around Y (0 = normal +Z)
+    public float  PanelYOffset { get; set; } = 1.0f;  // panel centre along its up axis (0 = centred)
+    public float  PanelYaw    { get; set; } = 0f;     // extra facing, degrees around Y (added to mesh)
+
+    // When true (and this entity has a Mesh3D), the panel adopts the mesh's rotation so it lies flat
+    // on that surface — set PanelSize to the plane's world width to fill it. When false, the panel is
+    // a standalone world-upright quad facing PanelYaw.
+    public bool   MatchMesh   { get; set; } = true;
+
+    // Mirror the panel left-to-right. Needed when the backing plane's front face points away from
+    // the player, which otherwise shows the puzzle reversed.
+    public bool   FlipHorizontal { get; set; } = false;
 
     // Set while the focused solve overlay is open, so the surface render freezes (the shared
     // PowergridView is being drawn at screen bounds, not the panel's).
@@ -45,20 +54,28 @@ public class PuzzlePanelComponent : Component
     private PowergridView _view;
     private RenderTarget2D _surface;
     private Effect _quadEffect;
+    private bool _loadFailed;   // set after a failed load so we don't retry (and log) every frame
     private readonly VertexPositionTexture[] _quad = new VertexPositionTexture[4];
 
     // Lazily load the puzzle scene + view (needs GraphicsDevice/Content, so not at load time).
+    // Returns null for an unconfigured panel (blank LevelPath) or one whose scene failed to load,
+    // so a half-authored panel degrades to "no surface" instead of crashing the whole level.
     public PowergridView GetOrCreateView(Rectangle bounds)
     {
-        if (_view == null)
+        if (_view != null) { _view.SetBounds(bounds); return _view; }
+        if (_loadFailed || string.IsNullOrWhiteSpace(LevelPath)) return null;
+
+        try
         {
             var scene = Scene.FromFile(Core.Content, LevelPath);
             // In-world panels are player-facing: no auto-solver.
             _view = new PowergridView(bounds, scene) { ShowSolver = false };
         }
-        else
+        catch (Exception ex)
         {
-            _view.SetBounds(bounds);
+            _loadFailed = true;
+            Console.WriteLine($"[puzzle] failed to load LevelPath '{LevelPath}': {ex.Message}");
+            return null;
         }
         return _view;
     }
@@ -71,11 +88,11 @@ public class PuzzlePanelComponent : Component
     {
         if (SurfaceSuspended) return;
 
+        var view = GetOrCreateView(new Rectangle(0, 0, PanelWidth, PanelHeight));
+        if (view == null) return;   // unconfigured or failed-to-load panel: nothing to draw
+
         _surface ??= new RenderTarget2D(device, PanelWidth, PanelHeight, false,
             SurfaceFormat.Color, DepthFormat.Depth24);
-
-        var view = GetOrCreateView(new Rectangle(0, 0, PanelWidth, PanelHeight));
-        view.SetBounds(new Rectangle(0, 0, PanelWidth, PanelHeight));
 
         var prevTargets = device.GetRenderTargets();
         device.SetRenderTarget(_surface);
@@ -91,12 +108,24 @@ public class PuzzlePanelComponent : Component
         if (_surface == null) return;
         _quadEffect ??= Core.Content.Load<Effect>("shaders/textured-quad");
 
-        // Fixed, world-mounted orientation (part of the level) — the panel faces PanelYaw.
-        var center  = Entity.Position3D + new Vector3(0, PanelYOffset, 0);
-        float yaw   = MathHelper.ToRadians(PanelYaw);
-        var forward = new Vector3(MathF.Sin(yaw), 0f, MathF.Cos(yaw)); // panel normal (readable side)
-        var right   = Vector3.Normalize(Vector3.Cross(Vector3.Up, forward));
-        var up      = Vector3.Up;
+        // Orientation basis. When MatchMesh is on and this entity carries a Mesh3D, the panel
+        // adopts the mesh's rotation so it lies flat on that surface (fills the plane); otherwise it
+        // falls back to a world-upright quad facing PanelYaw. In both cases +Z local is the readable
+        // face, +X is right, +Y is up.
+        var mesh = MatchMesh ? Entity.GetComponent<Mesh3DComponent>() : null;
+        Matrix rot = mesh != null
+            ? Matrix.CreateRotationX(mesh.RotationEuler.X)
+              * Matrix.CreateRotationY(mesh.RotationEuler.Y + MathHelper.ToRadians(PanelYaw))
+              * Matrix.CreateRotationZ(mesh.RotationEuler.Z)
+            : Matrix.CreateRotationY(MathHelper.ToRadians(PanelYaw));
+
+        var forward = Vector3.TransformNormal(Vector3.Forward, rot); // panel normal (readable side)
+        var right   = Vector3.TransformNormal(Vector3.Right,   rot);
+        var up      = Vector3.TransformNormal(Vector3.Up,      rot);
+
+        // Sit on the entity origin, nudged slightly along the panel normal so it never z-fights the
+        // backing mesh. PanelYOffset shifts it along the panel's own up axis (0 = centred).
+        var center  = Entity.Position3D + up * PanelYOffset + forward * 0.01f;
 
         float halfW = PanelSize * 0.5f;
         float halfH = halfW * PanelHeight / PanelWidth;   // keep the RT aspect
@@ -105,10 +134,14 @@ public class PuzzlePanelComponent : Component
         var br = center + right * halfW - up * halfH;
         var bl = center - right * halfW - up * halfH;
 
-        _quad[0] = new VertexPositionTexture(tl, new Vector2(0, 0));
-        _quad[1] = new VertexPositionTexture(tr, new Vector2(1, 0));
-        _quad[2] = new VertexPositionTexture(br, new Vector2(1, 1));
-        _quad[3] = new VertexPositionTexture(bl, new Vector2(0, 1));
+        // Reading the panel from behind its normal mirrors the texture; FlipHorizontal swaps the U
+        // coords so it reads correctly from whichever side the player actually approaches.
+        float uL = FlipHorizontal ? 1f : 0f;
+        float uR = FlipHorizontal ? 0f : 1f;
+        _quad[0] = new VertexPositionTexture(tl, new Vector2(uL, 0));
+        _quad[1] = new VertexPositionTexture(tr, new Vector2(uR, 0));
+        _quad[2] = new VertexPositionTexture(br, new Vector2(uR, 1));
+        _quad[3] = new VertexPositionTexture(bl, new Vector2(uL, 1));
 
         _quadEffect.Parameters["World"].SetValue(Matrix.Identity);
         _quadEffect.Parameters["View"].SetValue(view);

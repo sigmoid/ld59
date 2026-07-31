@@ -5,7 +5,7 @@
   <NavMeshPath>files/scenes/empty_level_navmesh.obj</NavMeshPath>
   <!-- Ambient (base) light "r,g,b" 0-255. Raise for a brighter/flatter look, lower for
        more contrast between the point lights and the shadows. -->
-  <Ambient>60,60,70</Ambient>
+  <Ambient>50, 50,50</Ambient>
   <!-- Procedural moon sky: black space with stars, a blue Earth, and the Sun (synced to the
        scene's directional light). -->
   <Skybox>true</Skybox>

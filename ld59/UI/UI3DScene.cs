@@ -43,7 +43,7 @@ public class UI3DScene : UIElement
     public bool DebugLook { get; set; }
 
     public CameraMode Mode        { get; set; } = CameraMode.Fly;
-    public WalkController Walker  { get; set; }
+    public WalkController Walker  { get; set; }     
 
     // Raised when the player presses the interact key while looking at an interactable.`
     public event Action<Interactable3DComponent> OnInteract;
@@ -92,7 +92,7 @@ public class UI3DScene : UIElement
     // Undo/redo. All editor mutations (inspector edits, transforms, add/delete) route through
     // this so Ctrl+Z/Ctrl+Y work uniformly.
     public EditorHistory History { get; } = new EditorHistory();
-    private bool _prevUndoKey, _prevRedoKey, _prevSaveKey;
+    private bool _prevUndoKey, _prevRedoKey, _prevSaveKey, _prevDuplicateKey;
 
     // Move/rotate/scale handles for the selection (Q/W/E/R picks the mode). Optional callback
     // so the host UI can report whether a text field (e.g. the inspector) currently has focus --
@@ -112,11 +112,14 @@ public class UI3DScene : UIElement
     private float _pitch;
     private bool _anglesInitialized = false;
     private Point _lockCenter;
+    private Point _prevRawMouse;        // previous raw (back-buffer) cursor pos for frame-to-frame look deltas
+    private bool _recenterPending = false;  // set the frame we reposition the cursor; swallow the next delta
     private bool _prevLeftPressed = false;
     private bool _prevEscapePressed = false;
     private bool _prevTabPressed = false;
     private bool _captureSuspended = false;
     private bool _prevDebugKey = false;
+    private bool _prevPickDbgKey = false;
     private int  _debugLookFrame = 0;
 
     // Release the mouse and stop re-capturing on click, so a modal (e.g. the puzzle solve view)
@@ -131,12 +134,24 @@ public class UI3DScene : UIElement
     public void ResumeCapture()
     {
         _captureSuspended = false;
+
+        // Re-lock the mouse into the walk view so leaving a puzzle drops you straight back into
+        // walking-look, instead of landing with a freed cursor that needs an extra click.
+        _cameraActive = true;
+        Core.Instance.IsMouseVisible = false;
+        _recenterPending = true;   // zero the first look delta so the view doesn't snap on resume
+
+        // A puzzle is usually closed with Tab, which is also the walk view's "release the mouse"
+        // key. Left alone, that same Tab press registers as a fresh release edge here next frame
+        // and immediately frees the cursor we just recaptured. Mask the edge so one Tab press only
+        // closes the puzzle.
+        _prevTabPressed = true;
     }
 
     // â”€â”€ ID-buffer object picking (Walk mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private const int   IdWidth  = 160;
     private const int   IdHeight = 90;
-    private const float InteractRange = 2.5f;
+
 
     private sealed class InteractInfo
     {
@@ -145,10 +160,24 @@ public class UI3DScene : UIElement
         public Mesh3DComponent Mesh;
     }
 
+    // Debug: toggled by the `idview` console command. Shows the ID-buffer as a picture-in-picture
+    // (grey = plain mesh, green = interactable, yellow = currently hovered) plus a text readout of
+    // the id sampled at the crosshair — so you can see whether an object renders into the pick
+    // buffer at all and whether it's recognised as interactable. Runs even without mouse capture.
+    public static bool DebugIdView;
+
+    // Editor picking diagnostics, drawn as an on-screen HUD (see Draw) so gizmo picking can be
+    // debugged without a visible stdout console (WindowsDX app).
+    private string _lastPickDiag  = "(no pick)";
+    private string _lastClickDiag = "(no click)";
+
     private RenderTarget2D _idTarget;
+    private string _gizmoPickDiag = "(move cursor over a handle)";  // live PickAxis readout when F4 is on
+    private Point _lastMousePos;                // cursor from the last Update (for the F4 live readout)
     private Effect _idEffect;
     private readonly Color[] _idPixel = new Color[1];
     private int _pickFrame;
+    private int _lastCrosshairId;   // id sampled at screen centre last pick frame (debug readout)
     private bool _tablesBuilt;
     private System.Collections.Generic.List<InteractInfo> _interactables;
     private System.Collections.Generic.List<Entity> _meshEntities;
@@ -200,6 +229,7 @@ public class UI3DScene : UIElement
         var mouse    = Quartz.Core.GetMouseState();
         var keyboard = Keyboard.GetState();
         var mousePos = new Point(mouse.X, mouse.Y);
+        _lastMousePos = mousePos;
 
         bool leftPressed  = mouse.LeftButton  == ButtonState.Pressed;
         bool rightPressed = mouse.RightButton == ButtonState.Pressed;
@@ -251,6 +281,15 @@ public class UI3DScene : UIElement
         }
         _prevDebugKey = debugKey;
 
+        // F4: overlay the gizmo's raycast pick volume (segments/ring/center box) for debugging.
+        bool pickDbgKey = keyboard.IsKeyDown(Keys.F4);
+        if (pickDbgKey && !_prevPickDbgKey && !textFocused && EditorMode)
+        {
+            Gizmo.ShowPickDebug = !Gizmo.ShowPickDebug;
+            Console.WriteLine($"[gizmo] pick-volume overlay {(Gizmo.ShowPickDebug ? "ON" : "OFF")}");
+        }
+        _prevPickDbgKey = pickDbgKey;
+
         // Delete: remove the selected entity from the scene.
         bool deleteKey = keyboard.IsKeyDown(Keys.Delete);
         if (deleteKey && !_prevDeleteKey && EditorMode && !textFocused && SelectedEntity != null)
@@ -262,6 +301,7 @@ public class UI3DScene : UIElement
         bool undoKey  = ctrlHeld && keyboard.IsKeyDown(Keys.Z);
         bool redoKey  = ctrlHeld && keyboard.IsKeyDown(Keys.Y);
         bool saveKey  = ctrlHeld && keyboard.IsKeyDown(Keys.S);
+        bool dupKey   = ctrlHeld && keyboard.IsKeyDown(Keys.D);
         if (EditorMode && !textFocused)
         {
             // Selection may point at an entity a delete/add command just disposed; drop it so we
@@ -271,10 +311,12 @@ public class UI3DScene : UIElement
             if (redoKey && !_prevRedoKey && History.CanRedo)
             { Select(null); History.Redo(); _tablesBuilt = false; OnSceneChanged?.Invoke(); }
             if (saveKey && !_prevSaveKey) SaveScene();
+            if (dupKey && !_prevDuplicateKey && SelectedEntity != null) DuplicateSelected();
         }
         _prevUndoKey = undoKey;
         _prevRedoKey = redoKey;
         _prevSaveKey = saveKey;
+        _prevDuplicateKey = dupKey;
 
         // Q/W/E/R pick the gizmo mode (none/translate/rotate/scale). Only live while the camera
         // isn't actively looking -- movement (WASD) only applies during a look-drag too, so the
@@ -312,8 +354,20 @@ public class UI3DScene : UIElement
 
             if (leftPressed && !_prevLeftPressed && _bounds.Contains(mousePos))
             {
-                if (!TryBeginGizmoDrag(mousePos, editView, editProj))
+                string selBefore = SelectedEntity?.Name ?? "null";
+                bool grabbed = TryBeginGizmoDrag(mousePos, editView, editProj);
+                if (!grabbed)
+                {
+                    // No gizmo under the cursor for the CURRENT selection -> select whatever mesh is
+                    // there, then immediately retry the grab. This makes clicking a gizmo work in one
+                    // click even when a different entity was selected: the pick that first missed (old
+                    // selection's gizmo elsewhere) now runs against the just-selected entity, whose
+                    // gizmo is under the cursor. A click on an object's body (not on an arrow) still
+                    // just selects, because the retry misses too.
                     PickSelection(mousePos);
+                    grabbed = TryBeginGizmoDrag(mousePos, editView, editProj);
+                }
+                _lastClickDiag = $"click grab={grabbed} selB={selBefore} selA={SelectedEntity?.Name ?? "null"} {_lastPickDiag}";
             }
             else if (Gizmo.IsDragging)
             {
@@ -357,12 +411,48 @@ public class UI3DScene : UIElement
             // the delta reads ~0 forever and the look appears to die.
             _lockCenter = new Point(_bounds.X + _bounds.Width / 2, _bounds.Y + _bounds.Height / 2);
 
-            // On the frame capture engages the cursor is wherever the user clicked; recentre without
-            // applying that offset as a look delta (otherwise the view snaps).
-            var delta = justCaptured
-                ? Vector2.Zero
-                : new Vector2(mouse.X - _lockCenter.X, mouse.Y - _lockCenter.Y);
-            Core.SetMousePosition(_lockCenter.X, _lockCenter.Y);
+            // Measure the look delta in raw back-buffer pixels rather than logical pixels.
+            // Core.GetMouseState() scales pointer motion down into logical space, so in borderless
+            // fullscreen (back buffer larger than the logical resolution) a given physical mouse move
+            // yields a smaller logical delta -- which reads as much weaker look sensitivity than in
+            // windowed mode. Recentre on, and diff against, the viewport centre expressed in
+            // back-buffer space so sensitivity (and precision) stay identical across window modes.
+            var pp = Core.GraphicsDevice.PresentationParameters;
+            int centerX = (int)(_lockCenter.X * (float)pp.BackBufferWidth  / Core.ScreenWidth);
+            int centerY = (int)(_lockCenter.Y * (float)pp.BackBufferHeight / Core.ScreenHeight);
+
+            // Look delta is measured frame-to-frame from the previous raw position -- NOT by
+            // recentring every frame and diffing against the centre. Mouse.SetPosition is an async
+            // OS call whose result may not be visible to the next Mouse.GetState(), so recentring
+            // every frame made deltas double-count/drop on alternating frames -> choppy look.
+            var raw = Mouse.GetState();
+            Vector2 delta;
+            if (justCaptured || _recenterPending)
+            {
+                // Capture frame (cursor is at the click point) or the frame after a recenter (a
+                // lagged SetPosition may not have landed yet): just re-anchor and skip the delta so
+                // neither registers as a snap.
+                delta = Vector2.Zero;
+                _prevRawMouse = new Point(raw.X, raw.Y);
+                _recenterPending = false;
+            }
+            else
+            {
+                delta = new Vector2(raw.X - _prevRawMouse.X, raw.Y - _prevRawMouse.Y);
+                _prevRawMouse = new Point(raw.X, raw.Y);
+
+                // Recentre only when the cursor nears the window edge (outside the central half), so
+                // it never reaches the OS clamp (where the delta would read ~0 and the look die),
+                // while keeping SetPosition rare enough that its latency doesn't cause jitter.
+                int marginX = pp.BackBufferWidth  / 4;
+                int marginY = pp.BackBufferHeight / 4;
+                if (raw.X < marginX || raw.X > pp.BackBufferWidth  - marginX ||
+                    raw.Y < marginY || raw.Y > pp.BackBufferHeight - marginY)
+                {
+                    Mouse.SetPosition(centerX, centerY);
+                    _recenterPending = true;
+                }
+            }
 
             _yaw   -= delta.X * LookSensitivity;
             _pitch -= delta.Y * LookSensitivity;
@@ -370,8 +460,8 @@ public class UI3DScene : UIElement
             _yaw    = MathHelper.WrapAngle(_yaw);   // keep yaw in [-pi,pi] so float precision never erodes slow looks
 
             if (DebugLook && (_debugLookFrame++ % 15) == 0)
-                Console.WriteLine($"[look] mouse=({mouse.X},{mouse.Y}) delta=({delta.X},{delta.Y}) " +
-                    $"yaw={_yaw:F3} lockCenter=({_lockCenter.X},{_lockCenter.Y}) " +
+                Console.WriteLine($"[look] raw=({raw.X},{raw.Y}) delta=({delta.X},{delta.Y}) " +
+                    $"yaw={_yaw:F3} center=({centerX},{centerY}) lockCenter=({_lockCenter.X},{_lockCenter.Y}) " +
                     $"bounds={_bounds} suspended={_captureSuspended}");
 
             var forward = new Vector3(
@@ -492,9 +582,19 @@ public class UI3DScene : UIElement
         if (EditorMode && SelectedEntity != null && Gizmo.HasValidTarget(SelectedEntity))
             Gizmo.Draw(device, SelectedEntity, CameraPosition, view, proj);
 
+        // F4 live pick readout: run the same CPU pick the click uses, at the current cursor, so the HUD
+        // shows exactly what a click would grab. Pure math -- safe to call from Draw or Update alike.
+        if (Gizmo.ShowPickDebug && EditorMode && SelectedEntity != null && Gizmo.HasValidTarget(SelectedEntity))
+        {
+            var vpDbg = new Viewport(0, 0, _rtWidth, _rtHeight);
+            Vector2 cur = CursorToRtPixel(_lastMousePos);
+            var axis = Gizmo.PickAxis(SelectedEntity, CameraPosition, cur, view, proj, vpDbg, out float miss);
+            _gizmoPickDiag = $"under cursor: {axis} sel={SelectedEntity.Name} miss={miss:0.#}px";
+        }
+
         device.SetRenderTarget(null);
 
-        if (Mode == CameraMode.Walk && _cameraActive)
+        if (Mode == CameraMode.Walk && (_cameraActive || DebugIdView))
             UpdatePicking(device, view, proj, keyboard);
     }
 
@@ -600,35 +700,38 @@ public class UI3DScene : UIElement
     private Ray ScreenRay(Point mousePos, Matrix view, Matrix proj)
     {
         var viewport = new Viewport(0, 0, _rtWidth, _rtHeight);
-        float px = mousePos.X - _bounds.X;
-        float py = mousePos.Y - _bounds.Y;
-        Vector3 near = viewport.Unproject(new Vector3(px, py, 0f), proj, view, Matrix.Identity);
-        Vector3 far  = viewport.Unproject(new Vector3(px, py, 1f), proj, view, Matrix.Identity);
+        Vector2 p = CursorToRtPixel(mousePos);
+        Vector3 near = viewport.Unproject(new Vector3(p.X, p.Y, 0f), proj, view, Matrix.Identity);
+        Vector3 far  = viewport.Unproject(new Vector3(p.X, p.Y, 1f), proj, view, Matrix.Identity);
         return new Ray(near, Vector3.Normalize(far - near));
     }
 
-    // Renders just the gizmo's handles (not entities) into a freshly cleared ID buffer, ignoring
-    // depth so a handle is pickable exactly where it's visible (always on top). Returns true and
-    // starts a drag if a handle was hit.
+    // Map the cursor from on-screen bounds into render-target pixels proportionally, so it stays
+    // correct if the window (and thus _bounds) is a different size than the fixed-size target. The
+    // render target is drawn stretched across _bounds, so this same proportional map is what makes a
+    // screen cursor line up with what's drawn in the target.
+    private Vector2 CursorToRtPixel(Point mousePos) => new Vector2(
+        (mousePos.X - _bounds.X) / (float)_bounds.Width  * _rtWidth,
+        (mousePos.Y - _bounds.Y) / (float)_bounds.Height * _rtHeight);
+
+    // Grabs a gizmo handle if the click hit one. Picking is a CPU raycast (TransformGizmo.PickAxis): a
+    // screen-space capsule test against the projected handles, evaluated right here in Update at the
+    // exact click cursor. No render-target readback -> no frame-lag or timing hazard, so a click on a
+    // handle can't fall through to selecting the object behind it. Dragging uses the world ray built
+    // from the same cursor, so grab and drag can't disagree.
     private bool TryBeginGizmoDrag(Point mousePos, Matrix view, Matrix proj)
     {
-        if (SelectedEntity == null || !Gizmo.HasValidTarget(SelectedEntity)) return false;
+        if (SelectedEntity == null || !Gizmo.HasValidTarget(SelectedEntity))
+        {
+            _lastPickDiag = $"pick=SKIP sel={SelectedEntity?.Name ?? "null"} "
+                          + $"valid={SelectedEntity != null && Gizmo.HasValidTarget(SelectedEntity)}";
+            return false;
+        }
 
-        var device = Core.GraphicsDevice;
-        EnsurePickResources(device);
-
-        device.SetRenderTarget(_idTarget);
-        device.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
-        device.BlendState = BlendState.Opaque;
-        Gizmo.DrawForPicking(device, SelectedEntity, CameraPosition, view, proj);
-        device.SetRenderTarget(null);
-
-        float u = MathHelper.Clamp((mousePos.X - _bounds.X) / (float)_bounds.Width,  0f, 0.999f);
-        float v = MathHelper.Clamp((mousePos.Y - _bounds.Y) / (float)_bounds.Height, 0f, 0.999f);
-        int px = (int)(u * IdWidth), py = (int)(v * IdHeight);
-        _idTarget.GetData(0, new Rectangle(px, py, 1, 1), _idPixel, 0, 1);
-
-        var axis = TransformGizmo.DecodeAxis(DecodeId(_idPixel[0]));
+        var viewport = new Viewport(0, 0, _rtWidth, _rtHeight);
+        Vector2 cursor = CursorToRtPixel(mousePos);
+        var axis = Gizmo.PickAxis(SelectedEntity, CameraPosition, cursor, view, proj, viewport, out float miss);
+        _lastPickDiag = $"pick={axis} sel={SelectedEntity.Name} miss={miss:0.#}px";
         if (axis == GizmoAxis.None) return false;
 
         Gizmo.BeginDrag(axis, SelectedEntity, CameraPosition, ScreenRay(mousePos, view, proj), mousePos);
@@ -728,6 +831,10 @@ public class UI3DScene : UIElement
     // it precisely, and Mesh3D entities already support free placement via the translate handle.
     private const float PlaceDistance = 5f;
 
+    // How far (world units, on X and Z) a Ctrl+D duplicate is nudged off its source so the two
+    // don't perfectly overlap and the copy is grabbable by the gizmo.
+    private const float DuplicateOffset = 1f;
+
     // Spawn a bare Mesh3D entity for the given content-relative model path (e.g. "models/Cube.001")
     // in front of the camera. Undoable; selects the new entity so it can be repositioned immediately.
     public void PlaceModel(string modelPath)
@@ -815,6 +922,38 @@ public class UI3DScene : UIElement
         Console.WriteLine($"[editor] deleted {target.Name}");
     }
 
+    // Clone the selected entity via its XML representation (same round-trip as delete/undo, so the
+    // copy carries every component and property), give it a unique name, nudge it off the original
+    // so the two aren't perfectly overlapping, and add it undoably. The clone becomes the selection.
+    private void DuplicateSelected()
+    {
+        var source = SelectedEntity;
+        if (source == null) return;
+
+        var clone = EntityXml.Deserialize(EntityXml.Serialize(source));
+        clone.Name = UniqueSceneName(source.Name);
+        clone.Position3D = source.Position3D + new Vector3(DuplicateOffset, 0f, DuplicateOffset);
+
+        History.Execute(new AddEntityCommand(_scene, clone));
+        _tablesBuilt = false;
+        OnSceneChanged?.Invoke();
+        Select(clone);
+    }
+
+    // Produce a name not already used by an entity in the scene. We dedupe against the live scene
+    // rather than EntityNameProvider because the editor loads scenes via Entity.FromXElement, which
+    // assigns names directly without registering them -- so the global registry can't be trusted to
+    // know about "monolith" and would happily hand the copy the same name.
+    private string UniqueSceneName(string baseName)
+    {
+        if (_scene.FindEntityByName(baseName) == null) return baseName;
+        for (int i = 2; ; i++)
+        {
+            string candidate = $"{baseName}_{i}";
+            if (_scene.FindEntityByName(candidate) == null) return candidate;
+        }
+    }
+
     // Write the scene back out to ScenePath (Content source dir). No-op if ScenePath is unset.
     private void SaveScene()
     {
@@ -856,13 +995,14 @@ public class UI3DScene : UIElement
             foreach (var entity in _meshEntities)
             {
                 if (!entity.Visible) continue; // hidden entities are neither drawn nor pickable
-                int id = entity.GetComponent<Interactable3DComponent>()?.Id ?? 0;
+                int id = entity.GetComponent<Interactable3DComponent>()?.PickId ?? 0;
                 _idEffect.Parameters["IdColor"].SetValue(new Vector4(id / 255f, 0f, 0f, 1f));
                 entity.DrawDepth(device, _idEffect, _scene.SceneScale);
             }
 
             device.SetRenderTarget(null);
             _idTarget.GetData(0, new Rectangle(IdWidth / 2, IdHeight / 2, 1, 1), _idPixel, 0, 1);
+            _lastCrosshairId = _idPixel[0].R;
             ResolveHover(_idPixel[0].R);
         }
 
@@ -871,6 +1011,42 @@ public class UI3DScene : UIElement
         if (ePressed && !_prevEPressed && _hovered != null)
             OnInteract?.Invoke(_hovered.Comp);
         _prevEPressed = ePressed;
+
+        // Debug: repaint the ID buffer in high-contrast colours for the on-screen overlay. Runs
+        // after the real pick read (which needs the true id colours), so it only affects display.
+        if (DebugIdView)
+            RenderIdDebug(device, view, proj);
+    }
+
+    // Re-render the mesh entities into _idTarget with bright, human-readable colours for the debug
+    // overlay: grey = plain mesh, green = interactable, yellow = the one currently hovered.
+    private void RenderIdDebug(GraphicsDevice device, Matrix view, Matrix proj)
+    {
+        device.SetRenderTarget(_idTarget);
+        device.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, new Color(18, 18, 26), 1f, 0);
+        device.BlendState        = BlendState.Opaque;
+        device.DepthStencilState = DepthStencilState.Default;
+        device.RasterizerState   = RasterizerState.CullNone;
+
+        _idEffect.CurrentTechnique = _idEffect.Techniques["IdColor"];
+        _idEffect.Parameters["LightViewProjection"].SetValue(view * proj);
+
+        foreach (var entity in _meshEntities)
+        {
+            if (!entity.Visible) continue;
+            var comp = entity.GetComponent<Interactable3DComponent>();
+            Vector4 col;
+            if (comp == null)
+                col = new Vector4(0.20f, 0.20f, 0.24f, 1f);                       // plain mesh: grey
+            else if (_hovered != null && ReferenceEquals(_hovered.Entity, entity))
+                col = new Vector4(1f, 1f, 0.15f, 1f);                             // hovered: yellow
+            else
+                col = new Vector4(0.15f, 1f, 0.35f, 1f);                          // interactable: green
+            _idEffect.Parameters["IdColor"].SetValue(col);
+            entity.DrawDepth(device, _idEffect, _scene.SceneScale);
+        }
+
+        device.SetRenderTarget(null);
     }
 
     private void ResolveHover(int id)
@@ -879,8 +1055,13 @@ public class UI3DScene : UIElement
         if (id >= 1 && id <= _interactables.Count)
         {
             var cand = _interactables[id - 1];
+            // Measure from the camera eye (not the floor) to the entity origin, against the
+            // interactable's own range. The crosshair id-test already proved line-of-sight with
+            // correct occlusion, so this is only a "close enough" gate. Origin-distance is still a
+            // crude proxy: a large/elevated object whose pivot sits far from its visible surface
+            // needs a larger per-object range (set InteractRange in the Inspector).
             if (cand.Entity.Visible && Walker != null &&
-                Vector3.Distance(Walker.Position, cand.Entity.Position3D) <= InteractRange)
+                Vector3.Distance(Walker.EyePosition, cand.Entity.Position3D) <= cand.Comp.InteractRange)
                 target = cand;
         }
 
@@ -910,7 +1091,7 @@ public class UI3DScene : UIElement
         {
             var comp = e.GetComponent<Interactable3DComponent>();
             var mesh = e.GetComponent<Mesh3DComponent>();
-            comp.Id = _interactables.Count + 1; // 1..255, encoded in the red channel
+            comp.PickId = _interactables.Count + 1; // 1..255, encoded in the red channel
             _interactables.Add(new InteractInfo
             {
                 Entity = e,
@@ -938,6 +1119,23 @@ public class UI3DScene : UIElement
     {
         spriteBatch.Draw(_renderTarget, _bounds, Color.White);
 
+        if (DebugIdView && _idTarget != null && !_idTarget.IsDisposed)
+        {
+            int pw  = _bounds.Width / 3;
+            int ph  = pw * IdHeight / IdWidth;
+            var dst = new Rectangle(_bounds.Right - pw - 12, _bounds.Y + 12, pw, ph);
+            spriteBatch.Draw(_pixel, new Rectangle(dst.X - 2, dst.Y - 2, dst.Width + 4, dst.Height + 4), Color.White);
+            spriteBatch.Draw(_idTarget, dst, Color.White);
+            // Marker at the buffer centre (= the crosshair sample point).
+            spriteBatch.Draw(_pixel, new Rectangle(dst.Center.X - 3, dst.Center.Y, 7, 1), Color.Magenta);
+            spriteBatch.Draw(_pixel, new Rectangle(dst.Center.X, dst.Center.Y - 3, 1, 7), Color.Magenta);
+
+            var font = Core.DefaultFont;
+            string info = $"id@crosshair={_lastCrosshairId}  hover={_hovered?.Entity.Name ?? "none"}";
+            spriteBatch.Draw(_pixel, new Rectangle(dst.X - 2, dst.Bottom + 4, (int)font.MeasureString(info).X + 6, (int)font.MeasureString(info).Y + 4), Color.Black * 0.6f);
+            spriteBatch.DrawString(font, info, new Vector2(dst.X + 1, dst.Bottom + 6), Color.Lime);
+        }
+
         if (_cameraActive)
         {
             int cx = _bounds.X + _bounds.Width  / 2;
@@ -955,6 +1153,32 @@ public class UI3DScene : UIElement
                 spriteBatch.Draw(_pixel, new Rectangle(tx - 6, ty - 3, (int)size.X + 12, (int)size.Y + 6), Color.Black * 0.6f);
                 spriteBatch.DrawString(font, text, new Vector2(tx, ty), Color.White);
             }
+        }
+
+        // Editor pick diagnostic HUD (top-left of the viewport). Shows live state and the last
+        // click's result so gizmo picking can be debugged on-screen.
+        if (EditorMode)
+        {
+            var font = Core.DefaultFont;
+            string l1 = $"sel={SelectedEntity?.Name ?? "none"}  mode={Gizmo.Mode}  valid={Gizmo.HasValidTarget(SelectedEntity)}  cam={_cameraActive}";
+            string l2 = _lastClickDiag;
+            var p1 = new Vector2(_bounds.X + 8, _bounds.Y + 8);
+            var p2 = new Vector2(_bounds.X + 8, _bounds.Y + 8 + font.LineSpacing);
+            spriteBatch.Draw(_pixel, new Rectangle((int)p1.X - 4, (int)p1.Y - 2,
+                (int)MathF.Max(font.MeasureString(l1).X, font.MeasureString(l2).X) + 8, font.LineSpacing * 2 + 4), Color.Black * 0.6f);
+            spriteBatch.DrawString(font, l1, p1, Color.Yellow);
+            spriteBatch.DrawString(font, l2, p2, Color.Yellow);
+        }
+
+        // F4 live pick readout: what the CPU raycast reports under the cursor right now (== what a click
+        // would grab).
+        if (EditorMode && Gizmo.ShowPickDebug)
+        {
+            var font = Core.DefaultFont;
+            var tp = new Vector2(_bounds.X + 8, _bounds.Bottom - font.LineSpacing - 8);
+            spriteBatch.Draw(_pixel, new Rectangle((int)tp.X - 4, (int)tp.Y - 2,
+                (int)font.MeasureString(_gizmoPickDiag).X + 8, font.LineSpacing + 4), Color.Black * 0.6f);
+            spriteBatch.DrawString(font, _gizmoPickDiag, tp, Color.Cyan);
         }
     }
 
