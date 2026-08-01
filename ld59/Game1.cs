@@ -56,6 +56,7 @@ public class Game1 : Core
         DeveloperConsole.RegisterCommandHandler(new MinefieldCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new BrowserCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new OneBitCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new PosterizeCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new IdViewCommandHandler());
         WebPages.RegisterAll();
         Core.CurrentScene.AddManager(new GameFileDataManager());

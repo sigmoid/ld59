@@ -73,6 +73,9 @@ float3   DirLightDirection;   // normalized, toward light (the "L" vector)
 float3   DirLightColor;
 float    DirLightIntensity;
 
+// Posterize the lighting term: 0 or 1 = off; >= 2 quantizes shading into that many bands.
+float    PosterizeLevels;
+
 bool     HasDirShadow;
 float4x4 DirShadowMatrix;
 float    DirShadowStep;   // texelSize * blurRadius, pre-multiplied on CPU
@@ -239,7 +242,16 @@ float4 PS(VertexOutput input) : COLOR
         lighting += shDir * CalcDirLight(normal);
 
     float3 diffuse = HasTexture ? tex2D(DiffuseSampler, input.TexCoord).rgb : DiffuseColor;
-    return float4(diffuse * saturate(lighting), 1.0);
+    float3 shade = saturate(lighting);
+    if (PosterizeLevels >= 1.5)
+    {
+        // Quantize by luminance (not per-channel) so a band is a brightness step of a
+        // single hue. Per-channel stepping splits a colored light into rings of hues.
+        float lum = dot(shade, float3(0.299, 0.587, 0.114));
+        float q   = floor(lum * PosterizeLevels + 0.5) / PosterizeLevels;
+        shade    *= (lum > 1e-4) ? (q / lum) : 0.0;
+    }
+    return float4(diffuse * shade, 1.0);
 }
 
 technique PointLightMesh

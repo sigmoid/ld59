@@ -78,6 +78,7 @@ public class ObjTerrainComponent : Component
         _effect.Parameters["View"].SetValue(view);
         _effect.Parameters["Projection"].SetValue(projection);
         _effect.Parameters["AmbientColor"].SetValue(lights.AmbientColor.ToVector3());
+        _effect.Parameters["PosterizeLevels"]?.SetValue(SceneLightData.PosterizeLevels);
 
         int count = Math.Min(lights.PointLights.Count, MaxLights);
         for (int i = 0; i < count; i++)

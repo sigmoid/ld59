@@ -216,5 +216,33 @@
       </Component>
       <Component Type="NavMeshObstacleComponent" />
     </Entity>
+    <Entity Name="cube">
+      <Position3D>
+        <X>1915.2914</X>
+        <Y>180.505</Y>
+        <Z>-83.529</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="2,2,2" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_2">
+      <Position3D>
+        <X>767.49585</X>
+        <Y>94.341736</Y>
+        <Z>-71.42813</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="5.705426,0.04247833,0.30571592" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
   </Entities>
 </Scene>
