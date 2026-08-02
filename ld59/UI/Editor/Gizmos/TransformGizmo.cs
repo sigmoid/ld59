@@ -28,15 +28,31 @@ public sealed class TransformGizmo : IDisposable
 
     public GizmoMode Mode { get; set; } = GizmoMode.Translate;
 
-    private const float HandleScaleFactor = 0.09f; // world units of handle length per unit of camera distance
-    private const float MinHandleLength = 0.3f;
-    private const float MaxHandleLength = 1.5f;      // cap so a far camera doesn't balloon the gizmo
+    // Fraction of the viewport HEIGHT the gizmo's reach occupies. Because the handle length is
+    // derived from this and the camera distance, the gizmo covers the same number of screen pixels
+    // whether the selection is at arm's length or across a level -- so a distant object's handles
+    // stay just as grabbable as a near one's. (0.11 reproduces how the gizmo used to look at close
+    // range, when its length was a flat 0.09 per unit of distance under the default 45 FOV.)
+    private const float ScreenHeightFraction = 0.11f;
+    private const float MinHandleLength = 1e-3f;    // only guards a camera sitting exactly on the origin
     private const float RotateSensitivity = 0.01f;  // radians per pixel of horizontal mouse delta
     private const float ScaleSensitivity = 0.1f;    // scale units per world unit of drag
     private const float UniformScaleSensitivity = 0.01f; // scale units per pixel of horizontal drag
     private const float ScaleMin = 0.01f;
 
     public bool IsDragging => _dragAxis != GizmoAxis.None;
+
+    /// <summary>
+    /// The handle the cursor is currently over, pushed in by the view each frame (it owns the
+    /// cursor and the camera matrices). Drawn brighter so you can tell which axis a click will
+    /// grab before committing to the drag -- the pick tolerances are generous, so which handle
+    /// wins isn't always obvious from the cursor position alone.
+    /// </summary>
+    public GizmoAxis HoverAxis { get; set; } = GizmoAxis.None;
+
+    // How far a hovered handle is washed toward white. Lerping rather than multiplying keeps the
+    // already-bright axis colours from just clipping to the same white.
+    private const float HoverLerp = 0.45f;
 
     private GizmoAxis _dragAxis = GizmoAxis.None;
     private object _dragTarget;
@@ -100,10 +116,26 @@ public sealed class TransformGizmo : IDisposable
 
     private static readonly GizmoAxis[] Axes = { GizmoAxis.X, GizmoAxis.Y, GizmoAxis.Z };
 
-    // Scale with camera distance for a roughly constant on-screen size, but clamp so it neither
-    // vanishes up close nor balloons into a scene-spanning object when the camera is far away.
-    private static float HandleLength(Vector3 origin, Vector3 cameraPos) =>
-        MathHelper.Clamp(Vector3.Distance(origin, cameraPos) * HandleScaleFactor, MinHandleLength, MaxHandleLength);
+    // Draw colour for one handle: its axis colour, brightened while dragged and washed toward white
+    // while hovered (drag wins, so the held axis doesn't dim if the cursor wanders onto another).
+    private Vector4 HandleColor(GizmoAxis axis)
+    {
+        var color = AxisColor(axis);
+        if (_dragAxis == axis) return color * (axis == GizmoAxis.All ? 1.4f : 1.5f);
+        if (!IsDragging && HoverAxis == axis) return Vector4.Lerp(color, Vector4.One, HoverLerp);
+        return color;
+    }
+
+    // Constant on-screen size: the world height a perspective camera sees at distance d is
+    // 2*d*tan(fovY/2), so making the handle that height times a fixed fraction pins its projected
+    // length to the same share of the viewport at every distance. tan(fovY/2) comes straight out of
+    // the projection matrix (M22 = 1/tan(fovY/2)), so this tracks the caller's FOV automatically.
+    private static float HandleLength(Vector3 origin, Vector3 cameraPos, Matrix proj)
+    {
+        float dist = Vector3.Distance(origin, cameraPos);
+        float tanHalfFov = proj.M22 > 1e-6f ? 1f / proj.M22 : 0.41421f;   // fall back to 45 vertical FOV
+        return MathF.Max(dist * 2f * tanHalfFov * ScreenHeightFraction, MinHandleLength);
+    }
 
     // Rotation that points the models' native forward axis onto the target world axis. The FBX
     // geometry points +Z, but MonoGame's importer converts Z-up -> Y-up, so in the BUILT model the
@@ -165,7 +197,7 @@ public sealed class TransformGizmo : IDisposable
     {
         var (_, _, value) = ResolveTarget(entity);
         Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
-        float len = HandleLength(origin, cameraPos);
+        float len = HandleLength(origin, cameraPos, proj);
         float pickLen = len * _renderer.TipFor(Mode) / _renderer.ReachFor(Mode);
         Matrix vp = view * proj;
 
@@ -252,7 +284,7 @@ public sealed class TransformGizmo : IDisposable
     {
         var (_, _, value) = ResolveTarget(entity);
         Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
-        float len = HandleLength(origin, cameraPos);
+        float len = HandleLength(origin, cameraPos, proj);
         var model = _renderer.ModelFor(Mode);
 
         // Clear the depth buffer so the gizmo sits on top of the scene, but draw depth-tested so
@@ -260,19 +292,11 @@ public sealed class TransformGizmo : IDisposable
         device.Clear(ClearOptions.DepthBuffer, Color.Black, 1f, 0);
 
         foreach (var axis in Axes)
-        {
-            var color = AxisColor(axis);
-            if (_dragAxis == axis) color *= 1.5f; // brighten the axis being dragged
-            DrawHandle(device, model, axis, origin, len, view, proj, color);
-        }
+            DrawHandle(device, model, axis, origin, len, view, proj, HandleColor(axis));
 
         // Scale gizmo: a center box that scales all three axes at once.
         if (Mode == GizmoMode.Scale)
-        {
-            var color = AxisColor(GizmoAxis.All);
-            if (_dragAxis == GizmoAxis.All) color *= 1.4f;
-            DrawUniformBox(device, origin, len, view, proj, color);
-        }
+            DrawUniformBox(device, origin, len, view, proj, HandleColor(GizmoAxis.All));
     }
 
     // The uniform-scale handle: a small cube at the gizmo origin.

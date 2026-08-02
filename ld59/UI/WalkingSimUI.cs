@@ -71,6 +71,17 @@ public class WalkingSimUI : UIPanel
                 ScenePath       = Path.Combine(contentRoot, asset.ScenePath),
                 ShowSkybox      = asset.Skybox,
             };
+
+            // Exponential fog over the 3D pass. Enabled here (rather than by default on every
+            // UI3DScene) so other 3D views -- the pinball table, the scene previewer -- keep their
+            // flat look. Tune live with the `fog` console command; a scene that draws its own sky
+            // keeps it visible instead of fading the horizon to the fog colour.
+            sceneView.Fog.Enabled = true;
+            sceneView.Fog.BackgroundFog = asset.Skybox ? 0.35f : 1f;
+
+            // Silhouette outlines off the same depth/id pass the fog already runs, so they cost
+            // three full-screen blits and no extra scene draw. Tune with `outline`.
+            sceneView.Outline.Enabled = true;
             // Interacting with a puzzle object opens the focused solve view; everything else
             // routes through the dispatcher (switches on Action). Pass the walk scene so
             // reveal/hide/toggle can resolve targets.

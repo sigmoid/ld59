@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Graphics;
 using Quartz.UI;
 using ld59.WalkingSim;
 using ld59.UI.Editor;
@@ -33,7 +34,7 @@ public class UI3DScene : UIElement
     public float FieldOfView      { get; set; } = MathHelper.PiOver4;
     public float NearPlane        { get; set; } = 1.0f;
     public float FarPlane         { get; set; } = 70000f;
-    public float MoveSpeed        { get; set; } = 10f;
+    public float MoveSpeed        { get; set; } = 30f;
     // Shift-to-boost multiplier for the free-fly (editor) camera.
     public float FlyBoostMultiplier { get; set; } = 6f;
     public float LookSensitivity  { get; set; } = 0.002f;
@@ -53,6 +54,44 @@ public class UI3DScene : UIElement
     // Procedural moon skybox (stars + Earth + Sun). Off by default; enabled per scene.
     public bool ShowSkybox { get; set; }
     private SkyboxRenderer _skybox;
+
+    // ── 3D post-processing (fog) ────────────────────────────────────────────────────────────
+    // A chain of its own, sized to this view's render target rather than the screen, so the 3D
+    // scene can be filtered before the editor overlays (gizmo/navmesh/billboards) draw on top --
+    // those need to stay crisp and unfogged. Core.PostProcessing still runs over the whole desktop
+    // afterwards.
+    private readonly PostProcessManager _postProcess;
+    private RenderTarget2D _postTarget;
+    private Effect _depthEffect;
+    private float _elapsedSeconds;
+
+    /// <summary>The view's own post-process chain -- add scene-aware effects here.</summary>
+    public PostProcessManager PostProcess => _postProcess;
+
+    /// <summary>Exponential fog over this view. Disabled by default; scenes that want it (the
+    /// walking sim) turn it on, and the <c>fog</c> console command tunes it live.</summary>
+    public ExponentialFogPostProcessEffect Fog { get; }
+
+    /// <summary>Silhouette outlines from the depth pass' entity ids. Disabled by default; tuned
+    /// live with the <c>outline</c> console command.</summary>
+    public OutlinePostProcessEffect Outline { get; }
+
+    /// <summary>World distance the depth pass' 1.0 encodes. Geometry beyond this reads as
+    /// maximally far (same as the background), so keep it comfortably past where fog saturates --
+    /// the camera's FarPlane (tens of thousands of units) would work but wastes the useful range.</summary>
+    public float DepthFarDistance { get; set; } = 1000f;
+
+    // Debug: toggled by the `depthview` console command. Shows the linear depth buffer as a
+    // picture-in-picture plus the world distance sampled at the crosshair, so the depth pass can be
+    // sanity-checked on its own (before/without any effect that consumes it).
+    public static bool DebugDepthView;
+    private Vector2 _lastCrosshairDepth;   // (distance / DepthFarDistance, geometry mask)
+    private readonly Vector2[] _depthPixel = new Vector2[1];
+
+    // Every live 3D view, so console commands (`fog`, `depthview`) can reach whatever scene the
+    // user currently has open without the command needing a handle on the window that owns it.
+    private static readonly System.Collections.Generic.List<UI3DScene> _instances = new();
+    public static System.Collections.Generic.IReadOnlyList<UI3DScene> Instances => _instances;
 
     // Debug navmesh overlay (toggle N) and free-fly camera (toggle F) for inspecting the level.
     public bool ShowNavMesh { get; set; }
@@ -209,6 +248,17 @@ public class UI3DScene : UIElement
 
         Gizmo = new TransformGizmo(Core.GraphicsDevice);
         _billboards = new BillboardGizmoRenderer(Core.GraphicsDevice);
+
+        // Registered but off: a view only pays for the depth pass and the chain once something in
+        // it is actually enabled (see ApplyScenePostProcess). Both effects read the same depth/id
+        // buffer, so turning the second one on costs no extra scene pass.
+        _postProcess = new PostProcessManager(Core.GraphicsDevice, _rtWidth, _rtHeight);
+        Fog = _postProcess.AddEffect<ExponentialFogPostProcessEffect>();
+        Fog.Enabled = false;
+        Outline = _postProcess.AddEffect<OutlinePostProcessEffect>();
+        Outline.Enabled = false;
+
+        _instances.Add(this);
     }
 
     private void InitializeCameraAngles()
@@ -268,9 +318,14 @@ public class UI3DScene : UIElement
         if (navKey && !_prevNavKey && !textFocused) ShowNavMesh = !ShowNavMesh;
         _prevNavKey = navKey;
 
+        // F: in the editor, frame the selected entity (Unity-style). Outside the editor it keeps
+        // its old job of detaching into free-fly and back.
         bool flyKey = keyboard.IsKeyDown(Keys.F);
-        if (flyKey && !_prevFlyKey && !textFocused && !EditorMode && Walker != null)
-            Mode = Mode == CameraMode.Walk ? CameraMode.Fly : CameraMode.Walk;
+        if (flyKey && !_prevFlyKey && !textFocused)
+        {
+            if (EditorMode) FocusOnSelected();
+            else if (Walker != null) Mode = Mode == CameraMode.Walk ? CameraMode.Fly : CameraMode.Walk;
+        }
         _prevFlyKey = flyKey;
 
         bool debugKey = keyboard.IsKeyDown(Keys.F3);
@@ -352,6 +407,15 @@ public class UI3DScene : UIElement
             var editProj = Matrix.CreatePerspectiveFieldOfView(
                 FieldOfView, (float)_rtWidth / _rtHeight, NearPlane, FarPlane);
 
+            // Highlight the handle under the cursor. Uses the very same CPU pick a click would run,
+            // so what lights up is exactly what a click grabs. While dragging, the held axis stays
+            // lit regardless of where the cursor has since travelled.
+            Gizmo.HoverAxis = !Gizmo.IsDragging && SelectedEntity != null
+                && Gizmo.HasValidTarget(SelectedEntity) && _bounds.Contains(mousePos)
+                ? Gizmo.PickAxis(SelectedEntity, CameraPosition, CursorToRtPixel(mousePos),
+                    editView, editProj, new Viewport(0, 0, _rtWidth, _rtHeight), out _)
+                : GizmoAxis.None;
+
             if (leftPressed && !_prevLeftPressed && _bounds.Contains(mousePos))
             {
                 string selBefore = SelectedEntity?.Name ?? "null";
@@ -376,6 +440,11 @@ public class UI3DScene : UIElement
                 else
                     Gizmo.EndDrag(History);
             }
+        }
+        else
+        {
+            // Looking around (or out of the editor): nothing is under the cursor to highlight.
+            Gizmo.HoverAxis = GizmoAxis.None;
         }
 
         // Fires every frame the editor has a selection, so panels showing live values (the
@@ -560,6 +629,11 @@ public class UI3DScene : UIElement
 
         _scene.Draw3D(device, view, proj);
 
+        // Fog (and any other depth-aware effect) filters the scene HERE -- after the world is
+        // drawn but before the editor overlays below, so gizmos and the navmesh stay readable at
+        // any fog density.
+        ApplyScenePostProcess(device, view, proj, deltaTime);
+
         if (EditorMode)
         {
             BuildTables();
@@ -596,6 +670,122 @@ public class UI3DScene : UIElement
 
         if (Mode == CameraMode.Walk && (_cameraActive || DebugIdView))
             UpdatePicking(device, view, proj, keyboard);
+    }
+
+    // Render the scene's linear depth, then run this view's post-process chain over the colour
+    // buffer and blit the result back into it. The blit-back (rather than just handing the chain's
+    // output straight to Draw) is what lets the editor overlays keep drawing into _renderTarget
+    // afterwards with the main pass' depth buffer intact -- the target is PreserveContents, so
+    // re-binding it doesn't clear colour or depth.
+    private void ApplyScenePostProcess(GraphicsDevice device, Matrix view, Matrix proj, float deltaTime)
+    {
+        _elapsedSeconds += deltaTime;
+
+        // Nothing wants depth and nothing is enabled -> skip the extra scene draw entirely.
+        bool needsDepth = _postProcess.NeedsSceneDepth || DebugDepthView;
+        if (!needsDepth && !_postProcess.HasEnabledEffects) return;
+
+        if (needsDepth)
+        {
+            _depthEffect ??= Core.Content.Load<Effect>("shaders/scene-depth");
+            _scene.DrawDepthPass(device, _depthEffect, _rtWidth, _rtHeight,
+                view, proj, CameraPosition, DepthFarDistance);
+
+            // Sample the centre of the buffer for the debug readout. GetData stalls on the GPU, so
+            // only while the overlay is up.
+            if (DebugDepthView && _scene.DepthMap != null)
+            {
+                _scene.DepthMap.GetData(0, new Rectangle(_rtWidth / 2, _rtHeight / 2, 1, 1), _depthPixel, 0, 1);
+                _lastCrosshairDepth = _depthPixel[0];
+            }
+        }
+
+        if (!_postProcess.HasEnabledEffects)
+        {
+            // Depth-only frame (the debug view): put the colour target back and carry on.
+            device.SetRenderTarget(_renderTarget);
+            RestoreSceneStates(device);
+            return;
+        }
+
+        _postProcess.SetSceneContext(new Scene3DFrameContext
+        {
+            DepthMap              = needsDepth ? _scene.DepthMap : null,
+            CameraPosition        = CameraPosition,
+            View                  = view,
+            Projection            = proj,
+            InverseViewProjection = Matrix.Invert(view * proj),
+            FarDistance           = DepthFarDistance,
+            Time                  = _elapsedSeconds,
+        });
+
+        if (_postTarget == null || _postTarget.IsDisposed)
+            _postTarget = new RenderTarget2D(device, _rtWidth, _rtHeight, false,
+                SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+
+        // The chain reads _renderTarget as a texture; unbind it first (the depth pass above already
+        // does when it runs, but a depth-free chain would still have it bound from the main pass).
+        device.SetRenderTarget(null);
+
+        var gameTime = new GameTime(TimeSpan.FromSeconds(_elapsedSeconds), TimeSpan.FromSeconds(deltaTime));
+        _postProcess.Process(_renderTarget, _postTarget, gameTime);
+
+        device.SetRenderTarget(_renderTarget);
+        Core.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointClamp);
+        Core.SpriteBatch.Draw(_postTarget, Vector2.Zero, Color.White);
+        Core.SpriteBatch.End();
+
+        RestoreSceneStates(device);
+    }
+
+    // SpriteBatch leaves the device set up for 2D; the overlays that draw after the post-process
+    // are 3D and need the main pass' states back.
+    private static void RestoreSceneStates(GraphicsDevice device)
+    {
+        device.BlendState        = BlendState.Opaque;
+        device.DepthStencilState = DepthStencilState.Default;
+        device.RasterizerState   = RasterizerState.CullNone;
+        device.SamplerStates[0]  = SamplerState.LinearWrap;
+    }
+
+    // How much bigger than the object's bounding sphere the framed view is, so focusing leaves a
+    // little air around the target instead of filling the viewport edge to edge.
+    private const float FocusMargin = 1.6f;
+    // Fallback radius for entities with no mesh (lights, PlayerStart) -- roughly their billboard.
+    private const float FocusPointRadius = 1f;
+
+    /// <summary>
+    /// Frame the selection (F, Unity-style): pull the camera back along its current view direction
+    /// far enough that the entity's bounds fit the vertical FOV. Keeps the current orientation, so
+    /// focusing never spins the view -- it only closes the distance.
+    /// </summary>
+    public void FocusOnSelected()
+    {
+        if (SelectedEntity == null) return;
+
+        Vector3 center;
+        float radius;
+        var mesh = SelectedEntity.GetComponent<Mesh3DComponent>();
+        if (mesh != null && mesh.TryGetWorldBounds(_scene.SceneScale, out var bounds))
+        {
+            center = bounds.Center;
+            radius = MathF.Max(bounds.Radius, 1e-3f);
+        }
+        else
+        {
+            center = SelectedEntity.Position3D * _scene.SceneScale;
+            radius = FocusPointRadius;
+        }
+
+        // Vertical FOV is the binding constraint on any aspect ratio wider than tall.
+        float dist = radius / MathF.Max(MathF.Sin(FieldOfView * 0.5f), 1e-3f) * FocusMargin;
+
+        var dir = CameraTarget - CameraPosition;
+        dir = dir.LengthSquared() > 1e-6f ? Vector3.Normalize(dir) : Vector3.Forward;
+
+        CameraPosition = center - dir * dist;
+        CameraTarget   = center;
+        Console.WriteLine($"[editor] focused {SelectedEntity.Name} (r={radius:0.##}, dist={dist:0.##})");
     }
 
     // Last bake outcome, for the navmesh panel to display.
@@ -1136,6 +1326,29 @@ public class UI3DScene : UIElement
             spriteBatch.DrawString(font, info, new Vector2(dst.X + 1, dst.Bottom + 6), Color.Lime);
         }
 
+        // Depth-pass debug overlay (`depthview`): the linear depth buffer picture-in-picture, plus
+        // the world distance under the crosshair. Near geometry is dark, the far plane is bright --
+        // a flat black or flat white panel means the pass isn't seeing the scene.
+        if (DebugDepthView && _scene.DepthMap != null && !_scene.DepthMap.IsDisposed)
+        {
+            int pw  = _bounds.Width / 3;
+            int ph  = pw * _rtHeight / _rtWidth;
+            var dst = new Rectangle(_bounds.Right - pw - 12, _bounds.Bottom - ph - 40, pw, ph);
+            spriteBatch.Draw(_pixel, new Rectangle(dst.X - 2, dst.Y - 2, dst.Width + 4, dst.Height + 4), Color.White);
+            // Distance is in red and the geometry mask in green, so this reads as a red ramp that
+            // turns yellow-ish past the encoding range and stays black where nothing was drawn.
+            spriteBatch.Draw(_scene.DepthMap, dst, Color.White);
+
+            var font = Core.DefaultFont;
+            string info = _lastCrosshairDepth.Y < 0.5f
+                ? "depth@crosshair: background (no geometry)"
+                : $"depth@crosshair: {_lastCrosshairDepth.X * DepthFarDistance:0.##}u  " +
+                  $"({_lastCrosshairDepth.X:0.###} of the {DepthFarDistance:0} range)";
+            var size = font.MeasureString(info);
+            spriteBatch.Draw(_pixel, new Rectangle(dst.X - 2, dst.Bottom + 4, (int)size.X + 6, (int)size.Y + 4), Color.Black * 0.6f);
+            spriteBatch.DrawString(font, info, new Vector2(dst.X + 1, dst.Bottom + 6), Color.Lime);
+        }
+
         if (_cameraActive)
         {
             int cx = _bounds.X + _bounds.Width  / 2;
@@ -1199,6 +1412,9 @@ public class UI3DScene : UIElement
             _cameraActive = false;
         }
         if (_hovered?.Mesh != null) _hovered.Mesh.HighlightFactor = 1f;
+        _instances.Remove(this);
+        _postProcess?.Dispose();
+        _postTarget?.Dispose();
         _pixel?.Dispose();
         _renderTarget?.Dispose();
         _idTarget?.Dispose();

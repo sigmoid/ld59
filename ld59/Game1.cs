@@ -58,6 +58,10 @@ public class Game1 : Core
         DeveloperConsole.RegisterCommandHandler(new OneBitCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new PosterizeCommandHandler());
         DeveloperConsole.RegisterCommandHandler(new IdViewCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new DepthViewCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new FogCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new OutlineCommandHandler());
+        DeveloperConsole.RegisterCommandHandler(new WalkingSimCommandHandler());
         WebPages.RegisterAll();
         Core.CurrentScene.AddManager(new GameFileDataManager());
         Core.CurrentScene.AddManager(new EmailDataManager());

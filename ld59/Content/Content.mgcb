@@ -1,4 +1,4 @@
-
+﻿
 #----------------------------- Global Properties ----------------------------#
 
 /outputDir:bin/$(Platform)
@@ -1547,6 +1547,12 @@
 /processorParam:DebugMode=Auto
 /build:shaders/debug-cubemap.fx
 
+#begin shaders/exponential-fog.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/exponential-fog.fx
+
 #begin shaders/fluid-simulation/add-smoke.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -1685,6 +1691,12 @@
 /processorParam:DebugMode=Auto
 /build:shaders/one_bit_dithering.fx
 
+#begin shaders/outline.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/outline.fx
+
 #begin shaders/point-light-mesh.fx
 /importer:EffectImporter
 /processor:EffectProcessor
@@ -1696,6 +1708,12 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:shaders/point-light.fx
+
+#begin shaders/scene-depth.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/scene-depth.fx
 
 #begin shaders/shadow-depth-dir.fx
 /importer:EffectImporter
