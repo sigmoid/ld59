@@ -86,6 +86,11 @@ public class WalkingSimUI : UIPanel
             // Silhouette outlines off the same depth/id pass the fog already runs, so they cost
             // three full-screen blits and no extra scene draw. Tune with `outline`.
             sceneView.Outline.Enabled = true;
+
+            // Ambient occlusion off that same depth pass -- again no extra scene draw, but unlike
+            // the fog and the outlines it is not nearly free: it samples a hemisphere per pixel.
+            // `ssao downscale 2` roughly quarters that if the frame gets tight. Tune with `ssao`.
+            sceneView.Ssao.Enabled = true;
             // Interacting with a puzzle object opens the focused solve view; everything else
             // routes through the dispatcher (switches on Action). Pass the walk scene so
             // reveal/hide/toggle can resolve targets.

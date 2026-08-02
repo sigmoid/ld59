@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Input;
 using ld59.WalkingSim;
 
 namespace ld59.UI.Scene3D;
@@ -58,6 +59,8 @@ public sealed class CameraRig
     private bool _prevLookPressed;
     private bool _prevTabPressed;
     private bool _captureSuspended;
+    private bool _inputBlocked;              // last frame's GameInput.Blocked, for edge detection
+    private bool _restoreCaptureOnUnblock;   // walk-mode capture we took away for the console
     private int  _debugLookFrame;
 
     /// <summary>
@@ -126,6 +129,15 @@ public sealed class CameraRig
     {
         if (!_anglesInitialized) InitializeAngles();
 
+        // While the game isn't listening (developer console), the cursor has to go back to the
+        // user or the console can't be clicked -- and the view must not keep turning with it.
+        if (UpdateInputBlock())
+        {
+            _prevLookPressed = lookPressed;
+            _prevTabPressed  = tabPressed;
+            return;
+        }
+
         bool justCaptured = false;
         if (!_captureSuspended && lookPressed && !_prevLookPressed && vp.Contains(cursor))
         {
@@ -149,6 +161,40 @@ public sealed class CameraRig
 
         _prevLookPressed = lookPressed;
         _prevTabPressed  = tabPressed;
+    }
+
+    /// <summary>
+    /// Tracks <see cref="GameInput.Blocked"/> and takes/returns the mouse across the transition.
+    /// Kept separate from <see cref="SuspendCapture"/>: a modal owns that flag for as long as it is
+    /// up, and the console closing must not steal it back. Only walk-mode capture is restored --
+    /// fly-mode look is hold-to-look, so it re-captures on its own at the next button press, and
+    /// force-restoring it would leave the cursor hidden if the button was let go while blocked.
+    /// </summary>
+    /// <returns>True while input is blocked, i.e. the caller should do nothing this frame.</returns>
+    private bool UpdateInputBlock()
+    {
+        bool blocked = GameInput.Blocked;
+        if (blocked == _inputBlocked) return blocked;
+        _inputBlocked = blocked;
+
+        if (blocked)
+        {
+            _restoreCaptureOnUnblock = _cameraActive && Mode == CameraMode.Walk;
+            ReleaseCapture();
+        }
+        else if (_restoreCaptureOnUnblock && !_captureSuspended)
+        {
+            _restoreCaptureOnUnblock = false;
+            _cameraActive = true;
+            Core.Instance.IsMouseVisible = false;
+            _recenterPending = true;   // zero the first look delta so the view doesn't snap on resume
+        }
+        else
+        {
+            _restoreCaptureOnUnblock = false;
+        }
+
+        return blocked;
     }
 
     private void InitializeAngles()
@@ -182,7 +228,7 @@ public sealed class CameraRig
         // recentring every frame and diffing against the centre. Mouse.SetPosition is an async
         // OS call whose result may not be visible to the next Mouse.GetState(), so recentring
         // every frame made deltas double-count/drop on alternating frames -> choppy look.
-        var raw = Mouse.GetState();
+        var raw = GameInput.RawDeviceMouse;
         Vector2 delta;
         if (justCaptured || _recenterPending)
         {

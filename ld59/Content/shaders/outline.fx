@@ -17,8 +17,8 @@
 // max filters, 2*(2R+1) samples total. Line width comes out uniform and the cost is linear in R.
 //
 //   1. Edge     : id discontinuity -> a 1px mask, laid on the nearer surface
-//   2. DilateH  : horizontal max over +/- Thickness
-//   3. Composite: vertical max over +/- Thickness, then blend the outline over the scene
+//   2. DilateH  : horizontal max over the Dilate window
+//   3. Composite: vertical max over the Dilate window, then blend the outline over the scene
 
 // IMPORTANT, and the source of a long-lived bug here: under ps_4_0 the sampler register and the
 // texture register are SEPARATE binding spaces, and `register(s1)` pins only the former. A pass
@@ -56,9 +56,19 @@ sampler2D MaskSampler : register(s2) = sampler_state
 };
 
 float2 Resolution   = float2(1280.0, 720.0);
-float  Thickness    = 1.0;               // dilation radius in pixels; line width = 1 + 2*Thickness
 float3 OutlineColor = float3(0.1, 0.1, 0.15);
 float  Opacity      = 1.0;
+
+// Dilation window around each mask pixel, in pixels: (before, after) along whichever axis the pass
+// is working on. Line width = Dilate.x + Dilate.y + 1.
+//
+// Two sides rather than one radius, because a symmetric window can only ever produce ODD widths
+// (1 + 2R). An even width needs one extra pixel on one side only -- (0,1) for 2px, (1,2) for 4px --
+// which the caller works out from the width it wants. The cost of that: at even widths the line
+// sits half a pixel off-centre on the boundary, so it reads as very slightly inside an object's
+// left/top edges and outside its right/bottom ones. Unavoidable without knowing which side of the
+// boundary each mask pixel is on, and the scalar mask has deliberately thrown that away (see above).
+float2 Dilate = float2(1.0, 1.0);
 
 // Distance (world units) at which outlines have faded out completely. 0 disables the fade, keeping
 // every line at full strength no matter how far away -- which is what you want when the outlines
@@ -67,7 +77,7 @@ float FadeDistance = 0.0;
 float FarDistance  = 1000.0;
 
 // Hard cap on the dilation loop so the shader has a bounded instruction count regardless of what
-// Thickness is set to at runtime.
+// Dilate is set to at runtime. Caps the line at 1 + 2*MAX_RADIUS px.
 #define MAX_RADIUS 16
 
 struct VSInput
@@ -128,31 +138,33 @@ float4 EdgePS(VSOutput input) : COLOR
     return float4(edge ? 1.0 : 0.0, 0, 0, 1);
 }
 
-// Max of the mask along one axis, out to `radius` pixels each way. Takes the sampler because the
-// mask arrives in different slots depending on the pass: as the SpriteBatch source (t0) when
-// dilation is all the pass does, and as a secondary texture when Composite also needs the scene.
-float DilateAxis(sampler2D src, float2 uv, float2 stepUv, float radius)
+// Max of the mask along one axis, over `range.x` pixels back and `range.y` forward. Takes the
+// sampler because the mask arrives in different slots depending on the pass: as the SpriteBatch
+// source (t0) when dilation is all the pass does, and as a secondary texture when Composite also
+// needs the scene.
+float DilateAxis(sampler2D src, float2 uv, float2 stepUv, float2 range)
 {
     float m = tex2D(src, uv).r;
+    float reach = max(range.x, range.y);
     for (int i = 1; i <= MAX_RADIUS; i++)
     {
-        if (i > radius) break;
-        m = max(m, tex2D(src, uv + stepUv * i).r);
-        m = max(m, tex2D(src, uv - stepUv * i).r);
+        if (i > reach) break;
+        if (i <= range.x) m = max(m, tex2D(src, uv - stepUv * i).r);
+        if (i <= range.y) m = max(m, tex2D(src, uv + stepUv * i).r);
     }
     return m;
 }
 
 float4 DilateHPS(VSOutput input) : COLOR
 {
-    float m = DilateAxis(TextureSampler, input.TexCoord, float2(1.0 / Resolution.x, 0), Thickness);
+    float m = DilateAxis(TextureSampler, input.TexCoord, float2(1.0 / Resolution.x, 0), Dilate);
     return float4(m, 0, 0, 1);
 }
 
 float4 CompositePS(VSOutput input) : COLOR
 {
     float4 scene = tex2D(TextureSampler, input.TexCoord);
-    float  mask  = DilateAxis(MaskSampler, input.TexCoord, float2(0, 1.0 / Resolution.y), Thickness);
+    float  mask  = DilateAxis(MaskSampler, input.TexCoord, float2(0, 1.0 / Resolution.y), Dilate);
 
     float alpha = mask * Opacity;
 
@@ -192,7 +204,7 @@ float4 DebugIdsPS(VSOutput input) : COLOR
 // vertical pass Composite does.
 float4 DebugMaskPS(VSOutput input) : COLOR
 {
-    float mask = DilateAxis(TextureSampler, input.TexCoord, float2(0, 1.0 / Resolution.y), Thickness);
+    float mask = DilateAxis(TextureSampler, input.TexCoord, float2(0, 1.0 / Resolution.y), Dilate);
     return float4(mask, mask, mask, 1.0);
 }
 

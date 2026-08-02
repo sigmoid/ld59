@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Input;
 using Quartz.UI;
 using crash.FluidSimulation;
 
@@ -16,7 +17,6 @@ namespace ld59.UI
 
         private Vector2 _prevMouseUV;
         private bool _showVelocity;
-        private KeyboardState _prevKeyboard;
 
         public FluidSimulator Simulator => _simulator;
 
@@ -34,8 +34,9 @@ namespace ld59.UI
 
         public override void Update(float deltaTime)
         {
-            var mouseState = Quartz.Core.GetMouseState();
-            var mousePos = Core.GetTransformedMousePosition();
+            // Raw: the smoke trailing the cursor is decoration, not gameplay, so it keeps
+            // following the pointer even while the console has the game paused.
+            var mousePos = GameInput.MousePosition;
 
             var uv = new Vector2(
                 (mousePos.X - _bounds.X) / _bounds.Width,
@@ -48,10 +49,10 @@ namespace ld59.UI
             }
             _prevMouseUV = uv;
 
-            var keyboard = Keyboard.GetState();
-            if (keyboard.IsKeyDown(Keys.V) && !_prevKeyboard.IsKeyDown(Keys.V))
+            // Debug toggle, so it goes through the gated view -- typing "v" in the developer
+            // console must not flip the desktop background to a velocity field.
+            if (GameInput.Pressed(Keys.V))
                 _showVelocity = !_showVelocity;
-            _prevKeyboard = keyboard;
 
             var gameTime = new GameTime(TimeSpan.Zero, TimeSpan.FromSeconds(deltaTime));
             _simulator.Update(gameTime);

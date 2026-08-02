@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Input;
 using Quartz.UI;
 using ld59.UI;
 using ld59.UI.Powergrid;
@@ -22,7 +23,6 @@ public class PuzzleSolveOverlay : UIElement
     private Rectangle _viewBounds;
 
     private bool _wasSolved;
-    private bool _prevTab;
     private bool _closed;
 
     // Puzzle rect = the walk window's content bounds inset by a margin, recomputed each frame so
@@ -63,9 +63,7 @@ public class PuzzleSolveOverlay : UIElement
         _view.Update(deltaTime);
 
         // Tab leaves the puzzle without solving.
-        bool tab = Keyboard.GetState().IsKeyDown(Keys.Tab);
-        if (tab && !_prevTab) { Close(); return; }
-        _prevTab = tab;
+        if (GameInput.Pressed(Keys.Tab)) { Close(); return; }
 
         // Rising edge of solved: match the solution to an outcome and fire it.
         bool solved = _panel.IsSolved;

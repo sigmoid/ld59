@@ -1,4 +1,4 @@
-﻿
+
 #----------------------------- Global Properties ----------------------------#
 
 /outputDir:bin/$(Platform)
@@ -1425,6 +1425,25 @@
 /processorParam:TextureFormat=Compressed
 /build:models/editor/scale-gizmo.fbx
 
+#begin models/monkey.fbx
+/importer:FbxImporter
+/processor:ModelProcessor
+/processorParam:ColorKeyColor=0,0,0,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:DefaultEffect=BasicEffect
+/processorParam:GenerateMipmaps=True
+/processorParam:GenerateTangentFrames=False
+/processorParam:PremultiplyTextureAlpha=True
+/processorParam:PremultiplyVertexColors=True
+/processorParam:ResizeTexturesToPowerOfTwo=False
+/processorParam:RotationX=0
+/processorParam:RotationY=0
+/processorParam:RotationZ=0
+/processorParam:Scale=1
+/processorParam:SwapWindingOrder=False
+/processorParam:TextureFormat=Compressed
+/build:models/monkey.fbx
+
 #begin models/monolith.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
@@ -1732,6 +1751,12 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:shaders/skybox.fx
+
+#begin shaders/ssao.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/ssao.fx
 
 #begin shaders/static_noise.fx
 /importer:EffectImporter

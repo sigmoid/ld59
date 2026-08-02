@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Input;
 using Quartz.UI;
 
 public class FullscreenPrompt : UIPanel
@@ -31,8 +32,6 @@ public class FullscreenPrompt : UIPanel
 
     private Rectangle _yBounds;
     private Rectangle _nBounds;
-    private KeyboardState _prevKeys;
-    private bool _lastMouseDown = false;
     private bool _chosen = false;
 
     public FullscreenPrompt(Rectangle bounds, Action onComplete)
@@ -41,7 +40,6 @@ public class FullscreenPrompt : UIPanel
         _onComplete = onComplete;
         AddChild(new Canvas(bounds, ColorPalette.Black));
         _font = Core.Content.Load<SpriteFont>("fonts/Prompt");
-        _prevKeys = Keyboard.GetState();
     }
 
     public override void Update(float deltaTime)
@@ -77,22 +75,19 @@ public class FullscreenPrompt : UIPanel
                 _cursorBlinkTimer = 0f;
             }
 
-            var keys = Keyboard.GetState();
-            if (keys.IsKeyDown(Keys.Y) && !_prevKeys.IsKeyDown(Keys.Y))
+            // Gated: Y/N are single letters, so typing them into the developer console must not
+            // answer the prompt behind it.
+            if (GameInput.Pressed(Keys.Y))
                 Choose(true);
-            else if (keys.IsKeyDown(Keys.N) && !_prevKeys.IsKeyDown(Keys.N))
+            else if (GameInput.Pressed(Keys.N))
                 Choose(false);
-            _prevKeys = keys;
 
-            var mouse = Quartz.Core.GetMouseState();
-            bool mouseDown = mouse.LeftButton == ButtonState.Pressed;
-            if (mouseDown && !_lastMouseDown)
+            if (GameInput.LeftJustPressed)
             {
-                var pt = Core.GetTransformedMousePoint();
+                var pt = GameInput.MousePoint;
                 if (_yBounds.Contains(pt)) Choose(true);
                 else if (_nBounds.Contains(pt)) Choose(false);
             }
-            _lastMouseDown = mouseDown;
         }
 
         base.Update(deltaTime);

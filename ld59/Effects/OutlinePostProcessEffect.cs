@@ -36,11 +36,20 @@ public class OutlinePostProcessEffect : Scene3DPostProcessEffect
         }
     }
 
+    /// <summary>Widest line the shader's bounded dilation loop can draw.</summary>
+    public const int MaxWidth = 33;   // 1 + 2 * MAX_RADIUS in outline.fx
+
     /// <summary>
-    /// Dilation radius in pixels: the drawn line is <c>1 + 2 * Thickness</c> pixels wide, so 0 is a
-    /// hairline and 1 is 3px. Clamped to 16 in the shader, which bounds the per-pixel cost.
+    /// Line width in pixels, 1 = hairline. Clamped to <see cref="MaxWidth"/>, which is what bounds
+    /// the per-pixel cost.
+    /// <para>
+    /// Even widths are honest but slightly lopsided: the extra pixel has to go on one side of the
+    /// boundary, so a 2px line reads as sitting a touch inside an object's left/top edges and
+    /// outside its right/bottom ones. Odd widths are perfectly centred. See the note on
+    /// <c>Dilate</c> in outline.fx for why the pass can't do better cheaply.
+    /// </para>
     /// </summary>
-    public float Thickness { get; set; } = 1f;
+    public int Width { get; set; } = 3;
 
     /// <summary>How strongly the line is blended over the scene. 1 = solid.</summary>
     public float Opacity { get; set; } = 1f;
@@ -72,9 +81,24 @@ public class OutlinePostProcessEffect : Scene3DPostProcessEffect
     private RenderTarget2D _edgeMask;
     private RenderTarget2D _dilatedMask;
 
-    // Thickness only widens an existing line; with no visible line there's nothing to widen, so
-    // this tracks opacity rather than thickness.
+    // Width only widens an existing line; with no visible line there's nothing to widen, so this
+    // tracks opacity rather than width.
     public override bool WantsDepth => Enabled && Opacity > 0f;
+
+    /// <summary>
+    /// Splits <see cref="Width"/> into the shader's (before, after) dilation window. A 1px mask
+    /// dilated by lo back and hi forward is <c>lo + hi + 1</c> wide, so the split carries the odd
+    /// pixel out: 1 -> (0,0), 2 -> (0,1), 3 -> (1,1), 4 -> (1,2).
+    /// </summary>
+    private Vector2 DilateWindow
+    {
+        get
+        {
+            int span = MathHelper.Clamp(Width, 1, MaxWidth) - 1;
+            int lo = span / 2;
+            return new Vector2(lo, span - lo);
+        }
+    }
 
     public override void Initialize(GraphicsDevice graphicsDevice)
     {
@@ -101,7 +125,7 @@ public class OutlinePostProcessEffect : Scene3DPostProcessEffect
 
         var resolution = new Vector2(source.Width, source.Height);
         Shader.Parameters["Resolution"].SetValue(resolution);
-        Shader.Parameters["Thickness"].SetValue(Thickness);
+        Shader.Parameters["Dilate"].SetValue(DilateWindow);
 
         // Every pass below draws its INPUT as the SpriteBatch source, not the scene, because that
         // is the only texture slot a pass can rely on: SpriteBatch writes the drawn texture into

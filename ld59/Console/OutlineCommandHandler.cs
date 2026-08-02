@@ -9,7 +9,7 @@ using ld59.UI;
 /// <code>
 /// outline                  show the current settings
 /// outline on | off         enable/disable
-/// outline thickness 2      dilation radius in pixels; the line is 1 + 2*t px wide
+/// outline width 2          line width in pixels (any integer, even widths included)
 /// outline color 20,20,30   line colour, 0-255 per channel
 /// outline opacity 0.6      how strongly the line blends over the scene
 /// outline fade 120         world distance where outlines fade out (0 = never)
@@ -45,9 +45,19 @@ public class OutlineCommandHandler : ConsoleCommandHandler
                 foreach (var v in views) v.Outline.Enabled = sub == "on";
                 break;
 
-            case "thickness" when TryFloat(args, 1, out float thickness):
-                foreach (var v in views) v.Outline.Thickness = MathHelper.Clamp(thickness, 0f, 16f);
+            case "width" when TryFloat(args, 1, out float width):
+                foreach (var v in views)
+                    v.Outline.Width = (int)MathHelper.Clamp(
+                        width, 1, OutlinePostProcessEffect.MaxWidth);
                 break;
+
+            // Deliberately not an alias for `width`: it used to mean a dilation RADIUS, so
+            // `thickness 2` drew 5px. Silently reinterpreting the same number as 2px would be a
+            // trap, so say so instead.
+            case "thickness":
+                Console.PrintLine("outline: `thickness` (a radius) is now `width` (pixels) -- " +
+                                  "old thickness t is width 1+2t, so `thickness 1` is `width 3`.");
+                return;
 
             case "color":
             case "colour":
@@ -99,14 +109,14 @@ public class OutlineCommandHandler : ConsoleCommandHandler
                 break;
 
             default:
-                Console.PrintLine("usage: outline [on|off|thickness <px>|color <r,g,b>|opacity <0-1>|" +
+                Console.PrintLine("usage: outline [on|off|width <px>|color <r,g,b>|opacity <0-1>|" +
                                   "fade <dist>|match|debug ids|mask|off]");
                 return;
         }
 
         var o = views[0].Outline;
-        Console.PrintLine($"outline {(o.Enabled ? "on" : "off")}  thickness={o.Thickness:0.#} " +
-                          $"({1 + 2 * (int)o.Thickness}px wide)  opacity={o.Opacity:0.##}  " +
+        Console.PrintLine($"outline {(o.Enabled ? "on" : "off")}  width={o.Width}px  " +
+                          $"opacity={o.Opacity:0.##}  " +
                           $"fade={(o.FadeDistance <= 0f ? "off" : $"{o.FadeDistance:0.#}u")}");
         Console.PrintLine($"    color={o.OutlineColor.R},{o.OutlineColor.G},{o.OutlineColor.B}" +
                           (o.MatchOneBitPalette ? " (matching 1-bit palette)" : ""));

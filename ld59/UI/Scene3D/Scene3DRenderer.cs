@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
 using Quartz.Graphics;
+using Quartz.Util;
 using ld59.UI.Editor.Gizmos;
 using ld59.WalkingSim;
 
@@ -65,6 +66,10 @@ public sealed class Scene3DRenderer : IDisposable
     /// live with the <c>outline</c> console command.</summary>
     public OutlinePostProcessEffect Outline { get; }
 
+    /// <summary>Screen-space ambient occlusion off the same depth pass. Disabled by default; tuned
+    /// live with the <c>ssao</c> console command.</summary>
+    public SSAOPostProcessEffect Ssao { get; }
+
     /// <summary>Procedural moon skybox (stars + Earth + Sun). Off by default; enabled per scene.</summary>
     public bool ShowSkybox { get; set; }
 
@@ -100,13 +105,15 @@ public sealed class Scene3DRenderer : IDisposable
         _billboards      = new BillboardGizmoRenderer(device);
 
         // Registered but off: a view only pays for the depth pass and the chain once something in
-        // it is actually enabled (see ApplyPostProcess). Both effects read the same depth/id
-        // buffer, so turning the second one on costs no extra scene pass.
+        // it is actually enabled (see ApplyPostProcess). All three effects read the same depth/id
+        // buffer, so turning further ones on costs no extra scene pass.
         _postProcess = new PostProcessManager(device, width, height);
         Fog = _postProcess.AddEffect<ExponentialFogPostProcessEffect>();
         Fog.Enabled = false;
         Outline = _postProcess.AddEffect<OutlinePostProcessEffect>();
         Outline.Enabled = false;
+        Ssao = _postProcess.AddEffect<SSAOPostProcessEffect>();
+        Ssao.Enabled = false;
     }
 
     /// <summary>Render each visible puzzle panel to its own texture, before the main pass samples it.</summary>
@@ -124,19 +131,30 @@ public sealed class Scene3DRenderer : IDisposable
     /// </summary>
     public void BeginScene(Matrix view, Matrix proj, Vector3 cameraPos, float deltaTime)
     {
+        using var _ = Profiler.Sample("3d.scene");
+
         // Shadow pass -- renders all 6 cube faces
+        Profiler.Begin("3d.shadow");
         _device.DepthStencilState = DepthStencilState.Default;
         _device.RasterizerState   = RasterizerState.CullNone;
         _scene.DrawShadowPass(_device, _shadowEffect, _dirShadowEffect);
+        Profiler.End();
 
         // Main scene pass
         _device.SetRenderTarget(_renderTarget);
         _device.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Black, 1f, 0);
         RestoreSceneStates(_device);
 
-        if (ShowSkybox) DrawSkybox(view, proj, cameraPos);
+        if (ShowSkybox)
+        {
+            Profiler.Begin("3d.skybox");
+            DrawSkybox(view, proj, cameraPos);
+            Profiler.End();
+        }
 
+        Profiler.Begin("3d.geometry");
         _scene.Draw3D(_device, view, proj);
+        Profiler.End();
 
         // Fog (and any other depth-aware effect) filters the scene HERE -- after the world is
         // drawn but before the overlays, so gizmos and the navmesh stay readable at any density.
@@ -217,14 +235,21 @@ public sealed class Scene3DRenderer : IDisposable
 
         if (needsDepth)
         {
+            Profiler.Begin("3d.depth");
             _depthEffect ??= Core.Content.Load<Effect>("shaders/scene-depth");
             _scene.DrawDepthPass(_device, _depthEffect, _width, _height,
                 view, proj, cameraPos, DepthFarDistance);
+            Profiler.End();
 
             if (SampleDepthForDebug && _scene.DepthMap != null)
             {
+                // Its own step because it is not like the others: GetData blocks the CPU until the
+                // GPU has actually finished the depth pass, so this is a real pipeline stall and the
+                // only draw-side number here that reflects GPU time rather than submission cost.
+                Profiler.Begin("3d.depth.readback");
                 _scene.DepthMap.GetData(0, new Rectangle(_width / 2, _height / 2, 1, 1), _depthPixel, 0, 1);
                 LastCrosshairDepth = _depthPixel[0];
+                Profiler.End();
             }
         }
 
@@ -256,7 +281,9 @@ public sealed class Scene3DRenderer : IDisposable
         _device.SetRenderTarget(null);
 
         var gameTime = new GameTime(TimeSpan.FromSeconds(_elapsedSeconds), TimeSpan.FromSeconds(deltaTime));
+        Profiler.Begin("3d.post");
         _postProcess.Process(_renderTarget, _postTarget, gameTime);
+        Profiler.End();
 
         _device.SetRenderTarget(_renderTarget);
         Core.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.PointClamp);

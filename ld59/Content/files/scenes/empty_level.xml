@@ -245,13 +245,13 @@
     <Entity Name="PointLight_3">
       <Position3D>
         <X>1349.1519</X>
-        <Y>93.20759</Y>
-        <Z>827.8699</Z>
+        <Y>374.15775</Y>
+        <Z>365.52026</Z>
       </Position3D>
       <Component Type="PointLightComponent">
         <Property Name="Color" Value="1,1,1,1" Type="Color" />
-        <Property Name="Intensity" Value="2" Type="float" />
-        <Property Name="Range" Value="400" Type="float" />
+        <Property Name="Intensity" Value="1" Type="float" />
+        <Property Name="Range" Value="2000" Type="float" />
       </Component>
     </Entity>
     <Entity Name="cube_5">
@@ -278,6 +278,20 @@
         <Property Name="ModelPath" Value="models/cube" Type="string" />
         <Property Name="Scale" Value="2,11.435742,0.7686447" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="monkey">
+      <Position3D>
+        <X>-59.310246</X>
+        <Y>9.606693</Y>
+        <Z>-61.650085</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/monkey" Type="string" />
+        <Property Name="Scale" Value="3,3,3" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0.9799997,0" Type="Vector3" />
         <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>

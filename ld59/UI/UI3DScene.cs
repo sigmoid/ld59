@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
 using Quartz.Graphics;
+using Quartz.Input;
 using Quartz.UI;
 using ld59.UI.Editor;
 using ld59.UI.Editor.Gizmos;
@@ -44,8 +45,6 @@ public class UI3DScene : UIElement
     private readonly NavMeshBakeJob _bake = new();
     private readonly Scene3DHud _hud = new();
     private readonly KeyEdgeTracker _keys = new();
-
-    private bool _prevEPressed;
 
     // Every live 3D view, so console commands (`fog`, `depthview`) can reach whatever scene the
     // user currently has open without the command needing a handle on the window that owns it.
@@ -132,6 +131,10 @@ public class UI3DScene : UIElement
     /// <summary>Silhouette outlines from the depth pass' entity ids. Tuned live with the
     /// <c>outline</c> console command.</summary>
     public OutlinePostProcessEffect Outline => _renderer.Outline;
+
+    /// <summary>Screen-space ambient occlusion over this view. Disabled by default; tuned live with
+    /// the <c>ssao</c> console command.</summary>
+    public SSAOPostProcessEffect Ssao => _renderer.Ssao;
 
     /// <summary>World distance the depth pass' 1.0 encodes.</summary>
     public float DepthFarDistance { get => _renderer.DepthFarDistance; set => _renderer.DepthFarDistance = value; }
@@ -236,8 +239,11 @@ public class UI3DScene : UIElement
     public override void Update(float deltaTime)
     {
         var vp       = Viewport;
-        var mouse    = Core.GetMouseState();
-        var keyboard = Keyboard.GetState();
+        // Gated views: while the game is blocked (developer console open) these report nothing
+        // held and no buttons down, which is what silences movement, the editor hotkeys and
+        // click-picking here without any of them needing to know the console exists.
+        var mouse    = GameInput.Mouse;
+        var keyboard = GameInput.Keyboard;
         var cursor   = new Point(mouse.X, mouse.Y);
 
         // Finalize a background navmesh bake on the main thread once Recast has finished.
@@ -267,11 +273,11 @@ public class UI3DScene : UIElement
         {
             _picker.UpdateHover(Core.GraphicsDevice, _camera.View, _camera.Projection(vp.Aspect), DebugIdView);
 
-            // Interact edge-detect every frame against the last known hover.
-            bool ePressed = keyboard.IsKeyDown(Keys.E);
-            if (ePressed && !_prevEPressed && _picker.Hovered != null)
+            // Interact edge-detect every frame against the last known hover. GameInput tracks the
+            // edge globally, so this is safe to read from inside a conditional -- and it swallows
+            // the frame input unblocks, so a key held while the console was open doesn't fire.
+            if (GameInput.Pressed(Keys.E) && _picker.Hovered != null)
                 OnInteract?.Invoke(_picker.Hovered);
-            _prevEPressed = ePressed;
         }
     }
 

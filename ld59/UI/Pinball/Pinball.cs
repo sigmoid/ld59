@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Quartz;
+using Quartz.Input;
 using Quartz.UI;
 using ld59.UI;
 
@@ -47,7 +48,7 @@ public class PinballUI : UIPanel
     {
         base.Update(deltaTime);
 
-        var kb = Keyboard.GetState();
+        var kb = GameInput.Keyboard;
 
         bool tabDown = kb.IsKeyDown(Keys.Tab);
         if (tabDown && !_prevTabPressed)
@@ -155,8 +156,8 @@ public class PinballUI : UIPanel
 
         public override void Update(float deltaTime)
         {
-            if (Quartz.Core.GetMouseState().LeftButton != ButtonState.Pressed) return;
-            var pt = Core.GetTransformedMousePoint();
+            if (!GameInput.LeftDown) return;
+            var pt = GameInput.MousePoint;
             _engine.PlaceBalls(new Vector2(pt.X - _bounds.X, pt.Y - _bounds.Y));
         }
 
