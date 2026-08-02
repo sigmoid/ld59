@@ -49,7 +49,7 @@ public class WalkingSimUI : UIPanel
             scene.SceneScale        = 1f;   // UI3DScene initializes the entities
 
             var navMesh = LoadNavMesh(asset.NavMeshPath);
-            var walker  = new WalkController(navMesh) { MoveSpeed = 3f };
+            var walker  = new WalkController(navMesh);
             SpawnWalker(walker, scene, navMesh);
 
             // Prefer the Content SOURCE dir (under version control) so bakes/saves survive a
@@ -67,6 +67,10 @@ public class WalkingSimUI : UIPanel
             {
                 Mode   = CameraMode.Walk,
                 Walker = walker,
+                // Walk/fly speeds are separate knobs: strolling pace on foot, but a fast detached
+                // camera so the editor can cross the level. The camera drives the walker's speed,
+                // so this has to live here rather than on the WalkController.
+                WalkSpeed = 13f,
                 NavMeshSavePath = Path.Combine(contentRoot, asset.NavMeshPath),
                 ScenePath       = Path.Combine(contentRoot, asset.ScenePath),
                 ShowSkybox      = asset.Skybox,
