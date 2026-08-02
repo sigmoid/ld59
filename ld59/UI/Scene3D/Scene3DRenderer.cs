@@ -21,10 +21,6 @@ namespace ld59.UI.Scene3D;
 /// </summary>
 public sealed class Scene3DRenderer : IDisposable
 {
-    /// <summary>World size of the icon quads marking non-mesh entities. Shared with
-    /// <see cref="ScenePickBuffer"/> so what you click matches what you see.</summary>
-    public const float BillboardSize = 0.6f;
-
     private readonly GraphicsDevice _device;
     private readonly Scene _scene;
     private readonly int _width;
@@ -192,8 +188,9 @@ public sealed class Scene3DRenderer : IDisposable
             if (!e.Visible || e.GetComponent<Mesh3DComponent>() != null) continue;
             bool isSelected = ReferenceEquals(e, selected);
             var color = BillboardColorFor(e) * (isSelected ? 1.6f : 1f);
-            _billboards.Draw(_device, e.Position3D * _scene.SceneScale, cameraPos,
-                BillboardSize, view, proj, color);
+            var pos = e.Position3D * _scene.SceneScale;
+            _billboards.Draw(_device, pos, cameraPos,
+                BillboardGizmoRenderer.WorldSizeFor(pos, cameraPos, proj), view, proj, color);
         }
     }
 

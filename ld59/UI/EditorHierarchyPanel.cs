@@ -21,7 +21,27 @@ public sealed class EditorHierarchyPanel
     private const int RowH = 24;
     private const int PlayBtnH = 28;
 
+    private readonly List<Button> _rows = new();
     private Entity _selected;
+
+    /// <summary>
+    /// Absolute rectangle the rows are laid out in, as of right now. Recomputed on every use rather
+    /// than cached at construction: the panel is moved after it is built (entering the editor fans
+    /// the tool windows out around the viewport), and a cached rectangle goes on placing rows where
+    /// the panel USED to be. Rows stranded there are invisible -- <see cref="ScrollArea"/> scissors
+    /// its drawing to the panel -- but still live, because a <see cref="Button"/> hit-tests its own
+    /// bounds and nothing clips input. Stranded over the 3D viewport, they swallowed viewport clicks
+    /// and silently re-selected an entity, which is what made gizmo clicks land on whatever was
+    /// behind the handle.
+    /// </summary>
+    private Rectangle RowArea
+    {
+        get
+        {
+            var c = _window.GetContentBounds();
+            return new Rectangle(c.X, c.Y + PlayBtnH + 4, c.Width, c.Height - PlayBtnH - 4);
+        }
+    }
 
     public EditorHierarchyPanel(Rectangle bounds, Action<Entity> onSelect, Action onPlayFromCamera)
     {
@@ -39,17 +59,22 @@ public sealed class EditorHierarchyPanel
             "Play From Camera (P)", _font, ColorPalette.LightGreen, ColorPalette.Green, ColorPalette.Black,
             () => onPlayFromCamera()));
 
-        _scrollBounds = new Rectangle(c.X, c.Y + PlayBtnH + 4, c.Width, c.Height - PlayBtnH - 4);
-        _scroll = new ScrollArea(_scrollBounds);
+        _scroll = new ScrollArea(RowArea);
         _window.AddChild(_scroll);
     }
-
-    private readonly Rectangle _scrollBounds;
 
     public void SetVisible(bool visible) => _window.SetVisibility(visible);
 
     // Reposition the panel (move only -- keep the constructed size so child widgets stay laid out).
-    public void MoveTo(Rectangle bounds) => _window.SetBounds(bounds);
+    public void MoveTo(Rectangle bounds)
+    {
+        // Window.SetBounds carries its OWN children along (the play button, the scroll area), but
+        // the rows live inside the scroll area and hold absolute positions of their own, so they
+        // have to be walked over to the new location explicitly or they stay behind -- on top of
+        // whatever the panel just vacated, invisible and still clickable.
+        _window.SetBounds(bounds);
+        LayoutRows();
+    }
 
     // Re-flag which row is highlighted (call on selection change) without rebuilding rows.
     public void SetSelected(Entity e) => _selected = e;
@@ -59,9 +84,8 @@ public sealed class EditorHierarchyPanel
     public void Refresh(Scene scene)
     {
         _scroll.ClearChildren();
-        var c = _scrollBounds;
+        _rows.Clear();
 
-        int y = c.Y;
         var entities = new List<Entity>(scene.GetEntities());
         entities.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
 
@@ -72,11 +96,28 @@ public sealed class EditorHierarchyPanel
 
             var target = e; // capture
             bool isSelected = ReferenceEquals(e, _selected);
-            var btn = new Button(new Rectangle(c.X, y, c.Width - 20, RowH), label, _font,
+            var btn = new Button(Rectangle.Empty, label, _font,
                 isSelected ? ColorPalette.LightGreen : ColorPalette.White,
                 ColorPalette.Green, ColorPalette.Black,
                 () => _onSelect(target));
             _scroll.AddChild(btn);
+            _rows.Add(btn);
+        }
+
+        LayoutRows();
+    }
+
+    // The one place row geometry is decided, so a rebuild and a move can't disagree about where the
+    // rows are. Rows are created bounds-less and placed here.
+    private void LayoutRows()
+    {
+        var c = RowArea;
+        _scroll.SetBounds(c);
+
+        int y = c.Y;
+        foreach (var row in _rows)
+        {
+            row.SetBounds(new Rectangle(c.X, y, c.Width - 20, RowH));
             y += RowH + 2;
         }
 

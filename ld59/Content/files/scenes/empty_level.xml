@@ -219,12 +219,12 @@
     <Entity Name="cube">
       <Position3D>
         <X>1705.3862</X>
-        <Y>182.4195</Y>
+        <Y>123.36099</Y>
         <Z>-383.13327</Z>
       </Position3D>
       <Component Type="Mesh3DComponent">
         <Property Name="ModelPath" Value="models/cube" Type="string" />
-        <Property Name="Scale" Value="2,3.0040188,2.61037" Type="Vector3" />
+        <Property Name="Scale" Value="2,1.6972958,2.61037" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
         <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
@@ -244,42 +244,14 @@
     </Entity>
     <Entity Name="PointLight_3">
       <Position3D>
-        <X>1349.1519</X>
+        <X>802.35645</X>
         <Y>374.15775</Y>
-        <Z>365.52026</Z>
+        <Z>-26.097229</Z>
       </Position3D>
       <Component Type="PointLightComponent">
         <Property Name="Color" Value="1,1,1,1" Type="Color" />
         <Property Name="Intensity" Value="1" Type="float" />
         <Property Name="Range" Value="2000" Type="float" />
-      </Component>
-    </Entity>
-    <Entity Name="cube_5">
-      <Position3D>
-        <X>1706.3862</X>
-        <Y>180.505</Y>
-        <Z>822.49713</Z>
-      </Position3D>
-      <Component Type="Mesh3DComponent">
-        <Property Name="ModelPath" Value="models/cube" Type="string" />
-        <Property Name="Scale" Value="2,11.435742,2" Type="Vector3" />
-        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
-        <Property Name="NoCollide" Value="false" Type="bool" />
-      </Component>
-    </Entity>
-    <Entity Name="cube_6">
-      <Position3D>
-        <X>1706.3862</X>
-        <Y>180.505</Y>
-        <Z>143.36652</Z>
-      </Position3D>
-      <Component Type="Mesh3DComponent">
-        <Property Name="ModelPath" Value="models/cube" Type="string" />
-        <Property Name="Scale" Value="2,11.435742,0.7686447" Type="Vector3" />
-        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
-        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
-        <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>
     </Entity>
     <Entity Name="monkey">
@@ -292,6 +264,104 @@
         <Property Name="ModelPath" Value="models/monkey" Type="string" />
         <Property Name="Scale" Value="3,3,3" Type="Vector3" />
         <Property Name="RotationEuler" Value="0,0.9799997,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5">
+      <Position3D>
+        <X>1706.3862</X>
+        <Y>123.36099</Y>
+        <Z>302.82065</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="2,1.2677532,2.61037" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_2">
+      <Position3D>
+        <X>1765.218</X>
+        <Y>123.36099</Y>
+        <Z>1148.9501</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="2,2.7812176,2.61037" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_3">
+      <Position3D>
+        <X>1045.5278</X>
+        <Y>8.244522</Y>
+        <Z>303.82065</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="2,1.1762036,1.6744201" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_3_2">
+      <Position3D>
+        <X>660.27527</X>
+        <Y>8.244522</Y>
+        <Z>31.016083</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="0.741925,0.50204635,0.63406616" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_3_2_2">
+      <Position3D>
+        <X>661.27527</X>
+        <Y>-5.7532043</Y>
+        <Z>-239.64822</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="0.741925,0.50204635,0.63406616" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_3_2_2_2">
+      <Position3D>
+        <X>934.68115</X>
+        <Y>43.27324</Y>
+        <Z>-177.97177</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="0.741925,0.50204635,0.63406616" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
+        <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
+        <Property Name="NoCollide" Value="false" Type="bool" />
+      </Component>
+    </Entity>
+    <Entity Name="cube_5_3_3">
+      <Position3D>
+        <X>524.59863</X>
+        <Y>-76.571045</Y>
+        <Z>304.82065</Z>
+      </Position3D>
+      <Component Type="Mesh3DComponent">
+        <Property Name="ModelPath" Value="models/cube" Type="string" />
+        <Property Name="Scale" Value="2,1.1762036,1.6744201" Type="Vector3" />
+        <Property Name="RotationEuler" Value="0,0,0" Type="Vector3" />
         <Property Name="DiffuseColor" Value="1,1,1" Type="Vector3" />
         <Property Name="NoCollide" Value="false" Type="bool" />
       </Component>

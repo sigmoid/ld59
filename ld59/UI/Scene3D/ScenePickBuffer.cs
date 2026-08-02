@@ -202,9 +202,14 @@ public sealed class ScenePickBuffer : IDisposable
             else
             {
                 // Non-mesh entity (light, PlayerStart): stand-in geometry for picking is a
-                // camera-facing billboard, same as what's drawn for it in the main pass.
-                _billboards.Draw(device, e.Position3D * _scene.SceneScale, cameraPos,
-                    Scene3DRenderer.BillboardSize, view, proj, EncodeId(i + 1));
+                // camera-facing billboard, same size and place as what's drawn for it in the main
+                // pass. Sizing it on screen rather than in world units also keeps a distant light
+                // several texels wide in this (deliberately small) buffer, instead of collapsing to
+                // sub-pixel and letting the click fall through to whatever is behind it.
+                var pos = e.Position3D * _scene.SceneScale;
+                _billboards.Draw(device, pos, cameraPos,
+                    BillboardGizmoRenderer.WorldSizeFor(pos, cameraPos, proj), view, proj,
+                    EncodeId(i + 1));
             }
         }
         device.SetRenderTarget(null);

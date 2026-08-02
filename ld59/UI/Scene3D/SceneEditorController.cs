@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -41,6 +43,9 @@ public sealed class SceneEditorController
     // don't perfectly overlap and the copy is grabbable by the gizmo.
     private const float DuplicateOffset = 1f;
 
+    // How many frames of pick history to keep for the click diagnostic below.
+    private const int PickHistoryFrames = 12;
+
     private readonly Scene _scene;
     private readonly CameraRig _camera;
     private readonly ScenePickBuffer _picker;
@@ -50,6 +55,19 @@ public sealed class SceneEditorController
     private Mesh3DComponent _selectedMesh;
     private bool _prevLeftPressed;
     private Point _lastCursor;   // for the F4 live readout
+
+    // One frame's view of the pick, kept in a short ring so a click that moves the selection can
+    // report what the frames before it saw. Enough to tell apart the candidate explanations without
+    // guessing: whether the cursor moved between the lit frame and the click, whether the GIZMO
+    // moved under a still cursor, or whether neither did and the pick simply disagreed with itself.
+    private readonly record struct PickSample(
+        int Frame, Point Cursor, Vector2 CursorPx, Vector2 OriginPx, bool OriginOnScreen,
+        GizmoAxis Hover, float MissPx, float Score, string Target, Vector3 TargetPos, Vector3 CamPos);
+
+    private readonly PickSample[] _pickHistory = new PickSample[PickHistoryFrames];
+    private int _pickHistoryNext;
+    private int _pickHistoryCount;
+    private int _frameCounter;
 
     /// <summary>Editor mode: forces free-fly and enables in-game authoring.</summary>
     public bool EditorMode { get; set; }
@@ -97,16 +115,18 @@ public sealed class SceneEditorController
     /// Editor hotkeys and viewport interaction. Runs before the camera update, so the gizmo sees
     /// the same camera the click was aimed at. <paramref name="textFocused"/> suppresses letter and
     /// Delete hotkeys while a text field (e.g. the inspector's Name box) has focus, so typing "w"
-    /// edits the text instead of switching gizmo mode.
+    /// edits the text instead of switching gizmo mode. <paramref name="pointerBlocked"/> means
+    /// something is drawn over the viewport at the cursor (a tool panel, the taskbar), so a click
+    /// there must not also pick or grab in the world behind it.
     /// </summary>
     public void Update(KeyboardState keyboard, MouseState mouse, Point cursor,
-                       in RtViewport vp, bool textFocused)
+                       in RtViewport vp, bool textFocused, bool pointerBlocked = false)
     {
         _lastCursor = cursor;
 
         UpdateModeToggle(keyboard);
         UpdateHotkeys(keyboard, textFocused);
-        UpdateViewportInteraction(mouse, cursor, vp);
+        UpdateViewportInteraction(mouse, cursor, vp, pointerBlocked);
 
         // Fires every frame the editor has a selection, so panels showing live values (the
         // inspector's Position/Scale/etc. text) stay in sync while a gizmo drag is moving the
@@ -186,8 +206,11 @@ public sealed class SceneEditorController
 
     // Left-click (while not looking) either grabs a gizmo handle or picks the entity under the
     // cursor. While a handle is held, drag it; on release, commit the transform.
-    private void UpdateViewportInteraction(MouseState mouse, Point cursor, in RtViewport vp)
+    private void UpdateViewportInteraction(MouseState mouse, Point cursor, in RtViewport vp,
+                                           bool pointerBlocked)
     {
+        _frameCounter++;
+
         if (!EditorMode || _camera.IsActive)
         {
             // Looking around (or out of the editor): nothing is under the cursor to highlight.
@@ -202,14 +225,23 @@ public sealed class SceneEditorController
         // Highlight the handle under the cursor. Uses the very same CPU pick a click would run,
         // so what lights up is exactly what a click grabs. While dragging, the held axis stays
         // lit regardless of where the cursor has since travelled.
-        Gizmo.HoverAxis = !Gizmo.IsDragging && _selected != null
-            && Gizmo.HasValidTarget(_selected) && vp.Contains(cursor)
-            ? Gizmo.PickAxis(_selected, _camera.Position, vp.ToPixel(cursor), view, proj, vp.Viewport, out _)
-            : GizmoAxis.None;
+        // A viewport that fills the screen sits under the tool panels, so "in the viewport" is not
+        // enough on its own -- the cursor also has to not be over something drawn on top of it.
+        bool inViewport = vp.Contains(cursor) && !pointerBlocked;
 
-        if (leftPressed && !_prevLeftPressed && vp.Contains(cursor))
+        float hoverMiss = 0f, hoverScore = 0f;
+        var hover = !Gizmo.IsDragging && _selected != null
+            && Gizmo.HasValidTarget(_selected) && inViewport
+            ? Gizmo.PickAxis(_selected, _camera.Position, vp.ToPixel(cursor), view, proj, vp.Viewport,
+                             out hoverMiss, out hoverScore)
+            : GizmoAxis.None;
+        Gizmo.HoverAxis = hover;
+
+        RecordPickSample(cursor, vp, view, proj, hover, hoverMiss, hoverScore);
+
+        if (leftPressed && !_prevLeftPressed && inViewport)
         {
-            string selBefore = _selected?.Name ?? "null";
+            var selBefore = _selected;
             bool grabbed = TryBeginGizmoDrag(cursor, vp, view, proj);
             if (!grabbed)
             {
@@ -222,7 +254,13 @@ public sealed class SceneEditorController
                 Select(_picker.PickEntity(cursor, vp, view, proj, _camera.Position));
                 grabbed = TryBeginGizmoDrag(cursor, vp, view, proj);
             }
-            LastClickDiag = $"click grab={grabbed} selB={selBefore} selA={_selected?.Name ?? "null"} {_lastPickDiag}";
+            LastClickDiag = $"click grab={grabbed} selB={selBefore?.Name ?? "null"} "
+                          + $"selA={_selected?.Name ?? "null"} {_lastPickDiag}";
+
+            // The failure being chased: a click that was aimed at the gizmo moved the selection
+            // instead. Dump the frames leading up to it while the evidence is still in the ring.
+            if (!ReferenceEquals(selBefore, _selected))
+                DumpPickHistory(selBefore, cursor, vp);
         }
         else if (Gizmo.IsDragging)
         {
@@ -231,13 +269,15 @@ public sealed class SceneEditorController
             else
                 Gizmo.EndDrag(History);
         }
+
     }
 
     // Grabs a gizmo handle if the click hit one. Picking is a CPU raycast (TransformGizmo.PickAxis): a
     // screen-space capsule test against the projected handles, evaluated at the exact click cursor. No
-    // render-target readback -> no frame-lag or timing hazard, so a click on a handle can't fall
-    // through to selecting the object behind it. Dragging uses the world ray built from the same
-    // cursor, so grab and drag can't disagree.
+    // render-target readback -> no frame-lag from the pick itself, and dragging uses the world ray
+    // built from the same cursor, so grab and drag can't disagree. A miss falls through to selecting
+    // whatever the scene has under the cursor -- which is the behaviour under investigation, so it
+    // is deliberately left alone here while the diagnostic below gathers evidence.
     private bool TryBeginGizmoDrag(Point cursor, in RtViewport vp, Matrix view, Matrix proj)
     {
         if (_selected == null || !Gizmo.HasValidTarget(_selected))
@@ -248,12 +288,67 @@ public sealed class SceneEditorController
         }
 
         var axis = Gizmo.PickAxis(_selected, _camera.Position, vp.ToPixel(cursor), view, proj,
-                                  vp.Viewport, out float miss);
-        _lastPickDiag = $"pick={axis} sel={_selected.Name} miss={miss:0.#}px";
+                                  vp.Viewport, out float miss, out float score);
+        _lastPickDiag = $"pick={axis} sel={_selected.Name} miss={miss:0.#}px x{score:0.#}";
         if (axis == GizmoAxis.None) return false;
 
         Gizmo.BeginDrag(axis, _selected, _camera.Position, vp.ScreenRay(cursor, view, proj), cursor);
         return true;
+    }
+
+    // ── Click diagnostics ───────────────────────────────────────────────────────────────────
+    // Instrumentation for the "clicking a handle selects the object behind it" bug. Every frame's
+    // pick goes into a ring; a click that changes the selection writes the ring out. The failure is
+    // rare and happens faster than it can be read off the HUD, so it has to record itself.
+
+    /// <summary>Where <see cref="DumpPickHistory"/> writes. Next to the executable.</summary>
+    public static string DiagLogPath => Path.Combine(AppContext.BaseDirectory, "gizmo-diag.log");
+
+    private void RecordPickSample(Point cursor, in RtViewport vp, Matrix view, Matrix proj,
+                                  GizmoAxis hover, float miss, float score)
+    {
+        bool onScreen = Gizmo.TryProjectOrigin(_selected, view, proj, vp.Viewport, out var originPx);
+
+        _pickHistory[_pickHistoryNext] = new PickSample(
+            _frameCounter, cursor, vp.ToPixel(cursor), originPx, onScreen, hover, miss, score,
+            _selected?.Name ?? "null", _selected?.Position3D ?? Vector3.Zero, _camera.Position);
+        _pickHistoryNext = (_pickHistoryNext + 1) % PickHistoryFrames;
+        if (_pickHistoryCount < PickHistoryFrames) _pickHistoryCount++;
+    }
+
+    // Append the ring, oldest first, plus what the click itself resolved to. Cursor and gizmo origin
+    // are both in render-target pixels, so their distance is directly comparable to the ~20px grab
+    // tolerance -- and comparing them ACROSS frames says whether it was the cursor or the gizmo that
+    // moved between the frame that lit a handle and the frame that took the click.
+    private void DumpPickHistory(Entity selBefore, Point cursor, in RtViewport vp)
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"=== {DateTime.Now:HH:mm:ss.fff} selection changed by click ===");
+            sb.AppendLine($"  {LastClickDiag}");
+            sb.AppendLine($"  before={selBefore?.Name ?? "null"} ({selBefore?.Position3D})  "
+                        + $"after={_selected?.Name ?? "null"} ({_selected?.Position3D})");
+            sb.AppendLine($"  mode={Gizmo.Mode} validBefore={Gizmo.HasValidTarget(selBefore)} "
+                        + $"cursor={cursor} cursorPx={vp.ToPixel(cursor)} "
+                        + $"bounds={vp.Bounds} rt={vp.Width}x{vp.Height}");
+
+            for (int i = 0; i < _pickHistoryCount; i++)
+            {
+                var s = _pickHistory[(_pickHistoryNext - _pickHistoryCount + i + PickHistoryFrames * 2) % PickHistoryFrames];
+                float gap = s.OriginOnScreen ? Vector2.Distance(s.CursorPx, s.OriginPx) : -1f;
+                sb.AppendLine($"  f{s.Frame} hover={s.Hover,-4} miss={s.MissPx,7:0.#}px x{s.Score,6:0.##} "
+                            + $"cursorPx=({s.CursorPx.X:0},{s.CursorPx.Y:0}) "
+                            + $"originPx=({s.OriginPx.X:0},{s.OriginPx.Y:0}) onScreen={s.OriginOnScreen} "
+                            + $"cursor->origin={gap:0.#}px target={s.Target} pos={s.TargetPos} cam={s.CamPos}");
+            }
+
+            File.AppendAllText(DiagLogPath, sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[editor] pick diag write failed: {ex.Message}");
+        }
     }
 
     // ── Draw-time hooks ─────────────────────────────────────────────────────────────────────
@@ -273,8 +368,10 @@ public sealed class SceneEditorController
             return;
 
         var axis = Gizmo.PickAxis(_selected, _camera.Position, vp.ToPixel(_lastCursor),
-                                  view, proj, vp.Viewport, out float miss);
-        GizmoPickDiag = $"under cursor: {axis} sel={_selected.Name} miss={miss:0.#}px";
+                                  view, proj, vp.Viewport, out float miss, out float score);
+        // x<score> is the miss as a multiple of the handle's own tolerance: under 1 grabs, under
+        // NearMissScore is swallowed as aimed-at-the-gizmo, above that selects the scene behind.
+        GizmoPickDiag = $"under cursor: {axis} sel={_selected.Name} miss={miss:0.#}px x{score:0.#}";
     }
 
     /// <summary>The first line of the editor diagnostic HUD.</summary>

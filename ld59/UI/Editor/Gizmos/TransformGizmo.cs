@@ -189,11 +189,18 @@ public sealed class TransformGizmo : IDisposable
 
     private static float ToleranceFor(float projectedLenPx) => MathF.Max(GrabPixels, projectedLenPx * ThicknessFrac);
 
-    // Return the axis whose handle the cursor is closest to (relative to that handle's tolerance), or
-    // None. `bestPixels` is the winner's pixel miss distance (diagnostics). Picking is screen-space;
-    // dragging uses the world ray (BeginDrag/UpdateDrag) built from the SAME cursor, so they agree.
     public GizmoAxis PickAxis(Entity entity, Vector3 cameraPos, Vector2 cursor,
         Matrix view, Matrix proj, Viewport viewport, out float bestPixels)
+        => PickAxis(entity, cameraPos, cursor, view, proj, viewport, out bestPixels, out _);
+
+    // Return the axis whose handle the cursor is closest to (relative to that handle's tolerance), or
+    // None. `bestPixels` is the nearest handle's pixel distance and `bestScore` that distance as a
+    // fraction of the handle's tolerance -- both reported whether or not anything was actually hit, so
+    // a caller can tell a click that was AIMED at the gizmo and just missed (score a little over 1)
+    // from one aimed somewhere else entirely (score far over). Picking is screen-space; dragging uses
+    // the world ray (BeginDrag/UpdateDrag) built from the SAME cursor, so they agree.
+    public GizmoAxis PickAxis(Entity entity, Vector3 cameraPos, Vector2 cursor,
+        Matrix view, Matrix proj, Viewport viewport, out float bestPixels, out float bestScore)
     {
         var (_, _, value) = ResolveTarget(entity);
         Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
@@ -201,9 +208,12 @@ public sealed class TransformGizmo : IDisposable
         float pickLen = len * _renderer.TipFor(Mode) / _renderer.ReachFor(Mode);
         Matrix vp = view * proj;
 
+        // Normalised miss = distance / that handle's tolerance; a hit is < 1, smaller is closer.
+        // Tracked from infinity rather than from 1 so the nearest handle is known even when nothing
+        // was hit -- that near-miss distance is what tells a caller the click was meant for the gizmo.
         GizmoAxis best = GizmoAxis.None;
-        float bestScore = 1f;   // normalised miss = distance / tolerance; a hit is < 1, smaller is closer
-        bestPixels = GrabPixels;
+        bestScore  = float.PositiveInfinity;
+        bestPixels = float.PositiveInfinity;
 
         // Uniform-scale center box: distance from the cursor to the projected origin.
         if (Mode == GizmoMode.Scale && Project(origin, vp, viewport, out var oc))
@@ -232,7 +242,18 @@ public sealed class TransformGizmo : IDisposable
             float score = d / tol;
             if (score < bestScore) { bestScore = score; best = axis; bestPixels = d; }
         }
-        return best;
+        return bestScore < 1f ? best : GizmoAxis.None;
+    }
+
+    /// <summary>Where the gizmo's origin lands in render-target pixels -- the point the handles
+    /// radiate from, and what the pick measures against. False if it is behind the camera.</summary>
+    public bool TryProjectOrigin(Entity entity, Matrix view, Matrix proj, Viewport viewport,
+                                 out Vector2 screen)
+    {
+        if (entity == null || !HasValidTarget(entity)) { screen = Vector2.Zero; return false; }
+        var (_, _, value) = ResolveTarget(entity);
+        Vector3 origin = Mode == GizmoMode.Translate ? value : entity.Position3D;
+        return Project(origin, view * proj, viewport, out screen);
     }
 
     // Project a world point to render-target pixels. False if on/behind the camera plane (w <= 0).

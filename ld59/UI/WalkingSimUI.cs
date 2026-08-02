@@ -12,25 +12,29 @@ using ld59.WalkingSim;
 // scene in Walk mode: loads the navmesh, spawns the walker at the scene's PlayerStart, and
 // drives a first-person UI3DScene. Load failures fall back to a message rather than crashing
 // the desktop.
+//
+// Unlike the other apps this one is the desktop's backdrop: it fills the screen, sits behind the
+// taskbar and every other window, and can't be dragged around (see Window.IsBackgroundWindow).
+// The taskbar and start menu stay clickable on top of it, and the apps they launch open over the
+// world rather than under it.
 public class WalkingSimUI : UIPanel
 {
     private Window _rootContainer;
     private Rectangle _bounds;
-    private Rectangle _homeBounds;   // the main window's default (centered) position
     private ld59.WalkingSim.PuzzleSolveOverlay _activeOverlay;
 
     public WalkingSimUI(GameFile file)
     {
-        int w = 1200, h = 800;
-        int x = (Core.ScreenWidth  - w) / 2;
-        int y = (Core.ScreenHeight - h) / 2;
-        _bounds = new Rectangle(x, y, w, h);
-        _homeBounds = _bounds;
+        _bounds = new Rectangle(0, 0, Core.ScreenWidth, Core.ScreenHeight);
 
+        // No border and square corners: the backdrop has no edges to draw, and at fullscreen the
+        // rounded-corner masks would be four screen-sized textures for a couple of pixels.
         _rootContainer = new Window(_bounds, file.Name, Core.DefaultFont,
             ColorPalette.ActualWhite, ColorPalette.Black,
-            ColorPalette.ActualWhite, ColorPalette.Black, 2);
+            ColorPalette.ActualWhite, ColorPalette.Black, borderThickness: 0, titleBarRadius: 0);
         _rootContainer.SetCloseButtonColors(ColorPalette.Black, Color.DarkGray);
+        _rootContainer.IsBackgroundWindow = true;
+        _rootContainer.SetBounds(_bounds);   // undo the new-window cascade offset -- this one is pinned
         Core.UISystem.AddElement(_rootContainer);
         // Closing the window must also close any open puzzle (RemoveElement doesn't fire child
         // cleanup, so hook the window's close event directly).
@@ -91,6 +95,13 @@ public class WalkingSimUI : UIPanel
             // the fog and the outlines it is not nearly free: it samples a hemisphere per pixel.
             // `ssao downscale 2` roughly quarters that if the frame gets tight. Tune with `ssao`.
             sceneView.Ssao.Enabled = true;
+
+            // The view covers the whole screen, so a click on the taskbar, the start menu or an app
+            // window floating over the world lands "inside" it too. The pointer only belongs to the
+            // world when the backdrop really is the topmost thing under the cursor.
+            sceneView.OwnsPointer = () =>
+                Core.UISystem.GetElementAtPosition(Core.GetTransformedMousePosition()) == _rootContainer;
+
             // Interacting with a puzzle object opens the focused solve view; everything else
             // routes through the dispatcher (switches on Action). Pass the walk scene so
             // reveal/hide/toggle can resolve targets.
@@ -130,21 +141,20 @@ public class WalkingSimUI : UIPanel
             var contentBrowser = new EditorContentBrowser(
                 new Rectangle(_bounds.Right - 300, _bounds.Bottom - 260, 290, 250), sceneView, contentRoot);
 
-            // On entering the editor, dock the main window top-left and fan the tool panels out
-            // in the strip to its right so nothing overlaps the viewport and every panel is
-            // reachable. Panels are only translated (kept at their built size) so their contents
-            // stay laid out. On exit, the main window returns to its centered position.
+            // The main window is the fullscreen backdrop and never moves, so on entering the editor
+            // the tool panels overlay it instead of sitting beside it: hierarchy + navmesh down the
+            // left edge, inspector + content browser down the right, leaving the middle of the
+            // viewport clear. Panels are only translated (kept at their built size) so their
+            // contents stay laid out.
             void ArrangeEditorWindows()
             {
                 const int m = 12, gap = 12;
-                _rootContainer.SetBounds(new Rectangle(m, m, _homeBounds.Width, _homeBounds.Height));
-
-                int colA = m + _homeBounds.Width + gap;   // first panel column, right of main window
-                int colB = colA + 260 + gap;              // second column (right of the 260-wide column)
-                hierarchy.MoveTo(new Rectangle(colA, m,             260, 520));
-                navPanel.MoveTo (new Rectangle(colA, m + 520 + gap, 260, 170));
-                inspector.MoveTo(new Rectangle(colB, m,             290, 520));
-                contentBrowser.MoveTo(new Rectangle(colB, m + 520 + gap, 290, 250));
+                int colA = cb.Left  + m;          // left column
+                int colB = cb.Right - 290 - m;    // right column, flush to the far edge
+                hierarchy.MoveTo(new Rectangle(colA, cb.Top + m,             260, 520));
+                navPanel.MoveTo (new Rectangle(colA, cb.Top + m + 520 + gap, 260, 170));
+                inspector.MoveTo(new Rectangle(colB, cb.Top + m,             290, 520));
+                contentBrowser.MoveTo(new Rectangle(colB, cb.Top + m + 520 + gap, 290, 250));
             }
 
             sceneView.OnEditorModeChanged += on =>
@@ -158,10 +168,8 @@ public class WalkingSimUI : UIPanel
                     hierarchy.Refresh(scene);
                     ArrangeEditorWindows();
                 }
-                else
-                {
-                    _rootContainer.SetBounds(_homeBounds);   // restore centered position
-                }
+                // Leaving the editor only hides the panels -- the backdrop window is already
+                // fullscreen and pinned, so there is no position to restore.
             };
         }
         catch (Exception ex)

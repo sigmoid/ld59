@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Quartz;
@@ -33,6 +34,30 @@ public sealed class BillboardGizmoRenderer : System.IDisposable
         _quadVb.SetData(verts);
         _quadIb = new IndexBuffer(device, IndexElementSize.SixteenBits, idx.Length, BufferUsage.WriteOnly);
         _quadIb.SetData(idx);
+    }
+
+    // Fraction of the viewport HEIGHT an icon covers, and the world-size floor that only guards a
+    // camera sitting exactly on top of one.
+    private const float ScreenHeightFraction = 0.05f;
+    private const float MinWorldSize = 1e-3f;
+
+    /// <summary>
+    /// World edge length that draws the icon at a constant share of the viewport, whatever the
+    /// distance -- a light across the level stays as visible (and as clickable) as one at arm's
+    /// length, instead of shrinking to a speck. Same derivation as the transform gizmo's handle
+    /// length: a perspective camera sees 2*d*tan(fovY/2) of world height at distance d, and
+    /// tan(fovY/2) falls out of the projection matrix (M22 = 1/tan(fovY/2)), so this tracks the
+    /// caller's FOV on its own.
+    /// <para>
+    /// Both the visible pass and the ID-buffer pick pass size their quads through here, so what you
+    /// click stays what you see.
+    /// </para>
+    /// </summary>
+    public static float WorldSizeFor(Vector3 worldPos, Vector3 cameraPos, Matrix proj)
+    {
+        float dist = Vector3.Distance(worldPos, cameraPos);
+        float tanHalfFov = proj.M22 > 1e-6f ? 1f / proj.M22 : 0.41421f;   // fall back to 45 vertical FOV
+        return MathF.Max(dist * 2f * tanHalfFov * ScreenHeightFraction, MinWorldSize);
     }
 
     public void Draw(GraphicsDevice device, Vector3 worldPos, Vector3 cameraPos, float size,

@@ -42,6 +42,13 @@ public sealed class CameraRig
     public CameraMode Mode      { get; set; } = CameraMode.Fly;
     public WalkController Walker { get; set; }
 
+    /// <summary>
+    /// Optional veto on taking the mouse: return false and a click won't start mouse-look. The
+    /// fullscreen walking sim uses it so clicking the taskbar, the start menu or an app window
+    /// floating over the world doesn't drag the cursor into the view as well. Null = always allow.
+    /// </summary>
+    public Func<bool> CanCapture { get; set; }
+
     /// <summary>True while the cursor is captured and the mouse is steering the view.</summary>
     public bool IsActive => _cameraActive;
 
@@ -129,6 +136,12 @@ public sealed class CameraRig
     {
         if (!_anglesInitialized) InitializeAngles();
 
+        // In walk mode the camera *is* the walker's head, so pin it to the eye position every
+        // frame -- not just while the mouse is captured. Placing it only from the movement path
+        // left the view at the rig's default (0,0,5) looking at the origin until the first click,
+        // which reads as a broken camera on entering the sim.
+        if (Mode == CameraMode.Walk && Walker != null) PlaceWalkCamera(sceneScale);
+
         // While the game isn't listening (developer console), the cursor has to go back to the
         // user or the console can't be clicked -- and the view must not keep turning with it.
         if (UpdateInputBlock())
@@ -139,7 +152,8 @@ public sealed class CameraRig
         }
 
         bool justCaptured = false;
-        if (!_captureSuspended && lookPressed && !_prevLookPressed && vp.Contains(cursor))
+        if (!_captureSuspended && lookPressed && !_prevLookPressed && vp.Contains(cursor)
+            && (CanCapture?.Invoke() ?? true))
         {
             _cameraActive = true;
             Core.Instance.IsMouseVisible = false;
@@ -267,15 +281,25 @@ public sealed class CameraRig
                 $"yaw={_yaw:F3} center=({centerX},{centerY}) lockCenter=({_lockCenter.X},{_lockCenter.Y}) " +
                 $"bounds={vp.Bounds} suspended={_captureSuspended}");
 
-        var forward = new Vector3(
-            MathF.Cos(_pitch) * MathF.Sin(_yaw),
-            MathF.Sin(_pitch),
-            MathF.Cos(_pitch) * MathF.Cos(_yaw));
+        var forward = ForwardFromAngles();
 
         if (Mode == CameraMode.Walk && Walker != null)
             MoveWalk(deltaTime, keyboard, forward, sceneScale);
         else
             MoveFly(deltaTime, keyboard, forward);
+    }
+
+    private Vector3 ForwardFromAngles() => new Vector3(
+        MathF.Cos(_pitch) * MathF.Sin(_yaw),
+        MathF.Sin(_pitch),
+        MathF.Cos(_pitch) * MathF.Cos(_yaw));
+
+    /// <summary>Sit the camera on the walker's eye, looking along the current yaw/pitch. Runs every
+    /// frame in walk mode so a standing (or un-captured) walker still renders from head height.</summary>
+    private void PlaceWalkCamera(float sceneScale)
+    {
+        Position = Walker.EyePosition * sceneScale;
+        Target   = Position + ForwardFromAngles();
     }
 
     // Look is free (full pitch); movement is flattened to the ground plane and driven through the

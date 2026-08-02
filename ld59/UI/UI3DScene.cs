@@ -113,6 +113,15 @@ public class UI3DScene : UIElement
         set { _camera.Walker = value; _picker.Walker = value; }
     }
 
+    /// <summary>
+    /// Optional test for whether the pointer really belongs to this view: false when something else
+    /// -- another window, the taskbar, the start menu -- is drawn over the viewport at the cursor.
+    /// A view that fills the screen (the walking-sim backdrop) sets this so a click meant for the
+    /// desktop doesn't also grab mouse-look or pick an entity in the world behind it.
+    /// Null = the view always owns the pointer.
+    /// </summary>
+    public Func<bool> OwnsPointer { get => _camera.CanCapture; set => _camera.CanCapture = value; }
+
     public void SuspendCapture() => _camera.SuspendCapture();
     public void ResumeCapture()  => _camera.ResumeCapture();
 
@@ -253,7 +262,11 @@ public class UI3DScene : UIElement
         // Delete edits the text instead of firing a hotkey.
         bool textFocused = IsTextInputFocused?.Invoke() ?? false;
 
-        _editor.Update(keyboard, mouse, cursor, vp, textFocused);
+        // Only the editor's per-frame hover needs to know this every frame; mouse capture asks
+        // OwnsPointer for itself, at the click edge.
+        bool pointerBlocked = EditorMode && !(OwnsPointer?.Invoke() ?? true);
+
+        _editor.Update(keyboard, mouse, cursor, vp, textFocused, pointerBlocked);
         HandleViewHotkeys(keyboard, textFocused);
 
         // In editor mode, look with the RIGHT button (Unreal-style) so LEFT-click is free for
