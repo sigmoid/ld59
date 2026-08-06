@@ -8,6 +8,7 @@
     1. Dictionary app
     1. Translator
 1. Easy fullscreen for the walking sim
+1. Frustum Culling and bsp
 
 
 1. Write intro email
